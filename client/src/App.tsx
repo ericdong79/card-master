@@ -1,8 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 
 import { ForgotPasswordPage } from '@/pages/forgot-password-page'
+import { HomePage } from '@/pages/home-page'
 import { LoginPage } from '@/pages/login-page'
-import { ProtectedPage } from '@/pages/protected-page'
 import { SignUpPage } from '@/pages/sign-up-page'
 import { UpdatePasswordPage } from '@/pages/update-password-page'
 
@@ -14,7 +14,7 @@ function App() {
       <Route path="/sign-up" element={<SignUpPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/update-password" element={<UpdatePasswordPage />} />
-      <Route path="/protected" element={<ProtectedPage />} />
+      <Route path="/protected" element={<HomePage />} />
     </Routes>
   )
 }
