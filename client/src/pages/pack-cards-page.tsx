@@ -147,10 +147,15 @@ export function PackCardsPage() {
 							View and manage cards in this pack.
 						</p>
 					</div>
-					<Button onClick={() => setCreateOpen(true)}>
-						<Plus className="size-4" />
-						New card
-					</Button>
+					<div className="flex gap-2">
+						<Button variant="outline" asChild>
+							<Link to={`/pack/${cardPackId}/review`}>Review</Link>
+						</Button>
+						<Button onClick={() => setCreateOpen(true)}>
+							<Plus className="size-4" />
+							New card
+						</Button>
+					</div>
 				</div>
 			</header>
 

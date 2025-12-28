@@ -19,6 +19,34 @@ export type Sm2Parameters = {
 	minimumEase?: number;
 };
 
+const addDefaultDurationUnit = (spec: DurationSpec): DurationSpec => {
+	if (typeof spec === "string") {
+		const trimmed = spec.trim();
+		if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+			return `${trimmed}d`;
+		}
+	}
+	return spec;
+};
+
+export const normalizeSm2Parameters = (
+	params: Partial<Sm2Parameters> | null | undefined,
+): Sm2Parameters => {
+	const merged: Sm2Parameters = {
+		...SM2_DEFAULT_PARAMETERS,
+		...(params ?? {}),
+	};
+
+	return {
+		...merged,
+		learningSteps: merged.learningSteps.map(addDefaultDurationUnit),
+		relearningSteps: merged.relearningSteps.map(addDefaultDurationUnit),
+		easyInterval: addDefaultDurationUnit(merged.easyInterval),
+		maxInterval: addDefaultDurationUnit(merged.maxInterval),
+		forgotInterval: addDefaultDurationUnit(merged.forgotInterval),
+	};
+};
+
 export type Sm2State = {
 	schema_version: 1;
 	algorithm: "sm2";
