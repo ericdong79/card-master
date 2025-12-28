@@ -1,0 +1,187 @@
+# Project: Spaced Repetition Learning System - card master (SRS)
+
+## Background
+
+This project implements a modern Spaced Repetition System (SRS) for long-term memory retention.
+Unlike traditional flashcard apps that tightly couple content with a fixed scheduling algorithm,
+this system is designed from the beginning to support:
+
+- Multiple scheduling algorithms (e.g. SM-2, FSRS)
+- Algorithm upgrades without destructive data migrations
+- Accurate memory modeling driven by real review behavior
+- Clear separation between content, memory state, and learning events
+
+The system is built on Supabase (PostgreSQL) and follows an event-driven memory model:
+review events are treated as the source of truth, while scheduling state is treated as a derived cache.
+
+---
+
+## Goals
+
+### Product Goals
+- Help users retain knowledge efficiently over the long term
+- Optimize for *time spent vs memory retained*, not short-term correctness
+- Treat forgetting as a normal and useful signal, not a failure
+- Allow users to tune learning behavior via scheduling profiles
+
+### Engineering Goals
+- Avoid schema migration disasters when scheduling algorithms evolve
+- Support algorithm experimentation and gradual rollout
+- Make scheduling state reconstructable from historical data
+- Enable future offline sync, analytics, and optimization
+
+---
+
+## Core Concepts
+
+### 1. Card
+
+A `card` represents the smallest reviewable unit of knowledge.
+
+Table: `card`
+
+Key properties:
+- `prompt` / `answer`: the learning content
+- `owner_user_id`: cards are user-scoped
+- `card_pack_id`: logical grouping (deck / pack)
+- `status`: active / suspended / deleted
+
+Important:
+- Cards **do not** contain any scheduling or memory-related fields.
+- Cards are stable content objects.
+
+---
+
+### 2. Card Pack
+
+A `card_pack` is a logical grouping of cards (similar to a deck).
+
+Table: `card_pack`
+
+Used for:
+- Organizing content
+- Applying scheduling strategies at a higher level
+- Querying due cards by pack
+
+---
+
+### 3. Review Event (Learning Event)
+
+A `review_event` represents **one actual review performed by the user**.
+
+Table: `review_event`
+
+This is the **source of truth** for learning behavior.
+
+Key properties:
+- `card_id`: which card was reviewed
+- `grade`: user rating (Again / Hard / Good / Easy)
+- `time_ms`: time spent answering
+- `reviewed_at`: when the review occurred
+- `raw_payload`: extensible metadata for future use
+
+Important principles:
+- Review events are append-only.
+- Past events are never overwritten.
+- All scheduling state must be explainable from these events.
+
+---
+
+### 4. Grading Semantics (Again / Hard / Good / Easy)
+
+User grades are treated as **memory quality signals**, not emotional feedback.
+
+Semantic meaning:
+- Again (lowest): recall failed → model overestimated memory
+- Hard: recall succeeded but was difficult → near memory boundary
+- Good: normal recall → spacing is appropriate
+- Easy: effortless recall → spacing is too conservative
+
+Grades are stored as numeric values (`smallint`) to remain algorithm-agnostic.
+
+---
+
+### 5. Scheduling Profile
+
+A `scheduling_profile` defines **how scheduling is computed**.
+
+Table: `scheduling_profile`
+
+Key properties:
+- `algorithm_key`: e.g. "sm2", "fsrs"
+- `version`: algorithm or parameter set version
+- `parameters`: algorithm-specific configuration (JSON)
+- `owner_user_id`: profiles are user-scoped
+
+Profiles allow:
+- Different users to use different algorithms
+- Algorithm upgrades without breaking existing data
+- Shadow computation and gradual migration
+
+---
+
+### 6. Card Scheduling State
+
+`card_scheduling_state` represents the **current scheduling snapshot** for a card.
+
+Table: `card_scheduling_state`
+
+This is a **derived, mutable cache**, not the source of truth.
+
+Key properties:
+- `card_id`: which card this state belongs to
+- `profile_id`: which scheduling profile produced this state
+- `due_at`: next scheduled review time (indexed for fast queries)
+- `state`: algorithm-specific memory state (JSON)
+- `last_reviewed_at`: last review timestamp
+- `last_event_id`: reference to the triggering review event
+
+Important principles:
+- The `state` JSON is algorithm-private and versioned logically.
+- Scheduling state can be recomputed from review events if needed.
+- Only one active scheduling state exists per card per user.
+
+---
+
+## Scheduling Model Philosophy
+
+This system follows a predictive-feedback loop:
+
+1. The scheduler predicts memory retention based on current state
+2. The user reviews a card and provides a grade
+3. The review event exposes whether the prediction was correct
+4. The scheduling state is updated accordingly
+
+For advanced algorithms like FSRS:
+- Memory is modeled via Difficulty (D) and Stability (S)
+- Retention probability is derived from time + stability
+- Desired retention acts as a first-class control parameter
+
+---
+
+## Why Forgetting Is Valuable
+
+Forgetting is not treated as failure.
+It is the most informative signal that the scheduling model was incorrect.
+
+- Frequent success with no failures provides little learning signal
+- Controlled failures help calibrate difficulty and spacing
+- The system aims to review cards near the "almost forgotten" boundary
+
+---
+
+## Design Invariants
+
+- Review events are immutable
+- Scheduling state is replaceable
+- Algorithms are versioned and swappable
+- Content is independent of memory modeling
+- All future migrations should be lazy and event-driven
+
+---
+
+## Summary
+
+This project is a memory-first learning system designed for long-term evolution.
+By separating content, events, and scheduling logic, it avoids the rigidity of
+traditional SRS implementations and enables continuous improvement over time.
