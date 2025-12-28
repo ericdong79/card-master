@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { getOrCreateSchedulingProfile } from '@/lib/api/scheduling-profile'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,11 +28,14 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     setError(null)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
       if (error) throw error
+      const userId = data?.user?.id
+      if (!userId) throw new Error('Could not determine user after login')
+      await getOrCreateSchedulingProfile(supabase, userId)
       // Update this route to redirect to an authenticated route. The user already has an active session.
       navigate('/protected')
     } catch (error: unknown) {

@@ -108,7 +108,7 @@ A `scheduling_profile` defines **how scheduling is computed**.
 Table: `scheduling_profile`
 
 Key properties:
-- `algorithm_key`: e.g. "sm2", "fsrs"
+- `algorithm_key`: e.g. "fsrs"
 - `version`: algorithm or parameter set version
 - `parameters`: algorithm-specific configuration (JSON)
 - `owner_user_id`: profiles are user-scoped
@@ -170,6 +170,14 @@ It is the most informative signal that the scheduling model was incorrect.
 
 ---
 
+## Recent Implementation Notes
+
+- Shared scheduling contracts added in `client/src/lib/scheduling/types.ts` (grades, review events, algorithm interface, scheduling result).
+- SM-2 scheduler implemented with RemNote-like defaults and phase handling in `client/src/lib/scheduling/sm2.ts`.
+- Default scheduling profile now points to SM-2 and seeds parameters from the SM-2 defaults in `client/src/lib/api/scheduling-profile.ts`.
+
+---
+
 ## Design Invariants
 
 - Review events are immutable
@@ -185,3 +193,13 @@ It is the most informative signal that the scheduling model was incorrect.
 This project is a memory-first learning system designed for long-term evolution.
 By separating content, events, and scheduling logic, it avoids the rigidity of
 traditional SRS implementations and enables continuous improvement over time.
+
+---
+
+## Conventions
+
+- Client API types are split into `entities` (database-shaped records) and `dtos` (payloads); place them under `client/src/lib/api/entities` and `client/src/lib/api/dtos`.
+- Frontend is React 19 + TypeScript on Vite with `@/*` path aliases to `client/src`; auth flows use Supabase client-side helpers and `react-router-dom` navigation.
+- Styling is Tailwind CSS v4 (imported in `client/src/index.css` with theme tokens and dark mode CSS variables) plus `tw-animate-css`.
+- UI primitives come from shadcn/ui (New York style) in `client/src/components/ui`, built with class-variance-authority and tailwind-merge via the local `cn` helper.
+- Components lean on Tailwind utility classes for layout (e.g., `flex flex-col gap-6`) alongside shadcn Cards, Inputs, Labels, and Buttons for form structure and consistent spacing.
