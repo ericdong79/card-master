@@ -201,5 +201,5 @@ traditional SRS implementations and enables continuous improvement over time.
 - Client API types are split into `entities` (database-shaped records) and `dtos` (payloads); place them under `client/src/lib/api/entities` and `client/src/lib/api/dtos`.
 - Frontend is React 19 + TypeScript on Vite with `@/*` path aliases to `client/src`; auth flows use Supabase client-side helpers and `react-router-dom` navigation.
 - Styling is Tailwind CSS v4 (imported in `client/src/index.css` with theme tokens and dark mode CSS variables) plus `tw-animate-css`.
-- UI primitives come from shadcn/ui (New York style) in `client/src/components/ui`, built with class-variance-authority and tailwind-merge via the local `cn` helper.
-- Components lean on Tailwind utility classes for layout (e.g., `flex flex-col gap-6`) alongside shadcn Cards, Inputs, Labels, and Buttons for form structure and consistent spacing.
+- UI primitives come from shadcn/ui (New York style) in `client/src/components/ui`, built with class-variance-authority and tailwind-merge via the local `cn` helper; prefer these before custom components (e.g., Dialog instead of bespoke modals).
+- Components lean on Tailwind utility classes for layout (e.g., `flex flex-col gap-6`) alongside shadcn Cards, Inputs, Labels, Buttons, Textarea, Spinner, and Dialog for form structure, loading states, and modals/confirmations.

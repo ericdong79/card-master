@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Edit3, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -335,12 +335,16 @@ function CardPackTile({ pack, onEdit, onDelete }: CardPackTileProps) {
 
 	return (
 		<Card className="group relative overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md">
+			<Link to={`/pack/${pack.id}/cards`} className="absolute inset-0" aria-label={pack.name} />
 			<div className="absolute right-3 top-3 flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
 				<Button
 					size="icon-sm"
 					variant="ghost"
 					className="bg-background/80 hover:bg-accent"
-					onClick={onEdit}
+					onClick={(e) => {
+						e.preventDefault();
+						onEdit();
+					}}
 				>
 					<Edit3 className="size-4" />
 				</Button>
@@ -348,7 +352,10 @@ function CardPackTile({ pack, onEdit, onDelete }: CardPackTileProps) {
 					size="icon-sm"
 					variant="ghost"
 					className="bg-background/80 hover:bg-destructive/10 hover:text-destructive"
-					onClick={onDelete}
+					onClick={(e) => {
+						e.preventDefault();
+						onDelete();
+					}}
 				>
 					<Trash2 className="size-4" />
 				</Button>
