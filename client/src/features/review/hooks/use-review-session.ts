@@ -1,21 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
-
+import { buildQueue } from "@/features/review/lib/queue";
+import { listCards } from "@/lib/api/card";
+import { getCardPackById } from "@/lib/api/card-pack";
 import type { Card } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
-import { listCards } from "@/lib/api/card";
-import { getCardPackById } from "@/lib/api/card-pack";
 import { createReviewEvent } from "@/lib/api/review-event";
+import { getOrCreateSchedulingProfile } from "@/lib/api/scheduling-profile";
 import {
 	listSchedulingStatesByCardIds,
 	upsertSchedulingState,
 } from "@/lib/api/scheduling-state";
-import { getOrCreateSchedulingProfile } from "@/lib/api/scheduling-profile";
 import { useCurrentUser } from "@/lib/hooks/use-current-user";
-import { createClient } from "@/lib/supabase/client";
-import { buildQueue } from "@/features/review/lib/queue";
-import { normalizeSm2Parameters, sm2Scheduler, type Sm2Parameters, type Sm2State } from "@/lib/scheduling/sm2";
+import {
+	normalizeSm2Parameters,
+	type Sm2Parameters,
+	type Sm2State,
+	sm2Scheduler,
+} from "@/lib/scheduling/sm2";
 import type { ReviewGrade } from "@/lib/scheduling/types";
+import { createClient } from "@/lib/supabase/client";
 
 const REVIEW_GRADE_TO_VALUE: Record<ReviewGrade, number> = {
 	again: 1,
@@ -42,19 +46,25 @@ export type UseReviewSessionReturn = ReviewSessionState & {
 	handleGrade: (grade: ReviewGrade) => Promise<void>;
 };
 
-export function useReviewSession(cardPackId: string | undefined): UseReviewSessionReturn {
+export function useReviewSession(
+	cardPackId: string | undefined,
+): UseReviewSessionReturn {
 	const supabase = useMemo(() => createClient(), []);
 	const { userId, loading: userLoading, error: userError } = useCurrentUser();
 
 	const [cardPack, setCardPack] = useState<CardPack | null>(null);
 	const [cards, setCards] = useState<Card[]>([]);
-	const [states, setStates] = useState<Map<string, CardSchedulingState>>(new Map());
+	const [states, setStates] = useState<Map<string, CardSchedulingState>>(
+		new Map(),
+	);
 	const [queue, setQueue] = useState<Card[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [grading, setGrading] = useState(false);
 	const [totalReviewed, setTotalReviewed] = useState(0);
-	const [profileParams, setProfileParams] = useState<Sm2Parameters | null>(null);
+	const [profileParams, setProfileParams] = useState<Sm2Parameters | null>(
+		null,
+	);
 	const [profileId, setProfileId] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -77,7 +87,9 @@ export function useReviewSession(cardPackId: string | undefined): UseReviewSessi
 
 				setCardPack(pack);
 				setCards(fetchedCards);
-				setProfileParams(normalizeSm2Parameters(profile.parameters as Sm2Parameters));
+				setProfileParams(
+					normalizeSm2Parameters(profile.parameters as Sm2Parameters),
+				);
 				setProfileId(profile.id);
 
 				const stateList = fetchedCards.length
@@ -92,7 +104,9 @@ export function useReviewSession(cardPackId: string | undefined): UseReviewSessi
 				setStates(stateMap);
 				setQueue(buildQueue(fetchedCards, stateList));
 			} catch (err) {
-				setError(err instanceof Error ? err.message : "Failed to load review data");
+				setError(
+					err instanceof Error ? err.message : "Failed to load review data",
+				);
 			} finally {
 				setLoading(false);
 			}

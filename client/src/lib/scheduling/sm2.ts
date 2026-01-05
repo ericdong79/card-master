@@ -89,11 +89,7 @@ const durationMs = (spec: DurationSpec): number => {
 		throw new Error("Unsupported duration spec");
 	}
 
-	const parts = spec
-		.trim()
-		.split(/(?=[-+]?\d)/)
-		.map((p) => p.trim())
-		.filter(Boolean);
+	const parts = spec.trim().match(/-?\d+(?:\.\d+)?[mhd]/gi) || [];
 
 	if (parts.length === 0) {
 		throw new Error(`Invalid duration string: ${spec}`);
@@ -109,11 +105,7 @@ const durationMs = (spec: DurationSpec): number => {
 		const amount = parseFloat(amountRaw);
 		const unit = unitRaw.toLowerCase();
 		const unitMs =
-			unit === "m"
-				? 1000 * 60
-				: unit === "h"
-					? 1000 * 60 * 60
-					: MS_IN_DAY;
+			unit === "m" ? 1000 * 60 : unit === "h" ? 1000 * 60 * 60 : MS_IN_DAY;
 		totalMs += amount * unitMs;
 	}
 	return totalMs;
@@ -229,10 +221,7 @@ const applyLearningPhase = (
 			stepIndex: 0,
 			intervalDays,
 			repetitions: state.repetitions + 1,
-			ease: clampEase(
-				state.ease + EASY_EASE_BONUS,
-				params.minimumEase ?? 1.3,
-			),
+			ease: clampEase(state.ease + EASY_EASE_BONUS, params.minimumEase ?? 1.3),
 			lastReviewedAt: now.toISOString(),
 		},
 	};
@@ -309,7 +298,10 @@ const applyReviewPhase = (
 	}
 
 	const intervalDays = clampIntervalDays(
-		state.intervalDays * state.ease * params.easyBonus * params.intervalMultiplier,
+		state.intervalDays *
+			state.ease *
+			params.easyBonus *
+			params.intervalMultiplier,
 		maxDays,
 	);
 	const dueAt = new Date(now.getTime() + daysToMs(intervalDays));
@@ -320,10 +312,7 @@ const applyReviewPhase = (
 			phase: "review",
 			intervalDays,
 			repetitions: state.repetitions + 1,
-			ease: clampEase(
-				state.ease + EASY_EASE_BONUS,
-				params.minimumEase ?? 1.3,
-			),
+			ease: clampEase(state.ease + EASY_EASE_BONUS, params.minimumEase ?? 1.3),
 			lastReviewedAt: now.toISOString(),
 		},
 	};

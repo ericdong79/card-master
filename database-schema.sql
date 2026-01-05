@@ -29,7 +29,7 @@ CREATE TABLE public.card_scheduling_state (
   owner_user_id uuid NOT NULL,
   card_id uuid NOT NULL,
   profile_id uuid NOT NULL,
-  due_at time without time zone NOT NULL,
+  due_at timestamp without time zone NOT NULL,
   state jsonb NOT NULL,
   last_reviewed_at timestamp without time zone NOT NULL,
   last_event_id uuid,
