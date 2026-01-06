@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { buildQueue } from "@/features/review/lib/queue";
+import { createApiClient } from "@/lib/api/client";
 import { listCards } from "@/lib/api/card";
 import { getCardPackById } from "@/lib/api/card-pack";
 import type { Card } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
+import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 import { createReviewEvent } from "@/lib/api/review-event";
 import { getOrCreateSchedulingProfile } from "@/lib/api/scheduling-profile";
 import {
 	listSchedulingStatesByCardIds,
 	upsertSchedulingState,
 } from "@/lib/api/scheduling-state";
-import { useCurrentUser } from "@/lib/hooks/use-current-user";
 import {
 	normalizeSm2Parameters,
 	type Sm2Parameters,
@@ -19,7 +20,6 @@ import {
 	sm2Scheduler,
 } from "@/lib/scheduling/sm2";
 import type { ReviewGrade } from "@/lib/scheduling/types";
-import { createClient } from "@/lib/supabase/client";
 
 const REVIEW_GRADE_TO_VALUE: Record<ReviewGrade, number> = {
 	again: 1,
@@ -37,9 +37,6 @@ export type ReviewSessionState = {
 	grading: boolean;
 	totalReviewed: number;
 	profileId: string | null;
-	userLoading: boolean;
-	userError: string | null;
-	userId: string | null;
 };
 
 export type UseReviewSessionReturn = ReviewSessionState & {
@@ -49,8 +46,8 @@ export type UseReviewSessionReturn = ReviewSessionState & {
 export function useReviewSession(
 	cardPackId: string | undefined,
 ): UseReviewSessionReturn {
-	const supabase = useMemo(() => createClient(), []);
-	const { userId, loading: userLoading, error: userError } = useCurrentUser();
+	const client = useMemo(() => createApiClient(), []);
+	const ownerUserId = LOCAL_OWNER_ID;
 
 	const [cardPack, setCardPack] = useState<CardPack | null>(null);
 	const [cards, setCards] = useState<Card[]>([]);
@@ -68,16 +65,16 @@ export function useReviewSession(
 	const [profileId, setProfileId] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (!userId || !cardPackId) return;
+		if (!cardPackId) return;
 		setLoading(true);
 		setError(null);
 
 		(async () => {
 			try {
 				const [pack, fetchedCards, profile] = await Promise.all([
-					getCardPackById(supabase, cardPackId, userId),
-					listCards(supabase, userId, { cardPackId }),
-					getOrCreateSchedulingProfile(supabase, userId),
+					getCardPackById(client, cardPackId, ownerUserId),
+					listCards(client, ownerUserId, { cardPackId }),
+					getOrCreateSchedulingProfile(client, ownerUserId),
 				]);
 
 				if (!pack) {
@@ -94,10 +91,10 @@ export function useReviewSession(
 
 				const stateList = fetchedCards.length
 					? await listSchedulingStatesByCardIds(
-							supabase,
-							userId,
+							client,
+							ownerUserId,
 							fetchedCards.map((c) => c.id),
-						)
+					  )
 					: [];
 
 				const stateMap = new Map(stateList.map((s) => [s.card_id, s]));
@@ -111,11 +108,11 @@ export function useReviewSession(
 				setLoading(false);
 			}
 		})();
-	}, [supabase, userId, cardPackId]);
+	}, [cardPackId, client, ownerUserId]);
 
 	const handleGrade = async (grade: ReviewGrade) => {
 		const current = queue[0];
-		if (!current || !userId || !profileParams || !profileId) return;
+		if (!current || !profileParams || !profileId) return;
 		setGrading(true);
 
 		const now = new Date();
@@ -129,17 +126,17 @@ export function useReviewSession(
 		});
 
 		try {
-			const event = await createReviewEvent(supabase, {
+			const event = await createReviewEvent(client, {
 				card_id: current.id,
-				owner_user_id: userId,
+				owner_user_id: ownerUserId,
 				grade: REVIEW_GRADE_TO_VALUE[grade],
 				time_ms: 0,
 				raw_payload: null,
 				reviewed_at: now.toISOString(),
 			});
 
-			const persisted = await upsertSchedulingState(supabase, existingState, {
-				owner_user_id: userId,
+			const persisted = await upsertSchedulingState(client, existingState, {
+				owner_user_id: ownerUserId,
 				card_id: current.id,
 				profile_id: profileId,
 				due_at: dueAt.toISOString(),
@@ -170,9 +167,6 @@ export function useReviewSession(
 		grading,
 		totalReviewed,
 		profileId,
-		userLoading,
-		userError,
-		userId,
 		handleGrade,
 	};
 }

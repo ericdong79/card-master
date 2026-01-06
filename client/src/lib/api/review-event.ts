@@ -1,21 +1,18 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-
+import type { ApiClient } from "./client";
 import type { ReviewEventInsert } from "./dtos/review-event";
 import type { ReviewEvent } from "./entities/review-event";
+import { generateId, nowIso } from "./utils";
 
 export async function createReviewEvent(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	payload: ReviewEventInsert,
 ): Promise<ReviewEvent> {
-	const { data, error } = await supabase
-		.from("review_event")
-		.insert(payload)
-		.select("*")
-		.single();
+	const record: ReviewEvent = {
+		...payload,
+		id: generateId(),
+		created_at: nowIso(),
+	};
 
-	if (error || !data) {
-		throw error ?? new Error("Failed to create review event");
-	}
-
-	return data;
+	await client.put("review_event", record);
+	return record;
 }

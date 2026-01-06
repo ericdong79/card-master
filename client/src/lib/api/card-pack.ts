@@ -1,7 +1,7 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-
+import type { ApiClient } from "./client";
 import type { CardPackInsert, CardPackUpdate } from "./dtos/card-pack";
 import type { CardPack } from "./entities/card-pack";
+import { generateId, nowIso } from "./utils";
 
 const DEFAULT_CARD_PACK: Pick<CardPackInsert, "status"> = {
 	status: "active",
@@ -15,46 +15,29 @@ export type CardPackWithCounts = CardPack & {
 };
 
 export async function listCardPacks(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	ownerUserId: string,
 ): Promise<CardPack[]> {
-	const { data, error } = await supabase
-		.from("card_pack")
-		.select("*")
-		.eq("owner_user_id", ownerUserId)
-		.order("created_at", { ascending: true });
-
-	if (error) {
-		throw error;
-	}
-
-	return data ?? [];
+	return client.list("card_pack", {
+		filter: (pack) => pack.owner_user_id === ownerUserId,
+		sortBy: (a, b) =>
+			Date.parse(a.created_at ?? "") - Date.parse(b.created_at ?? ""),
+	});
 }
 
 export async function listCardPacksWithCounts(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	ownerUserId: string,
 ): Promise<CardPackWithCounts[]> {
-	const [cardPacks, countsResponse] = await Promise.all([
-		listCardPacks(supabase, ownerUserId),
-		supabase
-			.from("card")
-			.select("card_pack_id")
-			.eq("owner_user_id", ownerUserId),
+	const [cardPacks, cards] = await Promise.all([
+		listCardPacks(client, ownerUserId),
+		client.list("card", { filter: (card) => card.owner_user_id === ownerUserId }),
 	]);
-
-	if (countsResponse.error) {
-		throw countsResponse.error;
-	}
 
 	const countsMap = new Map<string, number>();
 
-	for (const row of countsResponse.data ?? []) {
-		if (!row || typeof row.card_pack_id !== "string") continue;
-		countsMap.set(
-			row.card_pack_id,
-			(countsMap.get(row.card_pack_id) ?? 0) + 1,
-		);
+	for (const card of cards) {
+		countsMap.set(card.card_pack_id, (countsMap.get(card.card_pack_id) ?? 0) + 1);
 	}
 
 	return cardPacks.map((pack) => ({
@@ -64,82 +47,66 @@ export async function listCardPacksWithCounts(
 }
 
 export async function getCardPackById(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	cardPackId: string,
 	ownerUserId: string,
 ): Promise<CardPack | null> {
-	const { data, error } = await supabase
-		.from("card_pack")
-		.select("*")
-		.eq("id", cardPackId)
-		.eq("owner_user_id", ownerUserId)
-		.maybeSingle();
-
-	if (error) {
-		throw error;
-	}
-
-	return data ?? null;
+	const pack = await client.get("card_pack", cardPackId);
+	if (!pack || pack.owner_user_id !== ownerUserId) return null;
+	return pack;
 }
 
 export async function createCardPack(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	ownerUserId: string,
 	input: CreateCardPackInput,
 ): Promise<CardPack> {
+	const now = nowIso();
 	const payload: CardPackInsert = {
 		...DEFAULT_CARD_PACK,
 		...input,
 		owner_user_id: ownerUserId,
+		updated_at: null,
 	};
 
-	const { data, error } = await supabase
-		.from("card_pack")
-		.insert(payload)
-		.select("*")
-		.single();
+	const record: CardPack = {
+		id: generateId(),
+		name: payload.name,
+		owner_user_id: payload.owner_user_id,
+		status: payload.status ?? DEFAULT_CARD_PACK.status,
+		created_at: now,
+		updated_at: payload.updated_at ?? null,
+	};
 
-	if (error || !data) {
-		throw error ?? new Error("Failed to create card pack");
-	}
-
-	return data;
+	await client.put("card_pack", record);
+	return record;
 }
 
 export async function updateCardPack(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	cardPackId: string,
 	ownerUserId: string,
 	updates: CardPackUpdate,
 ): Promise<CardPack | null> {
-	// Some PostgREST setups throw PGRST116 when requesting a single-row representation
-	// after an update. We split the write and read to avoid that error but still return
-	// the latest record when policies allow reads.
-	const { error: updateError } = await supabase
-		.from("card_pack")
-		.update(updates)
-		.eq("id", cardPackId)
-		.eq("owner_user_id", ownerUserId);
+	const existing = await getCardPackById(client, cardPackId, ownerUserId);
+	if (!existing) return null;
 
-	if (updateError) {
-		throw updateError;
-	}
+	const updated: CardPack = {
+		...existing,
+		...updates,
+		updated_at: nowIso(),
+	};
 
-	return getCardPackById(supabase, cardPackId, ownerUserId);
+	await client.put("card_pack", updated);
+	return updated;
 }
 
 export async function deleteCardPack(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	cardPackId: string,
 	ownerUserId: string,
 ): Promise<void> {
-	const { error } = await supabase
-		.from("card_pack")
-		.delete()
-		.eq("id", cardPackId)
-		.eq("owner_user_id", ownerUserId);
-
-	if (error) {
-		throw error;
-	}
+	const pack = await getCardPackById(client, cardPackId, ownerUserId);
+	if (!pack) return;
+	await client.delete("card_pack", cardPackId);
 }

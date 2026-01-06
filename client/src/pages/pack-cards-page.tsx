@@ -8,6 +8,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { CardFormDialog } from "@/features/cards/components/card-form-dialog";
 import { CardList } from "@/features/cards/components/card-list";
 import { DeleteCardDialog } from "@/features/cards/components/delete-card-dialog";
+import { createApiClient } from "@/lib/api/client";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
 import {
@@ -17,13 +18,12 @@ import {
 	updateCard,
 } from "@/lib/api/card";
 import { getCardPackById } from "@/lib/api/card-pack";
-import { useCurrentUser } from "@/lib/hooks/use-current-user";
-import { createClient } from "@/lib/supabase/client";
+import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 
 export function PackCardsPage() {
 	const { cardPackId } = useParams<{ cardPackId: string }>();
-	const supabase = useMemo(() => createClient(), []);
-	const { userId, loading: userLoading, error: userError } = useCurrentUser();
+	const apiClient = useMemo(() => createApiClient(), []);
+	const ownerUserId = LOCAL_OWNER_ID;
 
 	const [cardPack, setCardPack] = useState<CardPack | null>(null);
 	const [cards, setCards] = useState<CardEntity[]>([]);
@@ -36,13 +36,13 @@ export function PackCardsPage() {
 	const [pendingAction, setPendingAction] = useState<"create" | "edit" | "delete" | null>(null);
 
 	useEffect(() => {
-		if (!userId || !cardPackId) return;
+		if (!cardPackId) return;
 		setLoading(true);
 		setError(null);
 
 		Promise.all([
-			getCardPackById(supabase, cardPackId, userId),
-			listCards(supabase, userId, { cardPackId }),
+			getCardPackById(apiClient, cardPackId, ownerUserId),
+			listCards(apiClient, ownerUserId, { cardPackId }),
 		])
 			.then(([pack, list]) => {
 				if (!pack) {
@@ -58,32 +58,17 @@ export function PackCardsPage() {
 				setError(err instanceof Error ? err.message : "Failed to load cards"),
 			)
 			.finally(() => setLoading(false));
-	}, [supabase, userId, cardPackId]);
+	}, [apiClient, cardPackId, ownerUserId]);
 
 	if (!cardPackId) {
-		return <Navigate to="/protected" replace />;
-	}
-
-	if (userLoading) {
-		return (
-			<div className="flex min-h-screen items-center justify-center bg-muted/20">
-				<div className="flex items-center gap-2 text-muted-foreground">
-					<Spinner />
-					<span>Loading your account...</span>
-				</div>
-			</div>
-		);
-	}
-
-	if (!userId || userError) {
-		return <Navigate to="/login" replace />;
+		return <Navigate to="/" replace />;
 	}
 
 	const handleCreate = async (values: { prompt: string; answer: string }) => {
-		if (!cardPackId || !userId) return;
+		if (!cardPackId) return;
 		setPendingAction("create");
 		try {
-			const created = await createCard(supabase, userId, {
+			const created = await createCard(apiClient, ownerUserId, {
 				card_pack_id: cardPackId,
 				prompt: values.prompt,
 				answer: values.answer,
@@ -99,10 +84,10 @@ export function PackCardsPage() {
 	};
 
 	const handleEdit = async (values: { prompt: string; answer: string }) => {
-		if (!cardPackId || !userId || !editingCard) return;
+		if (!cardPackId || !editingCard) return;
 		setPendingAction("edit");
 		try {
-			const updated = await updateCard(supabase, editingCard.id, userId, values);
+			const updated = await updateCard(apiClient, editingCard.id, ownerUserId, values);
 			setCards((prev) =>
 				prev.map((card) => (card.id === editingCard.id ? updated : card)),
 			);
@@ -116,10 +101,10 @@ export function PackCardsPage() {
 	};
 
 	const handleDelete = async () => {
-		if (!deleteCardTarget || !userId) return;
+		if (!deleteCardTarget) return;
 		setPendingAction("delete");
 		try {
-			await deleteCard(supabase, deleteCardTarget.id, userId);
+			await deleteCard(apiClient, deleteCardTarget.id, ownerUserId);
 			setCards((prev) => prev.filter((card) => card.id !== deleteCardTarget.id));
 			setDeleteCardTarget(null);
 			setError(null);
@@ -136,7 +121,7 @@ export function PackCardsPage() {
 				<div className="mx-auto flex max-w-5xl flex-col gap-2 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
 					<div>
 						<div className="flex items-center gap-2 text-sm text-muted-foreground">
-							<Link to="/protected" className="underline underline-offset-4">
+							<Link to="/" className="underline underline-offset-4">
 								Card packs
 							</Link>
 							<span>/</span>

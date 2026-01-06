@@ -1,7 +1,8 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { SM2_DEFAULT_PARAMETERS } from "../scheduling/sm2";
+import type { ApiClient } from "./client";
 import type { SchedulingProfileInsert } from "./dtos/scheduling-profile";
 import type { SchedulingProfile } from "./entities/scheduling-profile";
+import { generateId, nowIso } from "./utils";
 
 const DEFAULT_PROFILE: Omit<SchedulingProfileInsert, "owner_user_id"> = {
 	algorithm_key: "sm2",
@@ -10,25 +11,20 @@ const DEFAULT_PROFILE: Omit<SchedulingProfileInsert, "owner_user_id"> = {
 };
 
 export async function fetchSchedulingProfile(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	ownerUserId: string,
 ): Promise<SchedulingProfile | null> {
-	const { data, error } = await supabase
-		.from("scheduling_profile")
-		.select("*")
-		.eq("owner_user_id", ownerUserId)
-		.order("created_at", { ascending: true })
-		.limit(1);
+	const profiles = await client.list("scheduling_profile", {
+		filter: (profile) => profile.owner_user_id === ownerUserId,
+		sortBy: (a, b) =>
+			Date.parse(a.created_at ?? "") - Date.parse(b.created_at ?? ""),
+	});
 
-	if (error) {
-		throw error;
-	}
-
-	return data?.[0] ?? null;
+	return profiles[0] ?? null;
 }
 
 export async function createSchedulingProfile(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	ownerUserId: string,
 	overrides: Partial<SchedulingProfileInsert> = {},
 ): Promise<SchedulingProfile> {
@@ -38,24 +34,24 @@ export async function createSchedulingProfile(
 		owner_user_id: ownerUserId,
 	};
 
-	const { data, error } = await supabase
-		.from("scheduling_profile")
-		.insert(payload)
-		.select("*")
-		.single();
+	const record: SchedulingProfile = {
+		id: generateId(),
+		owner_user_id: payload.owner_user_id,
+		algorithm_key: payload.algorithm_key,
+		parameters: payload.parameters,
+		version: payload.version,
+		created_at: nowIso(),
+	};
 
-	if (error || !data) {
-		throw error ?? new Error("Failed to create scheduling profile");
-	}
-
-	return data;
+	await client.put("scheduling_profile", record);
+	return record;
 }
 
 export async function getOrCreateSchedulingProfile(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	ownerUserId: string,
 ): Promise<SchedulingProfile> {
-	const existing = await fetchSchedulingProfile(supabase, ownerUserId);
+	const existing = await fetchSchedulingProfile(client, ownerUserId);
 	if (existing) return existing;
-	return createSchedulingProfile(supabase, ownerUserId);
+	return createSchedulingProfile(client, ownerUserId);
 }

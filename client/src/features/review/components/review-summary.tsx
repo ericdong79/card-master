@@ -22,7 +22,7 @@ export function ReviewSummary({ packName, totalReviewed }: ReviewSummaryProps) {
 				</div>
 				<div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
 					<Button asChild>
-						<Link to="/protected">Back to packs</Link>
+						<Link to="/">Back to packs</Link>
 					</Button>
 					<Button asChild variant="outline">
 						<Link to="..">Back to cards</Link>

@@ -12,22 +12,7 @@ export function PackReviewPage() {
 	const session = useReviewSession(cardPackId);
 
 	if (!cardPackId) {
-		return <Navigate to="/protected" replace />;
-	}
-
-	if (session.userLoading) {
-		return (
-			<div className="flex min-h-screen items-center justify-center bg-muted/20">
-				<div className="flex items-center gap-2 text-muted-foreground">
-					<Spinner />
-					<span>Loading your account...</span>
-				</div>
-			</div>
-		);
-	}
-
-	if (!session.userId || session.userError) {
-		return <Navigate to="/login" replace />;
+		return <Navigate to="/" replace />;
 	}
 
 	const current = session.queue[0] ?? null;
@@ -38,7 +23,7 @@ export function PackReviewPage() {
 				<div className="mx-auto flex max-w-5xl flex-col gap-2 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
 					<div>
 						<div className="flex items-center gap-2 text-sm text-muted-foreground">
-							<Link to="/protected" className="underline underline-offset-4">
+							<Link to="/" className="underline underline-offset-4">
 								Card packs
 							</Link>
 							<span>/</span>

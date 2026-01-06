@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Edit3, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -22,15 +22,15 @@ import {
 	type CardPackWithCounts,
 	updateCardPack,
 } from "@/lib/api/card-pack";
-import { useCurrentUser } from "@/lib/hooks/use-current-user";
-import { createClient } from "@/lib/supabase/client";
+import { createApiClient } from "@/lib/api/client";
+import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 import { cn } from "@/lib/utils";
 
 type PendingAction = "create" | "edit" | "delete" | null;
 
 export function HomePage() {
-	const supabase = useMemo(() => createClient(), []);
-	const { userId, loading: userLoading, error: userError } = useCurrentUser();
+	const apiClient = useMemo(() => createApiClient(), []);
+	const ownerUserId = LOCAL_OWNER_ID;
 
 	const [cardPacks, setCardPacks] = useState<CardPackWithCounts[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -55,25 +55,23 @@ export function HomePage() {
 	};
 
 	useEffect(() => {
-		if (!userId) return;
-
 		setLoading(true);
 		setError(null);
 
-		listCardPacksWithCounts(supabase, userId)
+		listCardPacksWithCounts(apiClient, ownerUserId)
 			.then(setCardPacks)
 			.catch((err) =>
 				setError(err instanceof Error ? err.message : "Failed to load card packs"),
 			)
 			.finally(() => setLoading(false));
-	}, [supabase, userId]);
+	}, [apiClient, ownerUserId]);
 
 	const handleCreatePack = async () => {
-		if (!userId || !newPackName.trim()) return;
+		if (!newPackName.trim()) return;
 		setPendingAction("create");
 
 		try {
-			const created = await createCardPack(supabase, userId, {
+			const created = await createCardPack(apiClient, ownerUserId, {
 				name: newPackName.trim(),
 			});
 			setCardPacks((prev) => [...prev, { ...created, cards_count: 0 }]);
@@ -92,11 +90,11 @@ export function HomePage() {
 	};
 
 	const handleEditPack = async () => {
-		if (!userId || !editingPack || !editName.trim()) return;
+		if (!editingPack || !editName.trim()) return;
 		setPendingAction("edit");
 
 		try {
-			const updated = await updateCardPack(supabase, editingPack.id, userId, {
+			const updated = await updateCardPack(apiClient, editingPack.id, ownerUserId, {
 				name: editName.trim(),
 			});
 			setCardPacks((prev) =>
@@ -115,11 +113,11 @@ export function HomePage() {
 	};
 
 	const handleDeletePack = async () => {
-		if (!userId || !deletingPack) return;
+		if (!deletingPack) return;
 		setPendingAction("delete");
 
 		try {
-			await deleteCardPack(supabase, deletingPack.id, userId);
+			await deleteCardPack(apiClient, deletingPack.id, ownerUserId);
 			setCardPacks((prev) => prev.filter((pack) => pack.id !== deletingPack.id));
 			closeDeleteDialog();
 		} catch (err) {
@@ -128,21 +126,6 @@ export function HomePage() {
 			setPendingAction(null);
 		}
 	};
-
-	if (userLoading) {
-		return (
-			<div className="flex min-h-screen items-center justify-center bg-muted/20">
-				<div className="flex items-center gap-2 text-muted-foreground">
-					<Spinner />
-					<span>Loading your account...</span>
-				</div>
-			</div>
-		);
-	}
-
-	if (!userId || userError) {
-		return <Navigate to="/login" replace />;
-	}
 
 	return (
 		<div className="min-h-screen bg-muted/20">

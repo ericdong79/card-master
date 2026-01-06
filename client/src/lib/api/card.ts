@@ -1,7 +1,7 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-
+import type { ApiClient } from "./client";
 import type { CardInsert, CardUpdate } from "./dtos/card";
 import type { Card, CardStatus } from "./entities/card";
+import { generateId, nowIso } from "./utils";
 
 const DEFAULT_CARD: Pick<CardInsert, "status"> = {
 	status: "active",
@@ -16,105 +16,88 @@ type CardListFilters = {
 };
 
 export async function listCards(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	ownerUserId: string,
 	filters: CardListFilters = {},
 ): Promise<Card[]> {
-	let query = supabase.from("card").select("*").eq("owner_user_id", ownerUserId);
-
-	if (filters.cardPackId) {
-		query = query.eq("card_pack_id", filters.cardPackId);
-	}
-
-	if (filters.status) {
-		query = query.eq("status", filters.status);
-	}
-
-	const { data, error } = await query.order("created_at", { ascending: true });
-
-	if (error) {
-		throw error;
-	}
-
-	return data ?? [];
+	return client.list("card", {
+		filter: (card) => {
+			if (card.owner_user_id !== ownerUserId) return false;
+			if (filters.cardPackId && card.card_pack_id !== filters.cardPackId)
+				return false;
+			if (filters.status && card.status !== filters.status) return false;
+			return true;
+		},
+		sortBy: (a, b) =>
+			Date.parse(a.created_at ?? "") - Date.parse(b.created_at ?? ""),
+	});
 }
 
 export async function getCardById(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	cardId: string,
 	ownerUserId: string,
 ): Promise<Card | null> {
-	const { data, error } = await supabase
-		.from("card")
-		.select("*")
-		.eq("id", cardId)
-		.eq("owner_user_id", ownerUserId)
-		.maybeSingle();
-
-	if (error) {
-		throw error;
-	}
-
-	return data ?? null;
+	const card = await client.get("card", cardId);
+	if (!card || card.owner_user_id !== ownerUserId) return null;
+	return card;
 }
 
 export async function createCard(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	ownerUserId: string,
 	input: CreateCardInput,
 ): Promise<Card> {
+	const now = nowIso();
 	const payload: CardInsert = {
 		...DEFAULT_CARD,
 		...input,
 		owner_user_id: ownerUserId,
+		updated_at: null,
 	};
 
-	const { data, error } = await supabase
-		.from("card")
-		.insert(payload)
-		.select("*")
-		.single();
+	const record: Card = {
+		id: generateId(),
+		card_pack_id: payload.card_pack_id,
+		owner_user_id: payload.owner_user_id,
+		prompt: payload.prompt,
+		answer: payload.answer,
+		status: payload.status ?? DEFAULT_CARD.status,
+		created_at: now,
+		updated_at: payload.updated_at ?? null,
+	};
 
-	if (error || !data) {
-		throw error ?? new Error("Failed to create card");
-	}
-
-	return data;
+	await client.put("card", record);
+	return record;
 }
 
 export async function updateCard(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	cardId: string,
 	ownerUserId: string,
 	updates: CardUpdate,
 ): Promise<Card> {
-	const { data, error } = await supabase
-		.from("card")
-		.update(updates)
-		.eq("id", cardId)
-		.eq("owner_user_id", ownerUserId)
-		.select("*")
-		.single();
-
-	if (error || !data) {
-		throw error ?? new Error("Failed to update card");
+	const existing = await getCardById(client, cardId, ownerUserId);
+	if (!existing) {
+		throw new Error("Card not found");
 	}
 
-	return data;
+	const updated: Card = {
+		...existing,
+		...updates,
+		updated_at: nowIso(),
+	};
+
+	await client.put("card", updated);
+	return updated;
 }
 
 export async function deleteCard(
-	supabase: SupabaseClient,
+	client: ApiClient,
 	cardId: string,
 	ownerUserId: string,
 ): Promise<void> {
-	const { error } = await supabase
-		.from("card")
-		.delete()
-		.eq("id", cardId)
-		.eq("owner_user_id", ownerUserId);
-
-	if (error) {
-		throw error;
-	}
+	const card = await getCardById(client, cardId, ownerUserId);
+	if (!card) return;
+	await client.delete("card", cardId);
 }
