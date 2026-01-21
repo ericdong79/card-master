@@ -1,33 +1,6 @@
-import type {
-	ReviewGrade,
-	SchedulingAlgorithm,
-	SchedulingResult,
-} from "./types";
-
-type DurationSpec = string | number;
-
-export type Sm2Parameters = {
-	learningSteps: DurationSpec[];
-	easyInterval: DurationSpec;
-	startingEase: number;
-	easyBonus: number;
-	intervalMultiplier: number;
-	maxInterval: DurationSpec;
-	forgotInterval: DurationSpec;
-	relearningSteps: DurationSpec[];
-	lapseIntervalMultiplier: number;
-	minimumEase?: number;
-};
-
-const addDefaultDurationUnit = (spec: DurationSpec): DurationSpec => {
-	if (typeof spec === "string") {
-		const trimmed = spec.trim();
-		if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
-			return `${trimmed}d`;
-		}
-	}
-	return spec;
-};
+import { daysToMs, msToDays, safeParseDuration } from "@/lib/api/utils";
+import { SM2_DEFAULT_PARAMETERS, EASY_EASE_BONUS, AGAIN_EASE_PENALTY, HARD_INTERVAL_FACTOR, HARD_EASE_PENALTY } from "@/lib/scheduling/sm2/const";
+import type { Sm2Parameters, Sm2State, ReviewGrade, SchedulingResult, SchedulingAlgorithm } from "@/lib/scheduling/types";
 
 export const normalizeSm2Parameters = (
 	params: Partial<Sm2Parameters> | null | undefined,
@@ -39,80 +12,14 @@ export const normalizeSm2Parameters = (
 
 	return {
 		...merged,
-		learningSteps: merged.learningSteps.map(addDefaultDurationUnit),
-		relearningSteps: merged.relearningSteps.map(addDefaultDurationUnit),
-		easyInterval: addDefaultDurationUnit(merged.easyInterval),
-		maxInterval: addDefaultDurationUnit(merged.maxInterval),
-		forgotInterval: addDefaultDurationUnit(merged.forgotInterval),
+		learningSteps: merged.learningSteps,
+		relearningSteps: merged.relearningSteps,
+		easyInterval: merged.easyInterval,
+		maxInterval: merged.maxInterval,
+		forgotInterval: merged.forgotInterval,
 	};
 };
 
-export type Sm2State = {
-	schema_version: 1;
-	algorithm: "sm2";
-	updated_at: string;
-	phase: "learning" | "review" | "relearning";
-	ease: number;
-	intervalDays: number;
-	repetitions: number;
-	lapses: number;
-	stepIndex: number;
-	pendingIntervalDays: number | null;
-	lastReviewedAt: string | null;
-};
-
-export const SM2_DEFAULT_PARAMETERS: Sm2Parameters = {
-	learningSteps: ["1d", "2d"],
-	easyInterval: "4d",
-	startingEase: 2.3,
-	easyBonus: 1.3,
-	intervalMultiplier: 1,
-	maxInterval: "1825d",
-	forgotInterval: "1m",
-	relearningSteps: ["1d", "4d"],
-	lapseIntervalMultiplier: 0.1,
-	minimumEase: 1.3,
-};
-
-const MS_IN_DAY = 1000 * 60 * 60 * 24;
-const HARD_INTERVAL_FACTOR = 1.2;
-const AGAIN_EASE_PENALTY = 0.2;
-const HARD_EASE_PENALTY = 0.15;
-const EASY_EASE_BONUS = 0.15;
-
-const durationMs = (spec: DurationSpec): number => {
-	if (typeof spec === "number" && Number.isFinite(spec)) {
-		return spec * MS_IN_DAY;
-	}
-
-	if (typeof spec !== "string") {
-		throw new Error("Unsupported duration spec");
-	}
-
-	const parts = spec.trim().match(/-?\d+(?:\.\d+)?[mhd]/gi) || [];
-
-	if (parts.length === 0) {
-		throw new Error(`Invalid duration string: ${spec}`);
-	}
-
-	let totalMs = 0;
-	for (const part of parts) {
-		const match = part.match(/^(-?\d+(?:\.\d+)?)([mhd])$/i);
-		if (!match) {
-			throw new Error(`Invalid duration component: ${part}`);
-		}
-		const [, amountRaw, unitRaw] = match;
-		const amount = parseFloat(amountRaw);
-		const unit = unitRaw.toLowerCase();
-		const unitMs =
-			unit === "m" ? 1000 * 60 : unit === "h" ? 1000 * 60 * 60 : MS_IN_DAY;
-		totalMs += amount * unitMs;
-	}
-	return totalMs;
-};
-
-const msToDays = (ms: number): number => ms / MS_IN_DAY;
-const daysToMs = (days: number): number => days * MS_IN_DAY;
 
 const clampEase = (ease: number, minimumEase: number): number =>
 	Math.max(minimumEase, Number.isFinite(ease) ? ease : minimumEase);
@@ -141,8 +48,8 @@ const applyLearningPhase = (
 	now: Date,
 	maxDays: number,
 ): SchedulingResult<Sm2State> => {
-	const stepsMs = params.learningSteps.map(durationMs);
-	const firstStepMs = stepsMs[0] ?? durationMs("1d");
+	const stepsMs = params.learningSteps.map((val)=>safeParseDuration(val));
+	const firstStepMs = stepsMs[0] ?? safeParseDuration("1d");
 
 	if (grade === "again") {
 		const dueAt = new Date(now.getTime() + firstStepMs);
@@ -207,7 +114,7 @@ const applyLearningPhase = (
 	}
 
 	// easy -> skip remaining steps and graduate
-	const easyDays = msToDays(durationMs(params.easyInterval));
+	const easyDays = safeParseDuration(params.easyInterval,'d');
 	const intervalDays = clampIntervalDays(
 		easyDays * params.intervalMultiplier,
 		maxDays,
@@ -239,7 +146,7 @@ const applyReviewPhase = (
 			1,
 			(state.intervalDays || 1) * params.lapseIntervalMultiplier,
 		);
-		const dueAt = new Date(now.getTime() + durationMs(params.forgotInterval));
+		const dueAt = new Date(now.getTime() + (params.forgotInterval));
 		return {
 			dueAt,
 			nextState: {
@@ -325,8 +232,8 @@ const applyRelearningPhase = (
 	now: Date,
 	maxDays: number,
 ): SchedulingResult<Sm2State> => {
-	const stepsMs = params.relearningSteps.map(durationMs);
-	const firstStepMs = stepsMs[0] ?? durationMs(params.forgotInterval);
+	const stepsMs = params.relearningSteps.map(v=>safeParseDuration(v));
+	const firstStepMs = stepsMs[0] ?? safeParseDuration(params.forgotInterval);
 
 	if (grade === "again") {
 		const dueAt = new Date(now.getTime() + firstStepMs);
@@ -394,7 +301,7 @@ export const sm2Scheduler: SchedulingAlgorithm<Sm2State, Sm2Parameters> = {
 		const now = review.reviewedAt;
 		const minimumEase = params.minimumEase ?? 1.3;
 		const state = previousState ?? initialState(params, now);
-		const maxDays = msToDays(durationMs(params.maxInterval));
+		const maxDays = msToDays(safeParseDuration(params.maxInterval));
 
 		let result: SchedulingResult<Sm2State>;
 		if (state.phase === "learning") {

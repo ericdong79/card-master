@@ -7,7 +7,3 @@ export function generateId(): string {
 		Math.floor((1 + Math.random()) * 0x10000).toString(16).slice(1),
 	).join("-");
 }
-
-export function nowIso(): string {
-	return new Date().toISOString();
-}

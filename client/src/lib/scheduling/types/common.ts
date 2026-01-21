@@ -20,3 +20,5 @@ export interface SchedulingAlgorithm<State, Params> {
 		params: Params;
 	}): SchedulingResult<State>;
 }
+
+export type DurationSpec = string;
