@@ -9,7 +9,7 @@ export const daysToMs = (days: number): number => days * MS_IN_DAY;
 
 export const safeParseDuration = (spec: DurationSpec, unit?:string): number => {
 	const res = parseDuration(spec,unit);
-	if(res !== undefined){
+	if(res == null){
 		throw new Error('Invalid duration:' + spec);
 	}
 	return res;

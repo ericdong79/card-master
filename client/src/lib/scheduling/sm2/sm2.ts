@@ -1,6 +1,19 @@
+import { produce } from "immer";
 import { daysToMs, msToDays, safeParseDuration } from "@/lib/api/utils";
-import { SM2_DEFAULT_PARAMETERS, EASY_EASE_BONUS, AGAIN_EASE_PENALTY, HARD_INTERVAL_FACTOR, HARD_EASE_PENALTY } from "@/lib/scheduling/sm2/const";
-import type { Sm2Parameters, Sm2State, ReviewGrade, SchedulingResult, SchedulingAlgorithm } from "@/lib/scheduling/types";
+import {
+	AGAIN_EASE_PENALTY,
+	EASY_EASE_BONUS,
+	HARD_EASE_PENALTY,
+	HARD_INTERVAL_FACTOR,
+	SM2_DEFAULT_PARAMETERS,
+} from "@/lib/scheduling/sm2/const";
+import type {
+	ReviewGrade,
+	SchedulingAlgorithm,
+	SchedulingResult,
+	Sm2Parameters,
+	Sm2State,
+} from "@/lib/scheduling/types";
 
 export const normalizeSm2Parameters = (
 	params: Partial<Sm2Parameters> | null | undefined,
@@ -19,7 +32,6 @@ export const normalizeSm2Parameters = (
 		forgotInterval: merged.forgotInterval,
 	};
 };
-
 
 const clampEase = (ease: number, minimumEase: number): number =>
 	Math.max(minimumEase, Number.isFinite(ease) ? ease : minimumEase);
@@ -41,127 +53,128 @@ const initialState = (params: Sm2Parameters, now: Date): Sm2State => ({
 	lastReviewedAt: null,
 });
 
-const applyLearningPhase = (
+/** Context shared across all phase handlers */
+type ReviewContext = {
+	state: Sm2State;
+	params: Sm2Parameters;
+	now: Date;
+	maxDays: number;
+};
+
+/** Helper to create base update applied to all state transitions */
+const createBaseUpdate = (ctx: ReviewContext) => ({
+	updated_at: ctx.now.toISOString(),
+	lastReviewedAt: ctx.now.toISOString(),
+});
+
+type BaseUpdate = ReturnType<typeof createBaseUpdate>;
+
+const applyBaseUpdate = (draft: Sm2State, baseUpdate: BaseUpdate) => {
+	draft.updated_at = baseUpdate.updated_at;
+	draft.lastReviewedAt = baseUpdate.lastReviewedAt;
+};
+
+const updateState = (
 	state: Sm2State,
+	baseUpdate: BaseUpdate,
+	recipe?: (draft: Sm2State) => void,
+): Sm2State =>
+	produce(state, (draft) => {
+		recipe?.(draft);
+		applyBaseUpdate(draft, baseUpdate);
+	});
+
+const addMs = (now: Date, ms: number) => new Date(now.getTime() + ms);
+
+const applyLearningPhase = (
 	grade: ReviewGrade,
-	params: Sm2Parameters,
-	now: Date,
-	maxDays: number,
+	ctx: ReviewContext,
 ): SchedulingResult<Sm2State> => {
-	const stepsMs = params.learningSteps.map((val)=>safeParseDuration(val));
+	const { state, params, now, maxDays } = ctx;
+	const stepsMs = params.learningSteps.map((val) => safeParseDuration(val));
 	const firstStepMs = stepsMs[0] ?? safeParseDuration("1d");
+	const baseUpdate = createBaseUpdate(ctx);
 
 	if (grade === "again") {
-		const dueAt = new Date(now.getTime() + firstStepMs);
-		return {
-			dueAt,
-			nextState: {
-				...state,
-				phase: "learning",
-				stepIndex: 0,
-				lastReviewedAt: now.toISOString(),
-			},
-		};
+		const dueAt = addMs(now, firstStepMs);
+		const nextState = updateState(state, baseUpdate, (draft) => {
+			draft.stepIndex = 0;
+		});
+		return { dueAt, nextState };
 	}
 
 	if (grade === "hard") {
 		const currentIndex = state.stepIndex;
 		const stepMs = stepsMs[currentIndex] ?? firstStepMs;
-		const dueAt = new Date(now.getTime() + stepMs);
-		return {
-			dueAt,
-			nextState: {
-				...state,
-				phase: "learning",
-				stepIndex: currentIndex,
-				lastReviewedAt: now.toISOString(),
-			},
-		};
+		const dueAt = addMs(now, stepMs);
+		const nextState = updateState(state, baseUpdate, (draft) => {
+			draft.stepIndex = currentIndex;
+		});
+		return { dueAt, nextState };
 	}
 
 	if (grade === "good") {
 		const nextIndex = state.stepIndex + 1;
 		if (nextIndex < stepsMs.length) {
-			const dueAt = new Date(now.getTime() + stepsMs[nextIndex]);
-			return {
-				dueAt,
-				nextState: {
-					...state,
-					phase: "learning",
-					stepIndex: nextIndex,
-					lastReviewedAt: now.toISOString(),
-				},
-			};
+			const dueAt = addMs(now, stepsMs[nextIndex]);
+			const nextState = updateState(state, baseUpdate, (draft) => {
+				draft.stepIndex = nextIndex;
+			});
+			return { dueAt, nextState };
 		}
 
-		const graduatingDays = msToDays(stepsMs[stepsMs.length - 1] ?? firstStepMs);
-		const intervalDays = clampIntervalDays(
-			graduatingDays * params.intervalMultiplier,
-			maxDays,
-		);
-		const dueAt = new Date(now.getTime() + daysToMs(intervalDays));
-		return {
-			dueAt,
-			nextState: {
-				...state,
-				phase: "review",
-				stepIndex: 0,
-				intervalDays,
-				repetitions: state.repetitions + 1,
-				lastReviewedAt: now.toISOString(),
-			},
-		};
+		const intervalDays = clampIntervalDays(1, maxDays);
+		const dueAt = addMs(now, daysToMs(intervalDays));
+		const nextState = updateState(state, baseUpdate, (draft) => {
+			draft.phase = "review";
+			draft.stepIndex = 0;
+			draft.intervalDays = intervalDays;
+			draft.repetitions += 1;
+		});
+		return { dueAt, nextState };
 	}
 
 	// easy -> skip remaining steps and graduate
-	const easyDays = safeParseDuration(params.easyInterval,'d');
-	const intervalDays = clampIntervalDays(
-		easyDays * params.intervalMultiplier,
-		maxDays,
-	);
-	const dueAt = new Date(now.getTime() + daysToMs(intervalDays));
-	return {
-		dueAt,
-		nextState: {
-			...state,
-			phase: "review",
-			stepIndex: 0,
-			intervalDays,
-			repetitions: state.repetitions + 1,
-			ease: clampEase(state.ease + EASY_EASE_BONUS, params.minimumEase ?? 1.3),
-			lastReviewedAt: now.toISOString(),
-		},
-	};
+	const easyDays = safeParseDuration(params.easyInterval, "d");
+	const intervalDays = clampIntervalDays(easyDays, maxDays);
+	const dueAt = addMs(now, daysToMs(intervalDays));
+	const nextState = updateState(state, baseUpdate, (draft) => {
+		draft.phase = "review";
+		draft.stepIndex = 0;
+		draft.intervalDays = intervalDays;
+		draft.repetitions += 1;
+		draft.ease = clampEase(
+			state.ease + EASY_EASE_BONUS,
+			params.minimumEase ?? 1.3,
+		);
+	});
+	return { dueAt, nextState };
 };
 
 const applyReviewPhase = (
-	state: Sm2State,
 	grade: ReviewGrade,
-	params: Sm2Parameters,
-	now: Date,
-	maxDays: number,
+	ctx: ReviewContext,
 ): SchedulingResult<Sm2State> => {
+	const { state, params, now, maxDays } = ctx;
+	const baseUpdate = createBaseUpdate(ctx);
+
 	if (grade === "again") {
 		const pendingIntervalDays = Math.max(
 			1,
 			(state.intervalDays || 1) * params.lapseIntervalMultiplier,
 		);
-		const dueAt = new Date(now.getTime() + (params.forgotInterval));
-		return {
-			dueAt,
-			nextState: {
-				...state,
-				phase: "relearning",
-				stepIndex: 0,
-				lapses: state.lapses + 1,
-				pendingIntervalDays,
-				ease: clampEase(
-					state.ease - AGAIN_EASE_PENALTY,
-					params.minimumEase ?? 1.3,
-				),
-				lastReviewedAt: now.toISOString(),
-			},
-		};
+		const dueAt = addMs(now, safeParseDuration(params.forgotInterval));
+		const nextState = updateState(state, baseUpdate, (draft) => {
+			draft.phase = "relearning";
+			draft.stepIndex = 0;
+			draft.lapses += 1;
+			draft.pendingIntervalDays = pendingIntervalDays;
+			draft.ease = clampEase(
+				state.ease - AGAIN_EASE_PENALTY,
+				params.minimumEase ?? 1.3,
+			);
+		});
+		return { dueAt, nextState };
 	}
 
 	if (grade === "hard") {
@@ -169,21 +182,16 @@ const applyReviewPhase = (
 			state.intervalDays * HARD_INTERVAL_FACTOR * params.intervalMultiplier,
 			maxDays,
 		);
-		const dueAt = new Date(now.getTime() + daysToMs(intervalDays));
-		return {
-			dueAt,
-			nextState: {
-				...state,
-				phase: "review",
-				intervalDays,
-				repetitions: state.repetitions + 1,
-				ease: clampEase(
-					state.ease - HARD_EASE_PENALTY,
-					params.minimumEase ?? 1.3,
-				),
-				lastReviewedAt: now.toISOString(),
-			},
-		};
+		const dueAt = addMs(now, daysToMs(intervalDays));
+		const nextState = updateState(state, baseUpdate, (draft) => {
+			draft.intervalDays = intervalDays;
+			draft.repetitions += 1;
+			draft.ease = clampEase(
+				state.ease - HARD_EASE_PENALTY,
+				params.minimumEase ?? 1.3,
+			);
+		});
+		return { dueAt, nextState };
 	}
 
 	if (grade === "good") {
@@ -191,17 +199,12 @@ const applyReviewPhase = (
 			state.intervalDays * state.ease * params.intervalMultiplier,
 			maxDays,
 		);
-		const dueAt = new Date(now.getTime() + daysToMs(intervalDays));
-		return {
-			dueAt,
-			nextState: {
-				...state,
-				phase: "review",
-				intervalDays,
-				repetitions: state.repetitions + 1,
-				lastReviewedAt: now.toISOString(),
-			},
-		};
+		const dueAt = addMs(now, daysToMs(intervalDays));
+		const nextState = updateState(state, baseUpdate, (draft) => {
+			draft.intervalDays = intervalDays;
+			draft.repetitions += 1;
+		});
+		return { dueAt, nextState };
 	}
 
 	const intervalDays = clampIntervalDays(
@@ -211,66 +214,50 @@ const applyReviewPhase = (
 			params.intervalMultiplier,
 		maxDays,
 	);
-	const dueAt = new Date(now.getTime() + daysToMs(intervalDays));
-	return {
-		dueAt,
-		nextState: {
-			...state,
-			phase: "review",
-			intervalDays,
-			repetitions: state.repetitions + 1,
-			ease: clampEase(state.ease + EASY_EASE_BONUS, params.minimumEase ?? 1.3),
-			lastReviewedAt: now.toISOString(),
-		},
-	};
+	const dueAt = addMs(now, daysToMs(intervalDays));
+	const nextState = updateState(state, baseUpdate, (draft) => {
+		draft.intervalDays = intervalDays;
+		draft.repetitions += 1;
+		draft.ease = clampEase(
+			state.ease + EASY_EASE_BONUS,
+			params.minimumEase ?? 1.3,
+		);
+	});
+	return { dueAt, nextState };
 };
 
 const applyRelearningPhase = (
-	state: Sm2State,
 	grade: ReviewGrade,
-	params: Sm2Parameters,
-	now: Date,
-	maxDays: number,
+	ctx: ReviewContext,
 ): SchedulingResult<Sm2State> => {
-	const stepsMs = params.relearningSteps.map(v=>safeParseDuration(v));
+	const { state, params, now, maxDays } = ctx;
+	const stepsMs = params.relearningSteps.map((v) => safeParseDuration(v));
 	const firstStepMs = stepsMs[0] ?? safeParseDuration(params.forgotInterval);
+	const baseUpdate = createBaseUpdate(ctx);
 
 	if (grade === "again") {
-		const dueAt = new Date(now.getTime() + firstStepMs);
-		return {
-			dueAt,
-			nextState: {
-				...state,
-				stepIndex: 0,
-				lastReviewedAt: now.toISOString(),
-			},
-		};
+		const dueAt = addMs(now, firstStepMs);
+		const nextState = updateState(state, baseUpdate, (draft) => {
+			draft.stepIndex = 0;
+		});
+		return { dueAt, nextState };
 	}
 
 	if (grade === "hard") {
 		const stepMs = stepsMs[state.stepIndex] ?? firstStepMs;
-		const dueAt = new Date(now.getTime() + stepMs);
-		return {
-			dueAt,
-			nextState: {
-				...state,
-				lastReviewedAt: now.toISOString(),
-			},
-		};
+		const dueAt = addMs(now, stepMs);
+		const nextState = updateState(state, baseUpdate);
+		return { dueAt, nextState };
 	}
 
 	if (grade === "good") {
 		const nextIndex = state.stepIndex + 1;
 		if (nextIndex < stepsMs.length) {
-			const dueAt = new Date(now.getTime() + stepsMs[nextIndex]);
-			return {
-				dueAt,
-				nextState: {
-					...state,
-					stepIndex: nextIndex,
-					lastReviewedAt: now.toISOString(),
-				},
-			};
+			const dueAt = addMs(now, stepsMs[nextIndex]);
+			const nextState = updateState(state, baseUpdate, (draft) => {
+				draft.stepIndex = nextIndex;
+			});
+			return { dueAt, nextState };
 		}
 	}
 
@@ -279,19 +266,15 @@ const applyRelearningPhase = (
 		state.pendingIntervalDays ??
 		Math.max(1, (state.intervalDays || 1) * params.lapseIntervalMultiplier);
 	const intervalDays = clampIntervalDays(pendingIntervalDays, maxDays);
-	const dueAt = new Date(now.getTime() + daysToMs(intervalDays));
-	return {
-		dueAt,
-		nextState: {
-			...state,
-			phase: "review",
-			stepIndex: 0,
-			pendingIntervalDays: null,
-			intervalDays,
-			repetitions: state.repetitions + 1,
-			lastReviewedAt: now.toISOString(),
-		},
-	};
+	const dueAt = addMs(now, daysToMs(intervalDays));
+	const nextState = updateState(state, baseUpdate, (draft) => {
+		draft.phase = "review";
+		draft.stepIndex = 0;
+		draft.pendingIntervalDays = null;
+		draft.intervalDays = intervalDays;
+		draft.repetitions += 1;
+	});
+	return { dueAt, nextState };
 };
 
 export const sm2Scheduler: SchedulingAlgorithm<Sm2State, Sm2Parameters> = {
@@ -303,22 +286,22 @@ export const sm2Scheduler: SchedulingAlgorithm<Sm2State, Sm2Parameters> = {
 		const state = previousState ?? initialState(params, now);
 		const maxDays = msToDays(safeParseDuration(params.maxInterval));
 
+		const ctx: ReviewContext = { state, params, now, maxDays };
+
 		let result: SchedulingResult<Sm2State>;
 		if (state.phase === "learning") {
-			result = applyLearningPhase(state, review.grade, params, now, maxDays);
+			result = applyLearningPhase(review.grade, ctx);
 		} else if (state.phase === "relearning") {
-			result = applyRelearningPhase(state, review.grade, params, now, maxDays);
+			result = applyRelearningPhase(review.grade, ctx);
 		} else {
-			result = applyReviewPhase(state, review.grade, params, now, maxDays);
+			result = applyReviewPhase(review.grade, ctx);
 		}
 
 		return {
 			dueAt: result.dueAt,
-			nextState: {
-				...result.nextState,
-				updated_at: now.toISOString(),
-				ease: clampEase(result.nextState.ease, minimumEase),
-			},
+			nextState: produce(result.nextState, (draft) => {
+				draft.ease = clampEase(result.nextState.ease, minimumEase);
+			}),
 		};
 	},
 };
