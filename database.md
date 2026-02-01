@@ -1,71 +1,75 @@
-# Tables
+# Data Storage
 
+## Overview
 
-## Card
+The application uses **IndexedDB** (browser local storage) for data persistence.
+This provides offline-first capability and eliminates backend dependencies.
 
-Card without state information.
+## Object Stores (IndexedDB)
 
-**Schema**
-id (pk): uuid;
-card_pack_id (fk): uuid;
-prompt:string;  Prompt for the card.
-answer:string;  Answer for the prompt.
-status: active/suspended/deleted
-owner_user_id:string;
-created_at
-updated_at
+### card_pack
+Logical group of cards (similar to a deck).
 
-## Scheduling Profile
+**Schema:**
+- `id` (string, pk): UUID
+- `name` (string): Pack name
+- `owner_user_id` (string): User identifier (currently "local-user")
+- `status` (string): active | suspended | deleted
+- `created_at` (string): ISO timestamp
+- `updated_at` (string | null): ISO timestamp
 
-About algorithms
+### card
+Individual flashcard with prompt and answer.
 
-**Schema**
-- id (pk): uuid;
-- owner_user_id;
-- algorithm_key: (sm2, fsrs ...);
-- parameters: json;
-- created_at;
-- updated_at;
+**Schema:**
+- `id` (string, pk): UUID
+- `card_pack_id` (string, fk): Reference to card_pack
+- `prompt` (string): Question/prompt text
+- `answer` (string): Answer text
+- `status` (string): active | suspended | deleted
+- `owner_user_id` (string): User identifier
+- `created_at` (string): ISO timestamp
+- `updated_at` (string | null): ISO timestamp
 
+### scheduling_profile
+Configuration for scheduling algorithms.
 
-## Card Scheduling State
+**Schema:**
+- `id` (string, pk): UUID
+- `algorithm_key` (string): e.g., "sm2"
+- `version` (number): Algorithm version
+- `parameters` (object): Algorithm-specific settings
+- `owner_user_id` (string): User identifier
+- `created_at` (string): ISO timestamp
 
-ast state snapshot and parameters for cache
+### card_scheduling_state
+Current scheduling state for each card (derived cache).
 
-**Schema**
-- card_id (fk to card);
-- profile_id (fk to scheduling profile);
-- due_at
-- state_json
-- updated_at
-- last_event_id
-- last_reviewed_at;
-- owner_user_id
+**Schema:**
+- `id` (string, pk): UUID
+- `card_id` (string, fk): Reference to card
+- `profile_id` (string, fk): Reference to scheduling_profile
+- `due_at` (string): ISO timestamp when card is due
+- `state` (object): Algorithm-specific state (SM-2: ease, interval, phase, etc.)
+- `last_reviewed_at` (string): ISO timestamp
+- `last_event_id` (string | null): Reference to review_event
+- `owner_user_id` (string): User identifier
+- `created_at` (string): ISO timestamp
 
+### review_event
+Immutable record of each review session.
 
-## Review Events
+**Schema:**
+- `id` (string, pk): UUID
+- `card_id` (string, fk): Reference to card
+- `grade` (number): 1-4 (Again/Hard/Good/Easy mapped to numbers)
+- `time_ms` (number): Time spent reviewing
+- `raw_payload` (object | null): Additional metadata
+- `reviewed_at` (string): ISO timestamp
+- `owner_user_id` (string): User identifier
+- `created_at` (string): ISO timestamp
 
-Card review events
+## Legacy PostgreSQL Schema
 
-**Schema**
-- id (pk) : uuid
-- card_id (fk)
-- reviewed_at
-- grade: (0-5) Again / Hard / Good / Easy
-- time_ms
-- raw_payload json
-- owner_user_id;
-
-
-## Card Pack
-Logical group of cards.
-
-id (pk): uuid;
-owner_user_id:string;
-name:string;
-created_at;
-updated_at;
-status: active/suspended/deleted;
-
-
-
+See `database-schema.sql` for the original PostgreSQL/Supabase design.
+This is kept for architectural reference but is not used in the current implementation.

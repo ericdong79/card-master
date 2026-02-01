@@ -1,5 +1,6 @@
--- WARNING: This schema is for context only and is not meant to be run.
--- Table order and constraints may not be valid for execution.
+-- LEGACY: This schema documents the original PostgreSQL/Supabase design.
+-- The current implementation uses IndexedDB in the browser.
+-- This file is kept for architectural reference only.
 
 CREATE TABLE public.card (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
