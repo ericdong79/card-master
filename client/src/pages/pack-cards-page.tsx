@@ -136,6 +136,9 @@ export function PackCardsPage() {
 						<Button variant="outline" asChild>
 							<Link to={`/pack/${cardPackId}/review`}>Review</Link>
 						</Button>
+						<Button variant="outline" asChild>
+							<Link to={`/pack/${cardPackId}/quick-review`}>Quick Review</Link>
+						</Button>
 						<Button onClick={() => setCreateOpen(true)}>
 							<Plus className="size-4" />
 							New card
