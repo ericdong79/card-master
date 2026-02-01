@@ -171,7 +171,7 @@ export function useReviewSession(
 					},
 				};
 
-				session.moveToNext(updatedResult);
+				session.moveToNext(updatedResult, grade);
 
 				// 5. Update React state
 				setTotalReviewed((count) => count + 1);

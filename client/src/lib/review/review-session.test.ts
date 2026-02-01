@@ -3,7 +3,6 @@ import type { Card } from "@/lib/api/entities/card";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
 import type { Sm2Parameters, Sm2State } from "@/lib/scheduling/sm2";
 import { ReviewSession } from "./review-session";
-import type { QueueItem } from "./types";
 
 // Test fixtures
 const createCard = (id: string, prompt: string): Card => ({
@@ -18,7 +17,7 @@ const createCard = (id: string, prompt: string): Card => ({
 });
 
 const defaultParams: Sm2Parameters = {
-	learningSteps: ["1m", "10m"], // 1 minute, 10 minutes
+	learningSteps: ["1m", "10m"],
 	relearningSteps: ["10m"],
 	easyInterval: "4d",
 	startingEase: 2.5,
@@ -30,36 +29,9 @@ const defaultParams: Sm2Parameters = {
 	minimumEase: 1.3,
 };
 
-describe("ReviewSession", () => {
-	describe("new card learning flow", () => {
-		it("should show new card and put it back in queue if not graduated", () => {
-			const card = createCard("card-1", "New Card");
-			const now = new Date("2025-01-15T10:00:00Z");
-
-			const session = ReviewSession.create(
-				[card],
-				[], // No scheduling states - new card
-				defaultParams,
-				"profile-1",
-				{ now, newCardsLimit: 10 },
-			);
-
-			// Should show the new card
-			expect(session.getCurrentCard()?.id).toBe("card-1");
-
-			// Grade "Good" - should move to step 1, not graduate
-			const result = session.submitGrade("good");
-			expect(result.isCardCompleted).toBe(false);
-
-			// Move to next
-			session.moveToNext(result);
-
-			// Card should still be in queue (learning phase)
-			expect(session.isComplete()).toBe(false);
-			expect(session.getCurrentCard()?.id).toBe("card-1");
-		});
-
-		it("should graduate card to review after completing all learning steps", () => {
+describe("ReviewSession (Simplified)", () => {
+	describe("basic review flow", () => {
+		it("should show card once and complete if rated Good", () => {
 			const card = createCard("card-1", "New Card");
 			const now = new Date("2025-01-15T10:00:00Z");
 
@@ -71,22 +43,21 @@ describe("ReviewSession", () => {
 				{ now, newCardsLimit: 10 },
 			);
 
-			// Step 0: Good
-			let result = session.submitGrade("good");
-			expect(result.isCardCompleted).toBe(false);
-			session.moveToNext(result);
+			// Should show the card
+			expect(session.getCurrentCard()?.id).toBe("card-1");
 
-			// Step 1: Good (graduates)
-			result = session.submitGrade("good");
+			// Rate Good
+			const result = session.submitGrade("good");
 			expect(result.isCardCompleted).toBe(true);
-			session.moveToNext(result);
 
-			// Session complete
+			session.moveToNext(result, "good");
+
+			// Session should be complete - card doesn't need to graduate
 			expect(session.isComplete()).toBe(true);
 			expect(session.getCurrentCard()).toBeNull();
 		});
 
-		it("should reset to step 0 when clicking Again in learning", () => {
+		it("should re-show card immediately if rated Again", () => {
 			const card = createCard("card-1", "New Card");
 			const now = new Date("2025-01-15T10:00:00Z");
 
@@ -98,51 +69,120 @@ describe("ReviewSession", () => {
 				{ now, newCardsLimit: 10 },
 			);
 
-			// Step 0: Good
-			let result = session.submitGrade("good");
-			session.moveToNext(result);
-
-			// Get the queue item to check step
-			let item = session.getQueueSnapshot()[0];
-			expect((item.schedulingState?.state as Sm2State)?.stepIndex).toBe(1);
-
-			// Step 1: Again (should reset to step 0)
-			result = session.submitGrade("again");
-			session.moveToNext(result);
-
-			// Should be back at step 0
-			item = session.getQueueSnapshot()[0];
-			expect((item.schedulingState?.state as Sm2State)?.stepIndex).toBe(0);
+			// First showing - rate Again
+			let result = session.submitGrade("again");
 			expect(result.isCardCompleted).toBe(false);
+
+			session.moveToNext(result, "again");
+
+			// Card should still be available (Again cards are re-shown)
+			expect(session.isComplete()).toBe(false);
+			expect(session.getCurrentCard()?.id).toBe("card-1");
+
+			// Second showing - rate Good
+			result = session.submitGrade("good");
+			session.moveToNext(result, "good");
+
+			// Now session is complete
+			expect(session.isComplete()).toBe(true);
 		});
 
-		it("should skip to review when clicking Easy on new card", () => {
-			const card = createCard("card-1", "New Card");
+		it("should handle multiple cards with mixed ratings", () => {
+			const card1 = createCard("card-1", "Card 1");
+			const card2 = createCard("card-2", "Card 2");
+			const card3 = createCard("card-3", "Card 3");
 			const now = new Date("2025-01-15T10:00:00Z");
 
 			const session = ReviewSession.create(
-				[card],
+				[card1, card2, card3],
 				[],
 				defaultParams,
 				"profile-1",
 				{ now, newCardsLimit: 10 },
 			);
 
-			// Easy skips all learning steps
-			const result = session.submitGrade("easy");
-			expect(result.isCardCompleted).toBe(true);
+			// Review all 3 cards
+			for (let i = 0; i < 3; i++) {
+				const card = session.getCurrentCard();
+				expect(card).not.toBeNull();
 
-			const state = result.schedulingState.state as Sm2State;
-			expect(state.phase).toBe("review");
+				const result = session.submitGrade("good");
+				session.moveToNext(result, "good");
+			}
+
+			// Session complete after reviewing each card once
+			expect(session.isComplete()).toBe(true);
+			expect(session.getStats().completedCards).toBe(3);
 		});
 	});
 
-	describe("review card flow", () => {
+	describe("Again cards handling", () => {
+		it("should track cards rated Again for re-review", () => {
+			const card1 = createCard("card-1", "Easy Card");
+			const card2 = createCard("card-2", "Hard Card");
+			const now = new Date("2025-01-15T10:00:00Z");
+
+			const session = ReviewSession.create(
+				[card1, card2],
+				[],
+				defaultParams,
+				"profile-1",
+				{ now, newCardsLimit: 10 },
+			);
+
+			// First card - Good
+			let result = session.submitGrade("good");
+			session.moveToNext(result, "good");
+
+			// Second card - Again
+			result = session.submitGrade("again");
+			session.moveToNext(result, "again");
+
+			// Should have 1 card in Again list
+			const againCards = session.getAgainCards();
+			expect(againCards.length).toBe(1);
+			expect(againCards[0].id).toBe("card-2");
+
+			// Current card should be the Again card
+			expect(session.getCurrentCard()?.id).toBe("card-2");
+		});
+
+		it("should allow multiple Again attempts until success", () => {
+			const card = createCard("card-1", "Difficult Card");
+			const now = new Date("2025-01-15T10:00:00Z");
+
+			const session = ReviewSession.create(
+				[card],
+				[],
+				defaultParams,
+				"profile-1",
+				{ now, newCardsLimit: 10 },
+			);
+
+			// Rate Again 3 times
+			for (let i = 0; i < 3; i++) {
+				expect(session.getCurrentCard()?.id).toBe("card-1");
+				const result = session.submitGrade("again");
+				session.moveToNext(result, "again");
+			}
+
+			// Still showing the card
+			expect(session.getCurrentCard()?.id).toBe("card-1");
+
+			// Finally rate Good
+			const result = session.submitGrade("good");
+			session.moveToNext(result, "good");
+
+			// Now complete
+			expect(session.isComplete()).toBe(true);
+		});
+	});
+
+	describe("review cards", () => {
 		it("should complete review card in one step", () => {
 			const card = createCard("card-1", "Review Card");
 			const now = new Date("2025-01-15T10:00:00Z");
 
-			// Card is already in review phase with a past due date
 			const state: CardSchedulingState = {
 				id: "state-1",
 				card_id: "card-1",
@@ -177,12 +217,14 @@ describe("ReviewSession", () => {
 
 			expect(session.getCurrentCard()?.id).toBe("card-1");
 
-			// Any grade should complete the review card
-			const result = session.submitGrade("good");
-			expect(result.isCardCompleted).toBe(true);
+			// Any grade completes the review
+			const result = session.submitGrade("hard");
+			session.moveToNext(result, "hard");
+
+			expect(session.isComplete()).toBe(true);
 		});
 
-		it("should move card to relearning when clicking Again on review card", () => {
+		it("should put lapsed card in relearning but not require graduation", () => {
 			const card = createCard("card-1", "Review Card");
 			const now = new Date("2025-01-15T10:00:00Z");
 
@@ -218,159 +260,27 @@ describe("ReviewSession", () => {
 				{ now },
 			);
 
-			// Again should move to relearning, not complete
+			// Rate Again - card goes to relearning
 			const result = session.submitGrade("again");
 			expect(result.isCardCompleted).toBe(false);
 
-			const newState = result.schedulingState.state as Sm2State;
-			expect(newState.phase).toBe("relearning");
-		});
-	});
+			session.moveToNext(result, "again");
 
-	describe("relearning flow", () => {
-		it("should keep card in queue during relearning until graduated", () => {
-			const card = createCard("card-1", "Relearning Card");
-			const now = new Date("2025-01-15T10:00:00Z");
-
-			const state: CardSchedulingState = {
-				id: "state-1",
-				card_id: "card-1",
-				owner_user_id: "local-user",
-				profile_id: "profile-1",
-				due_at: "2025-01-14T10:00:00Z",
-				state: {
-					schema_version: 1,
-					algorithm: "sm2",
-					updated_at: "2025-01-14T10:00:00Z",
-					phase: "relearning",
-					ease: 2.1,
-					intervalDays: 10,
-					repetitions: 5,
-					lapses: 1,
-					stepIndex: 0,
-					pendingIntervalDays: 1,
-					lastReviewedAt: "2025-01-04T10:00:00Z",
-				},
-				last_reviewed_at: "2025-01-04T10:00:00Z",
-				last_event_id: null,
-				created_at: "2025-01-04T10:00:00Z",
-			};
-
-			const session = ReviewSession.create(
-				[card],
-				[state],
-				defaultParams,
-				"profile-1",
-				{ now },
-			);
-
-			// Good should graduate from relearning
-			const result = session.submitGrade("good");
-			expect(result.isCardCompleted).toBe(true);
-
-			const newState = result.schedulingState.state as Sm2State;
-			expect(newState.phase).toBe("review");
-		});
-	});
-
-	describe("queue priority", () => {
-		it("should prioritize learning cards over review cards", () => {
-			const now = new Date("2025-01-15T10:00:00Z");
-
-			const learningCard = createCard("card-1", "Learning Card");
-			const reviewCard = createCard("card-2", "Review Card");
-
-			const learningState: CardSchedulingState = {
-				id: "state-1",
-				card_id: "card-1",
-				owner_user_id: "local-user",
-				profile_id: "profile-1",
-				due_at: now.toISOString(),
-				state: {
-					schema_version: 1,
-					algorithm: "sm2",
-					updated_at: "2025-01-14T10:00:00Z",
-					phase: "learning",
-					ease: 2.5,
-					intervalDays: 0,
-					repetitions: 0,
-					lapses: 0,
-					stepIndex: 0,
-					pendingIntervalDays: null,
-					lastReviewedAt: null,
-				},
-				last_reviewed_at: "2025-01-14T10:00:00Z",
-				last_event_id: null,
-				created_at: "2025-01-14T10:00:00Z",
-			};
-
-			const reviewState: CardSchedulingState = {
-				id: "state-2",
-				card_id: "card-2",
-				owner_user_id: "local-user",
-				profile_id: "profile-1",
-				due_at: now.toISOString(),
-				state: {
-					schema_version: 1,
-					algorithm: "sm2",
-					updated_at: "2025-01-14T10:00:00Z",
-					phase: "review",
-					ease: 2.5,
-					intervalDays: 10,
-					repetitions: 5,
-					lapses: 0,
-					stepIndex: 0,
-					pendingIntervalDays: null,
-					lastReviewedAt: "2025-01-05T10:00:00Z",
-				},
-				last_reviewed_at: "2025-01-05T10:00:00Z",
-				last_event_id: null,
-				created_at: "2025-01-05T10:00:00Z",
-			};
-
-			const session = ReviewSession.create(
-				[reviewCard, learningCard], // Review card first in input
-				[reviewState, learningState],
-				defaultParams,
-				"profile-1",
-				{ now },
-			);
-
-			// Learning card should come first
+			// Card is in relearning but since we rated Again, it stays in queue
+			expect(session.isComplete()).toBe(false);
 			expect(session.getCurrentCard()?.id).toBe("card-1");
-		});
-	});
 
-	describe("session completion", () => {
-		it("should be complete when all cards are done", () => {
-			const card = createCard("card-1", "Only Card");
-			const now = new Date("2025-01-15T10:00:00Z");
-
-			const session = ReviewSession.create(
-				[card],
-				[],
-				defaultParams,
-				"profile-1",
-				{ now, newCardsLimit: 10 },
-			);
-
-			expect(session.isComplete()).toBe(false);
-
-			// Graduate the card
-			const result = session.submitGrade("good");
-			session.moveToNext(result);
-
-			// Still not complete, need one more Good
-			expect(session.isComplete()).toBe(false);
-
+			// Rate Good - completes even though not graduated from relearning
 			const result2 = session.submitGrade("good");
-			session.moveToNext(result2);
+			session.moveToNext(result2, "good");
 
-			// Now complete
+			// Session complete - card moves to next relearning step for next session
 			expect(session.isComplete()).toBe(true);
 		});
+	});
 
-		it("should respect new card limit", () => {
+	describe("new card limit", () => {
+		it("should respect new card daily limit", () => {
 			const cards = [
 				createCard("card-1", "New 1"),
 				createCard("card-2", "New 2"),
@@ -383,12 +293,58 @@ describe("ReviewSession", () => {
 				[],
 				defaultParams,
 				"profile-1",
-				{ now, newCardsLimit: 2 }, // Only 2 new cards allowed
+				{ now, newCardsLimit: 2 },
 			);
 
-			// Should only show 2 cards as due
-			const stats = session.getStats();
-			expect(stats.newCards).toBe(3);
+			// Should only show 2 new cards
+			const seen = new Set<string>();
+			while (true) {
+				const card = session.getCurrentCard();
+				if (!card) break;
+				seen.add(card.id);
+
+				const result = session.submitGrade("good");
+				session.moveToNext(result, "good");
+			}
+
+			expect(seen.size).toBe(2);
+		});
+	});
+
+	describe("session stats", () => {
+		it("should report correct statistics", () => {
+			const card1 = createCard("card-1", "Card 1");
+			const card2 = createCard("card-2", "Card 2");
+			const now = new Date("2025-01-15T10:00:00Z");
+
+			const session = ReviewSession.create(
+				[card1, card2],
+				[],
+				defaultParams,
+				"profile-1",
+				{ now, newCardsLimit: 10 },
+			);
+
+			let stats = session.getStats();
+			expect(stats.totalCards).toBe(2);
+			expect(stats.completedCards).toBe(0);
+			expect(stats.newCards).toBe(2);
+
+			// Complete first card
+			const result1 = session.submitGrade("good");
+			session.moveToNext(result1, "good");
+
+			stats = session.getStats();
+			expect(stats.completedCards).toBe(1);
+			expect(stats.remainingCards).toBe(1);
+
+			// Complete second card
+			const result2 = session.submitGrade("easy");
+			session.moveToNext(result2, "easy");
+
+			stats = session.getStats();
+			expect(stats.completedCards).toBe(2);
+			expect(stats.remainingCards).toBe(0);
 		});
 	});
 });
