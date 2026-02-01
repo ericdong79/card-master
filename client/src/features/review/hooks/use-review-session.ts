@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
-import { buildQueue } from "@/features/review/lib/queue";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { createApiClient } from "@/lib/api/client";
 import { listCards } from "@/lib/api/card";
 import { getCardPackById } from "@/lib/api/card-pack";
 import type { Card } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
-import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
+
+import type { ReviewEvent } from "@/lib/api/entities/review-event";
 import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 import { createReviewEvent } from "@/lib/api/review-event";
 import { getOrCreateSchedulingProfile } from "@/lib/api/scheduling-profile";
@@ -13,64 +13,75 @@ import {
 	listSchedulingStatesByCardIds,
 	upsertSchedulingState,
 } from "@/lib/api/scheduling-state";
-import {
-	normalizeSm2Parameters,
-	type Sm2Parameters,
-	type Sm2State,
-	sm2Scheduler,
-} from "@/lib/scheduling/sm2";
+import { ReviewSession, type ReviewResult } from "@/lib/review";
+import { normalizeSm2Parameters, type Sm2Parameters } from "@/lib/scheduling/sm2";
 import type { ReviewGrade } from "@/lib/scheduling/types";
-
-const REVIEW_GRADE_TO_VALUE: Record<ReviewGrade, number> = {
-	again: 1,
-	hard: 2,
-	good: 3,
-	easy: 4,
-};
 
 export type ReviewSessionState = {
 	cardPack: CardPack | null;
-	queue: Card[];
-	states: Map<string, CardSchedulingState>;
 	loading: boolean;
 	error: string | null;
 	grading: boolean;
 	totalReviewed: number;
-	profileId: string | null;
+	isComplete: boolean;
 };
 
 export type UseReviewSessionReturn = ReviewSessionState & {
+	/** Current card to review, or null if session complete */
+	currentCard: Card | null;
+	/** All cards in the pack (for lookup) */
+	cards: Card[];
+	/** Submit a grade for the current card */
 	handleGrade: (grade: ReviewGrade) => Promise<void>;
 };
 
+/**
+ * React hook for managing a review session.
+ *
+ * This hook wraps the pure TypeScript ReviewSession class and handles:
+ * - Data loading from IndexedDB
+ * - State persistence after each review
+ * - React state management
+ *
+ * The core review logic is in ReviewSession (client/src/lib/review/review-session.ts)
+ * which can be used independently for testing or other frameworks.
+ */
 export function useReviewSession(
 	cardPackId: string | undefined,
 ): UseReviewSessionReturn {
 	const client = useMemo(() => createApiClient(), []);
 	const ownerUserId = LOCAL_OWNER_ID;
 
+	// UI state
 	const [cardPack, setCardPack] = useState<CardPack | null>(null);
 	const [cards, setCards] = useState<Card[]>([]);
-	const [states, setStates] = useState<Map<string, CardSchedulingState>>(
-		new Map(),
-	);
-	const [queue, setQueue] = useState<Card[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [grading, setGrading] = useState(false);
 	const [totalReviewed, setTotalReviewed] = useState(0);
-	const [profileParams, setProfileParams] = useState<Sm2Parameters | null>(
-		null,
-	);
-	const [profileId, setProfileId] = useState<string | null>(null);
+	const [isComplete, setIsComplete] = useState(false);
 
+	// Core review session (pure TypeScript class)
+	const [session, setSession] = useState<ReviewSession | null>(null);
+	const [currentCard, setCurrentCard] = useState<Card | null>(null);
+
+	// Initialize session
 	useEffect(() => {
-		if (!cardPackId) return;
+		if (!cardPackId) {
+			setLoading(false);
+			return;
+		}
+
 		setLoading(true);
 		setError(null);
+		setSession(null);
+		setIsComplete(false);
+		setTotalReviewed(0);
+		setCurrentCard(null);
 
 		(async () => {
 			try {
+				// Load data
 				const [pack, fetchedCards, profile] = await Promise.all([
 					getCardPackById(client, cardPackId, ownerUserId),
 					listCards(client, ownerUserId, { cardPackId }),
@@ -84,22 +95,32 @@ export function useReviewSession(
 
 				setCardPack(pack);
 				setCards(fetchedCards);
-				setProfileParams(
-					normalizeSm2Parameters(profile.parameters as Sm2Parameters),
-				);
-				setProfileId(profile.id);
 
+				// Load scheduling states for cards
 				const stateList = fetchedCards.length
 					? await listSchedulingStatesByCardIds(
 							client,
 							ownerUserId,
 							fetchedCards.map((c) => c.id),
-					  )
+						)
 					: [];
 
-				const stateMap = new Map(stateList.map((s) => [s.card_id, s]));
-				setStates(stateMap);
-				setQueue(buildQueue(fetchedCards, stateList));
+				// Create review session
+				const params = normalizeSm2Parameters(
+					profile.parameters as Sm2Parameters,
+				);
+
+				const newSession = ReviewSession.create(
+					fetchedCards,
+					stateList,
+					params,
+					profile.id,
+					{ newCardsLimit: 20 },
+				);
+
+				setSession(newSession);
+				setCurrentCard(newSession.getCurrentCard());
+				setIsComplete(newSession.isComplete());
 			} catch (err) {
 				setError(
 					err instanceof Error ? err.message : "Failed to load review data",
@@ -110,63 +131,71 @@ export function useReviewSession(
 		})();
 	}, [cardPackId, client, ownerUserId]);
 
-	const handleGrade = async (grade: ReviewGrade) => {
-		const current = queue[0];
-		if (!current || !profileParams || !profileId) return;
-		setGrading(true);
+	// Handle grade submission
+	const handleGrade = useCallback(
+		async (grade: ReviewGrade) => {
+			if (!session || grading) return;
 
-		const now = new Date();
-		const existingState = states.get(current.id) ?? null;
-		const previousSm2State = (existingState?.state as Sm2State) ?? null;
+			setGrading(true);
 
-		const { nextState, dueAt } = sm2Scheduler.applyReview({
-			previousState: previousSm2State,
-			review: { grade, reviewedAt: now },
-			params: profileParams,
-		});
+			try {
+				// 1. Calculate review result (pure logic, no side effects)
+				const result = session.submitGrade(grade);
 
-		try {
-			const event = await createReviewEvent(client, {
-				card_id: current.id,
-				owner_user_id: ownerUserId,
-				grade: REVIEW_GRADE_TO_VALUE[grade],
-				time_ms: 0,
-				raw_payload: null,
-				reviewed_at: now.toISOString(),
-			});
+				// 2. Persist review event
+				const event: ReviewEvent = await createReviewEvent(client, {
+					card_id: result.reviewEvent.card_id,
+					owner_user_id: result.reviewEvent.owner_user_id,
+					grade: result.reviewEvent.grade,
+					time_ms: result.reviewEvent.time_ms,
+					raw_payload: result.reviewEvent.raw_payload,
+					reviewed_at: result.reviewEvent.reviewed_at,
+				});
 
-			const persisted = await upsertSchedulingState(client, existingState, {
-				owner_user_id: ownerUserId,
-				card_id: current.id,
-				profile_id: profileId,
-				due_at: dueAt.toISOString(),
-				state: nextState,
-				last_reviewed_at: now.toISOString(),
-				last_event_id: event.id,
-			});
+				// 3. Persist scheduling state
+				const existingState = session.getQueueSnapshot().find(
+					(item) => item.card.id === result.reviewEvent.card_id,
+				)?.schedulingState;
 
-			const updatedStates = new Map(states);
-			updatedStates.set(current.id, persisted);
-			setStates(updatedStates);
-			setQueue(buildQueue(cards, Array.from(updatedStates.values())));
-			setTotalReviewed((count) => count + 1);
-			setError(null);
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to record review");
-		} finally {
-			setGrading(false);
-		}
-	};
+				await upsertSchedulingState(client, existingState ?? null, {
+					...result.schedulingState,
+					last_event_id: event.id,
+				});
+
+				// 4. Update session state
+				const updatedResult: ReviewResult = {
+					...result,
+					schedulingState: {
+						...result.schedulingState,
+						last_event_id: event.id,
+					},
+				};
+
+				session.moveToNext(updatedResult);
+
+				// 5. Update React state
+				setTotalReviewed((count) => count + 1);
+				setCurrentCard(session.getCurrentCard());
+				setIsComplete(session.isComplete());
+				setError(null);
+			} catch (err) {
+				setError(err instanceof Error ? err.message : "Failed to record review");
+			} finally {
+				setGrading(false);
+			}
+		},
+		[session, client, grading],
+	);
 
 	return {
 		cardPack,
-		queue,
-		states,
 		loading,
 		error,
 		grading,
 		totalReviewed,
-		profileId,
+		isComplete,
+		currentCard,
+		cards,
 		handleGrade,
 	};
 }

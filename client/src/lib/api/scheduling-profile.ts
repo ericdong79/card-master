@@ -1,4 +1,4 @@
-import { SM2_DEFAULT_PARAMETERS } from "../scheduling/sm2";
+import { SM2_DEFAULT_PARAMETERS } from "@/lib/scheduling/sm2/const";
 import type { ApiClient } from "./client";
 import type { SchedulingProfileInsert } from "./dtos/scheduling-profile";
 import type { SchedulingProfile } from "./entities/scheduling-profile";

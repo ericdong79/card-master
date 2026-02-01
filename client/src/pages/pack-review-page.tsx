@@ -15,7 +15,12 @@ export function PackReviewPage() {
 		return <Navigate to="/" replace />;
 	}
 
-	const current = session.queue[0] ?? null;
+	const current = session.currentCard;
+
+	// Calculate remaining count based on session state
+	const remainingCount = session.isComplete
+		? 0
+		: session.cards.filter((c) => c.id !== current?.id).length + (current ? 1 : 0);
 
 	return (
 		<div className="min-h-screen bg-muted/20">
@@ -56,7 +61,7 @@ export function PackReviewPage() {
 						<Spinner />
 						<span>Loading review queue...</span>
 					</div>
-				) : session.queue.length === 0 ? (
+				) : session.isComplete || !current ? (
 					<ReviewSummary
 						packName={session.cardPack?.name ?? null}
 						totalReviewed={session.totalReviewed}
@@ -67,23 +72,24 @@ export function PackReviewPage() {
 							<CardHeader className="pb-4">
 								<CardTitle className="text-xl">{session.cardPack?.name ?? "Card pack"}</CardTitle>
 								<CardDescription>
-									{session.queue.length} due card{session.queue.length === 1 ? "" : "s"} remaining
+									Reviewing cards • {session.totalReviewed} completed
 								</CardDescription>
 							</CardHeader>
 							<CardContent>
 								<p className="text-sm text-muted-foreground">
-									Work through today&apos;s due cards. Grades update scheduling state in real time.
+									Learning cards will reappear until you graduate them.
 								</p>
 							</CardContent>
 						</Card>
-						{current ? (
-							<ReviewCard
-								card={current}
-								queuePosition={{ index: 0, total: session.queue.length }}
-								onGrade={session.handleGrade}
-								grading={session.grading}
-							/>
-						) : null}
+						<ReviewCard
+							card={current}
+							queuePosition={{
+								index: session.totalReviewed,
+								total: session.totalReviewed + remainingCount,
+							}}
+							onGrade={session.handleGrade}
+							grading={session.grading}
+						/>
 					</>
 				)}
 			</main>
