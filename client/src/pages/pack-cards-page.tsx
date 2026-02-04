@@ -1,24 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Navigate, useParams } from "react-router-dom";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
 import { CardFormDialog } from "@/features/cards/components/card-form-dialog";
-import { CardList } from "@/features/cards/components/card-list";
 import { DeleteCardDialog } from "@/features/cards/components/delete-card-dialog";
+import { PackCardsContent } from "@/features/cards/components/pack-cards-content";
+import { PackCardsError } from "@/features/cards/components/pack-cards-error";
+import { PackCardsHeader } from "@/features/cards/components/pack-cards-header";
+import { PackCardsLoading } from "@/features/cards/components/pack-cards-loading";
+import { createCard, deleteCard, listCards, updateCard } from "@/lib/api/card";
+import { getCardPackById } from "@/lib/api/card-pack";
 import { createApiClient } from "@/lib/api/client";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
-import {
-	createCard,
-	deleteCard,
-	listCards,
-	updateCard,
-} from "@/lib/api/card";
-import { getCardPackById } from "@/lib/api/card-pack";
+import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
 import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
+import { listSchedulingStatesByCardIds } from "@/lib/api/scheduling-state";
 
 export function PackCardsPage() {
 	const { cardPackId } = useParams<{ cardPackId: string }>();
@@ -27,13 +23,32 @@ export function PackCardsPage() {
 
 	const [cardPack, setCardPack] = useState<CardPack | null>(null);
 	const [cards, setCards] = useState<CardEntity[]>([]);
+	const [schedulingStates, setSchedulingStates] = useState<
+		CardSchedulingState[]
+	>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editingCard, setEditingCard] = useState<CardEntity | null>(null);
-	const [deleteCardTarget, setDeleteCardTarget] = useState<CardEntity | null>(null);
-	const [pendingAction, setPendingAction] = useState<"create" | "edit" | "delete" | null>(null);
+	const [deleteCardTarget, setDeleteCardTarget] = useState<CardEntity | null>(
+		null,
+	);
+	const [pendingAction, setPendingAction] = useState<
+		"create" | "edit" | "delete" | null
+	>(null);
+
+	// Calculate due cards count based on scheduling states
+	const dueCardsCount = useMemo(() => {
+		const now = new Date();
+		const stateMap = new Map(schedulingStates.map((s) => [s.card_id, s]));
+
+		return cards.filter((card) => {
+			const state = stateMap.get(card.id);
+			if (!state) return true; // New cards (no state) are considered due
+			return new Date(state.due_at) <= now;
+		}).length;
+	}, [cards, schedulingStates]);
 
 	useEffect(() => {
 		if (!cardPackId) return;
@@ -44,15 +59,28 @@ export function PackCardsPage() {
 			getCardPackById(apiClient, cardPackId, ownerUserId),
 			listCards(apiClient, ownerUserId, { cardPackId }),
 		])
-			.then(([pack, list]) => {
+			.then(async ([pack, list]) => {
 				if (!pack) {
 					setError("Card pack not found or inaccessible.");
 					setCardPack(null);
 					setCards([]);
+					setSchedulingStates([]);
 					return;
 				}
 				setCardPack(pack);
 				setCards(list);
+
+				// Load scheduling states for due cards calculation
+				if (list.length > 0) {
+					const states = await listSchedulingStatesByCardIds(
+						apiClient,
+						ownerUserId,
+						list.map((c) => c.id),
+					);
+					setSchedulingStates(states);
+				} else {
+					setSchedulingStates([]);
+				}
 			})
 			.catch((err) =>
 				setError(err instanceof Error ? err.message : "Failed to load cards"),
@@ -87,7 +115,12 @@ export function PackCardsPage() {
 		if (!cardPackId || !editingCard) return;
 		setPendingAction("edit");
 		try {
-			const updated = await updateCard(apiClient, editingCard.id, ownerUserId, values);
+			const updated = await updateCard(
+				apiClient,
+				editingCard.id,
+				ownerUserId,
+				values,
+			);
 			setCards((prev) =>
 				prev.map((card) => (card.id === editingCard.id ? updated : card)),
 			);
@@ -105,7 +138,9 @@ export function PackCardsPage() {
 		setPendingAction("delete");
 		try {
 			await deleteCard(apiClient, deleteCardTarget.id, ownerUserId);
-			setCards((prev) => prev.filter((card) => card.id !== deleteCardTarget.id));
+			setCards((prev) =>
+				prev.filter((card) => card.id !== deleteCardTarget.id),
+			);
 			setDeleteCardTarget(null);
 			setError(null);
 		} catch (err) {
@@ -117,62 +152,25 @@ export function PackCardsPage() {
 
 	return (
 		<div className="min-h-screen bg-muted/20">
-			<header className="border-b bg-background/80 backdrop-blur">
-				<div className="mx-auto flex max-w-5xl flex-col gap-2 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-					<div>
-						<div className="flex items-center gap-2 text-sm text-muted-foreground">
-							<Link to="/" className="underline underline-offset-4">
-								Card packs
-							</Link>
-							<span>/</span>
-							<span className="text-foreground">{cardPack?.name ?? "Loading..."}</span>
-						</div>
-						<h1 className="text-2xl font-semibold">Cards</h1>
-						<p className="text-sm text-muted-foreground">
-							View and manage cards in this pack.
-						</p>
-					</div>
-					<div className="flex gap-2">
-						<Button variant="outline" asChild>
-							<Link to={`/pack/${cardPackId}/review`}>Review</Link>
-						</Button>
-						<Button variant="outline" asChild>
-							<Link to={`/pack/${cardPackId}/quick-review`}>Quick Review</Link>
-						</Button>
-						<Button onClick={() => setCreateOpen(true)}>
-							<Plus className="size-4" />
-							New card
-						</Button>
-					</div>
-				</div>
-			</header>
+			<PackCardsHeader
+				cardPackId={cardPackId}
+				packName={cardPack?.name}
+				onCreateClick={() => setCreateOpen(true)}
+				dueCardsCount={dueCardsCount}
+			/>
 
 			<main className="mx-auto flex max-w-5xl flex-col gap-4 px-6 py-8">
-				{error ? (
-					<div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-						{error}
-					</div>
-				) : null}
+				{error ? <PackCardsError message={error} /> : null}
 
 				{loading ? (
-					<div className="flex items-center gap-2 text-muted-foreground">
-						<Spinner />
-						<span>Loading cards...</span>
-					</div>
+					<PackCardsLoading />
 				) : (
-					<Card>
-						<CardHeader className="pb-4">
-							<CardTitle className="text-xl">{cardPack?.name ?? "Card pack"}</CardTitle>
-							<CardDescription>{cards.length} cards</CardDescription>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<CardList
-								cards={cards}
-								onEdit={(card) => setEditingCard(card)}
-								onDelete={(card) => setDeleteCardTarget(card)}
-							/>
-						</CardContent>
-					</Card>
+					<PackCardsContent
+						packName={cardPack?.name}
+						cards={cards}
+						onEdit={setEditingCard}
+						onDelete={setDeleteCardTarget}
+					/>
 				)}
 			</main>
 

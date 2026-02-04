@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .kilocode/
+
+*storybook.log
+storybook-static
