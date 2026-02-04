@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
+import type { ReviewGrade } from "@/lib/scheduling/types";
+import { cn } from "@/lib/utils";
 import {
-	ReviewButtons,
 	defaultSimpleButtons,
 	defaultSm2Buttons,
+	ReviewButtons,
 	type ReviewMode,
 	type SimpleReviewResult,
 } from "./review-buttons";
-import type { ReviewGrade } from "@/lib/scheduling/types";
 
 type ReviewCardBaseProps = {
 	card: CardEntity;
@@ -43,9 +43,9 @@ type ReviewCardProps = SimpleReviewCardProps | Sm2ReviewCardProps;
 
 /**
  * Unified Review Card Component
- * 
+ *
  * Supports both simple (Forgot/Remembered) and SM-2 (Again/Hard/Good/Easy) review modes.
- * 
+ *
  * @example Simple mode (Quick Review)
  * ```tsx
  * <ReviewCard
@@ -57,7 +57,7 @@ type ReviewCardProps = SimpleReviewCardProps | Sm2ReviewCardProps;
  *   onReview={(result) => console.log(result)}
  * />
  * ```
- * 
+ *
  * @example SM-2 mode (Normal Review)
  * ```tsx
  * <ReviewCard
@@ -94,8 +94,15 @@ export function ReviewCard(props: ReviewCardProps) {
 	};
 
 	return (
-		<Card className={cn("w-full", className)}>
-			<CardHeader className="pb-4 space-y-4">
+		<Card
+			className={cn(
+				"flex flex-col",
+				"w-full max-w-3xl",
+				"h-[600px] max-h-[90vh]",
+				className,
+			)}
+		>
+			<CardHeader className="pb-4 space-y-4 shrink-0">
 				{/* Pack name and mode indicator */}
 				<div className="flex items-center justify-between text-sm">
 					{packName && (
@@ -125,15 +132,36 @@ export function ReviewCard(props: ReviewCardProps) {
 				</div>
 			</CardHeader>
 
-			<CardContent className="space-y-6">
-				{/* Question */}
-				<div className="space-y-2">
-					<p className="text-sm text-muted-foreground">Question</p>
-					<p className="text-lg font-medium leading-relaxed">{card.prompt}</p>
+			<CardContent className="flex-1 flex flex-col min-h-0">
+				{/* Scrollable content area - fixed height flex child */}
+				<div className="flex-1 overflow-y-auto min-h-0 space-y-6 pr-1">
+					{/* Question - always visible */}
+					<div className="space-y-2">
+						<p className="text-sm text-muted-foreground">Question</p>
+						<p className="text-lg font-medium leading-relaxed">{card.prompt}</p>
+					</div>
+
+					{/* Answer Section - expands with animation */}
+					<div
+						className={cn(
+							"transition-all duration-300 ease-out",
+							showAnswer
+								? "opacity-100 translate-y-0"
+								: "opacity-0 translate-y-2 h-0 overflow-hidden"
+						)}
+					>
+						<div className="space-y-6 pb-2">
+							{/* Answer display */}
+							<div className="rounded-lg border bg-muted/40 p-4">
+								<p className="text-sm text-muted-foreground mb-2">Answer</p>
+								<p className="text-base leading-relaxed">{card.answer}</p>
+							</div>
+						</div>
+					</div>
 				</div>
 
-				{/* Answer Section */}
-				<div className="space-y-4">
+				{/* Bottom section - always at bottom */}
+				<div className="shrink-0 pt-4 border-t mt-auto">
 					{!showAnswer ? (
 						<Button
 							variant="outline"
@@ -144,13 +172,12 @@ export function ReviewCard(props: ReviewCardProps) {
 							Show Answer
 						</Button>
 					) : (
-						<div className="space-y-6">
-							{/* Answer display */}
-							<div className="rounded-lg border bg-muted/40 p-4">
-								<p className="text-sm text-muted-foreground mb-2">Answer</p>
-								<p className="text-base leading-relaxed">{card.answer}</p>
-							</div>
-
+						<div
+							className={cn(
+								"space-y-4 transition-all duration-300 ease-out",
+								"opacity-100 translate-y-0"
+							)}
+						>
 							{/* Review buttons */}
 							{mode === "simple" ? (
 								<ReviewButtons
@@ -166,8 +193,7 @@ export function ReviewCard(props: ReviewCardProps) {
 								<ReviewButtons
 									mode="sm2"
 									buttons={
-										buttons ??
-										(defaultSm2Buttons as typeof defaultSm2Buttons)
+										buttons ?? (defaultSm2Buttons as typeof defaultSm2Buttons)
 									}
 									onSelect={handleAction}
 									disabled={isProcessing}

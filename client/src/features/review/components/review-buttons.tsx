@@ -1,16 +1,15 @@
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type { ReviewGrade } from "@/lib/scheduling/types";
-
+import { cn } from "@/lib/utils";
+import classes from "./review-buttons.module.css";
 export type SimpleReviewResult = "forgot" | "remembered";
 
 export type ReviewMode = "simple" | "sm2";
 
 type BaseButtonConfig = {
 	label: string;
-	icon?: string;
+	icon: string;
 	subLabel?: string;
-	className?: string;
 };
 
 type SimpleButtonConfig = BaseButtonConfig & {
@@ -19,7 +18,6 @@ type SimpleButtonConfig = BaseButtonConfig & {
 
 type Sm2ButtonConfig = BaseButtonConfig & {
 	grade: ReviewGrade;
-	variant?: "default" | "outline" | "destructive" | "secondary";
 };
 
 type ReviewButtonsProps =
@@ -28,14 +26,12 @@ type ReviewButtonsProps =
 			buttons: SimpleButtonConfig[];
 			onSelect: (result: SimpleReviewResult) => void;
 			disabled?: boolean;
-			className?: string;
 	  }
 	| {
 			mode: "sm2";
 			buttons: Sm2ButtonConfig[];
 			onSelect: (grade: ReviewGrade) => void;
 			disabled?: boolean;
-			className?: string;
 	  };
 
 /**
@@ -46,28 +42,26 @@ export const defaultSimpleButtons: SimpleButtonConfig[] = [
 		result: "forgot",
 		label: "Forgot",
 		icon: "😕",
-		subLabel: "Show again",
-		className: "border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300",
+		subLabel: "Try Again",
 	},
 	{
 		result: "remembered",
 		label: "Remembered",
 		icon: "✅",
-		subLabel: "Next card",
-		className: "bg-green-600 hover:bg-green-700 text-white",
+		subLabel: "Next Card",
 	},
 ];
 
 export const defaultSm2Buttons: Sm2ButtonConfig[] = [
-	{ grade: "again", label: "Again", variant: "destructive", subLabel: "< 1m" },
-	{ grade: "hard", label: "Hard", variant: "secondary", subLabel: "2d" },
-	{ grade: "good", label: "Good", variant: "default", subLabel: "3d" },
-	{ grade: "easy", label: "Easy", variant: "outline", subLabel: "5d" },
+	{ grade: "again", label: "Forgot", icon: "❌", subLabel: "< 1m" },
+	{ grade: "hard", label: "Partially Record", icon: "🤔", subLabel: "2d" },
+	{ grade: "good", label: "Recalled with effort", icon: "🤭", subLabel: "3d" },
+	{ grade: "easy", label: "Easily Recalled", icon: "👑", subLabel: "5d" },
 ];
 
 /**
  * Generic review buttons component supporting multiple modes
- * 
+ *
  * @example Simple mode (Quick Review)
  * ```tsx
  * <ReviewButtons
@@ -76,7 +70,7 @@ export const defaultSm2Buttons: Sm2ButtonConfig[] = [
  *   onSelect={(result) => console.log(result)}
  * />
  * ```
- * 
+ *
  * @example SM-2 mode (Normal Review)
  * ```tsx
  * <ReviewButtons
@@ -87,7 +81,7 @@ export const defaultSm2Buttons: Sm2ButtonConfig[] = [
  * ```
  */
 export function ReviewButtons(props: ReviewButtonsProps) {
-	const { mode, buttons, disabled, className } = props;
+	const { mode, buttons, disabled } = props;
 
 	const handleClick = (value: SimpleReviewResult | ReviewGrade) => {
 		if (mode === "simple") {
@@ -104,9 +98,8 @@ export function ReviewButtons(props: ReviewButtonsProps) {
 	return (
 		<div
 			className={cn(
-				"grid gap-3",
+				"grid gap-1",
 				mode === "simple" ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4",
-				className,
 			)}
 		>
 			{buttons.map((config) => {
@@ -118,26 +111,23 @@ export function ReviewButtons(props: ReviewButtonsProps) {
 				return (
 					<Button
 						key={value}
-						variant={(config as Sm2ButtonConfig).variant ?? "outline"}
+						variant={"outline"}
 						disabled={disabled}
 						onClick={() => handleClick(value)}
-						size="lg"
-						className={cn(
-							"transition-colors",
-							config.className,
-						)}
+						className={cn("transition-colors", classes.button)}
 					>
 						<span className="flex flex-col items-center gap-1">
-							{config.icon && <span className="text-lg">{config.icon}</span>}
-							<span>{config.label}</span>
+							{config.icon && <span className="text-2xl">{config.icon}</span>}
+							<span className="pb-2">{config.label}</span>
 							{config.subLabel && (
 								<span
 									className={cn(
 										"text-xs",
-										(config as Sm2ButtonConfig).variant === "default" ||
-											(config as Sm2ButtonConfig).grade === "remembered"
-											? "text-white/80"
-											: "text-muted-foreground",
+										"text-muted-foreground",
+										"border-1",
+										"border-neutral-300",
+										"py-1",
+										"px-2",
 									)}
 								>
 									{config.subLabel}
