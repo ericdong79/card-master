@@ -31,6 +31,10 @@ export type UseReviewSessionReturn = ReviewSessionState & {
 	currentCard: Card | null;
 	/** All cards in the pack (for lookup) */
 	cards: Card[];
+	/** Total number of cards in the session */
+	totalCards: number;
+	/** Number of cards completed (reviewed at least once, not Again) */
+	completedCount: number;
 	/** Submit a grade for the current card */
 	handleGrade: (grade: ReviewGrade) => Promise<void>;
 };
@@ -187,6 +191,10 @@ export function useReviewSession(
 		[session, client, grading],
 	);
 
+	// Get stats from session
+	const totalCards = session?.getStats().totalCards ?? 0;
+	const completedCount = session?.getStats().completedCards ?? 0;
+
 	return {
 		cardPack,
 		loading,
@@ -196,6 +204,8 @@ export function useReviewSession(
 		isComplete,
 		currentCard,
 		cards,
+		totalCards,
+		completedCount,
 		handleGrade,
 	};
 }

@@ -35,6 +35,8 @@ export interface QuickReviewResult {
 export interface QuickReviewStats {
 	totalCards: number;
 	completedCards: number;
+	/** Number of cards marked as "remembered" at least once (learned) */
+	learnedCount: number;
 	forgotCount: number;
 	rememberedCount: number;
 }
@@ -150,14 +152,23 @@ export class QuickReviewSession {
 
 		if (reviewResult.result === "forgot") {
 			// Mark for re-review
+			// Don't increment currentIndex - the forgot card will be picked up
+			// by getCurrentCard() and we want to continue from the same position
+			// after the re-review is complete
 			this.forgotCardIds.add(card.id);
-			// Move to next position (forgot card will be picked up by getCurrentCard)
-			this.currentIndex++;
 		} else {
 			// Remembered - mark as completed
+			// Check if this was a re-review BEFORE removing from forgotCardIds
+			const wasRevisited = this.forgotCardIds.has(card.id);
 			this.forgotCardIds.delete(card.id);
 			this.completedIds.add(card.id);
-			this.currentIndex++;
+			
+			// Only increment currentIndex for first-time reviews
+			// For revisited cards, stay at the same position to continue
+			// with the next unreviewed card
+			if (!wasRevisited) {
+				this.currentIndex++;
+			}
 		}
 	}
 
@@ -172,16 +183,13 @@ export class QuickReviewSession {
    * Gets statistics for the session
    */
 	getStats(): QuickReviewStats {
-		const stats: QuickReviewStats = {
+		return {
 			totalCards: this.cards.length,
 			completedCards: this.completedIds.size,
-			forgotCount: 0,
-			rememberedCount: 0,
+			learnedCount: this.completedIds.size,
+			forgotCount: this.forgotCardIds.size,
+			rememberedCount: this.completedIds.size,
 		};
-
-		// Note: These counts would need to be tracked during the session
-		// For now, we just return basic stats
-		return stats;
 	}
 
 	/**

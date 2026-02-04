@@ -24,6 +24,8 @@ export type UseQuickReviewReturn = QuickReviewState & {
 	currentCard: Card | null;
 	/** Total cards in the pack */
 	totalCards: number;
+	/** Number of cards marked as "remembered" at least once (learned) */
+	learnedCount: number;
 	/** Number of cards remaining */
 	remainingCount: number;
 	/** Current position in the queue */
@@ -62,6 +64,7 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 	const [session, setSession] = useState<QuickReviewSession | null>(null);
 	const [currentCard, setCurrentCard] = useState<Card | null>(null);
 	const [forgotCards, setForgotCards] = useState<Card[]>([]);
+	const [learnedCount, setLearnedCount] = useState(0);
 
 	// Initialize session
 	useEffect(() => {
@@ -108,6 +111,7 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 				setSession(newSession);
 				setCurrentCard(newSession.getCurrentCard());
 				setIsComplete(newSession.isComplete());
+				setLearnedCount(0);
 			} catch (err) {
 				setError(
 					err instanceof Error ? err.message : "Failed to load cards",
@@ -148,6 +152,7 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 				setCurrentCard(session.getCurrentCard());
 				setIsComplete(session.isComplete());
 				setForgotCards(session.getForgotCards());
+				setLearnedCount(session.getStats().learnedCount);
 				setError(null);
 			} catch (err) {
 				setError(err instanceof Error ? err.message : "Failed to record review");
@@ -183,6 +188,7 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 		isComplete,
 		currentCard,
 		totalCards: cards.length,
+		learnedCount,
 		remainingCount,
 		position,
 		handleReview,
