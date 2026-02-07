@@ -64,9 +64,9 @@ export class ReviewSession {
 		profileId: string,
 		options: ReviewSessionOptions = {},
 	) {
-		this.items = this.sortQueue(items);
 		this.completedIds = new Set();
 		this.againCardIds = new Set();
+		this.items = this.sortQueue(items);
 		this.newCardsSeen = 0;
 		this.newCardsLimit = options.newCardsLimit ?? 20;
 		this.params = normalizeSm2Parameters(params);
@@ -88,24 +88,27 @@ export class ReviewSession {
 		const stateMap = new Map(states.map((s) => [s.card_id, s]));
 		const now = options?.now ?? new Date();
 
-		const items: QueueItem[] = cards.map((card) => {
-			const state = stateMap.get(card.id) ?? null;
-			const sm2State = state?.state as Sm2State | null;
-			const phase = getQueuePhase(sm2State);
+		const items: QueueItem[] = cards
+			.map((card) => {
+				const state = stateMap.get(card.id) ?? null;
+				const sm2State = state?.state as Sm2State | null;
+				const phase = getQueuePhase(sm2State);
+				const scheduledAt = state?.due_at ? new Date(state.due_at) : now;
 
-			// For new cards, treat them as due now
-			const scheduledAt = state?.due_at
-				? new Date(state.due_at)
-				: now;
+				// Exclude non-new cards that are not due yet from this session.
+				if (state && scheduledAt.getTime() > now.getTime()) {
+					return null;
+				}
 
-			return {
-				card,
-				schedulingState: state,
-				phase,
-				scheduledAt,
-				isCompleted: false,
-			};
-		});
+				return {
+					card,
+					schedulingState: state,
+					phase,
+					scheduledAt,
+					isCompleted: false,
+				};
+			})
+			.filter((item): item is QueueItem => item !== null);
 
 		return new ReviewSession(items, params, profileId, options);
 	}
@@ -128,6 +131,13 @@ export class ReviewSession {
 				return a.isCompleted ? 1 : -1;
 			}
 
+			// "Again" cards are deferred in-session so users see other cards first.
+			const aIsAgain = this.againCardIds.has(a.card.id);
+			const bIsAgain = this.againCardIds.has(b.card.id);
+			if (aIsAgain !== bIsAgain) {
+				return aIsAgain ? 1 : -1;
+			}
+
 			// Compare phase priority
 			const priorityDiff = phasePriority[a.phase] - phasePriority[b.phase];
 			if (priorityDiff !== 0) return priorityDiff;
@@ -145,17 +155,12 @@ export class ReviewSession {
    * 2. Scheduled time <= now (already due)
    * 3. For new cards: within daily quota
    *
-   * Cards rated "Again" are immediately re-shown.
+   * Cards rated "Again" are deferred and revisited later in this session.
    */
 	getCurrentCard(): Card | null {
 		for (const item of this.items) {
 			// Skip completed cards
 			if (item.isCompleted) continue;
-
-			// Cards rated "Again" are always shown immediately
-			if (this.againCardIds.has(item.card.id)) {
-				return item.card;
-			}
 
 			// Check new card quota (only for cards that started as new)
 			if (item.phase === "new" && this.newCardsSeen >= this.newCardsLimit) {
@@ -176,7 +181,6 @@ export class ReviewSession {
 	private getCurrentItem(): QueueItem | null {
 		for (const item of this.items) {
 			if (item.isCompleted) continue;
-			if (this.againCardIds.has(item.card.id)) return item;
 			if (item.phase === "new" && this.newCardsSeen >= this.newCardsLimit) continue;
 			if (item.scheduledAt.getTime() <= this.now.getTime()) return item;
 		}
@@ -261,10 +265,11 @@ export class ReviewSession {
 		item.phase = getQueuePhase(result.schedulingState.state as Sm2State);
 		item.scheduledAt = result.nextDueAt;
 
-		// Handle "Again" - card stays in queue for immediate re-review
+		// Handle "Again" - card stays in queue, but is deferred behind other cards.
 		if (grade === "again") {
 			this.againCardIds.add(item.card.id);
-			// Don't mark as completed - will be re-shown
+			item.scheduledAt = this.now;
+			// Don't mark as completed - it will be revisited in this session.
 		} else {
 			// Hard/Good/Easy - card is "session-completed"
 			this.againCardIds.delete(item.card.id);

@@ -346,5 +346,58 @@ describe("ReviewSession (Simplified)", () => {
 			expect(stats.completedCards).toBe(2);
 			expect(stats.remainingCards).toBe(0);
 		});
+
+		it("should only count currently due cards in session totals", () => {
+			const now = new Date("2025-01-15T10:00:00Z");
+			const dueTomorrow = "2025-01-16T10:00:00Z";
+
+			const cards = [
+				createCard("card-1", "Old 1"),
+				createCard("card-2", "Old 2"),
+				createCard("card-3", "Old 3"),
+				createCard("card-4", "Old 4"),
+				createCard("card-5", "New"),
+			];
+
+			const states: CardSchedulingState[] = cards.slice(0, 4).map((card, idx) => ({
+				id: `state-${idx + 1}`,
+				card_id: card.id,
+				owner_user_id: "local-user",
+				profile_id: "profile-1",
+				due_at: dueTomorrow,
+				state: {
+					schema_version: 1,
+					algorithm: "sm2",
+					updated_at: "2025-01-15T09:00:00Z",
+					phase: "review",
+					ease: 2.5,
+					intervalDays: 1,
+					repetitions: 2,
+					lapses: 0,
+					stepIndex: 0,
+					pendingIntervalDays: null,
+					lastReviewedAt: "2025-01-15T09:00:00Z",
+				},
+				last_reviewed_at: "2025-01-15T09:00:00Z",
+				last_event_id: null,
+				created_at: "2025-01-15T09:00:00Z",
+			}));
+
+			const session = ReviewSession.create(
+				cards,
+				states,
+				defaultParams,
+				"profile-1",
+				{ now, newCardsLimit: 20 },
+			);
+
+			const stats = session.getStats();
+			expect(stats.totalCards).toBe(1);
+			expect(session.getCurrentCard()?.id).toBe("card-5");
+
+			const result = session.submitGrade("good");
+			session.moveToNext(result, "good");
+			expect(session.isComplete()).toBe(true);
+		});
 	});
 });
