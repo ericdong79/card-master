@@ -1,5 +1,11 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { ReviewButtons, defaultSimpleButtons, defaultSm2Buttons } from "./review-buttons";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { ReviewGrade } from "@/lib/scheduling/types";
+import {
+	defaultSimpleButtons,
+	defaultSm2Buttons,
+	type SimpleReviewResult,
+} from "./review-buttons-config";
+import { ReviewButtons } from "./review-buttons";
 
 const meta = {
 	title: "Features/Review/ReviewButtons",
@@ -18,7 +24,7 @@ export const SimpleMode: Story = {
 	args: {
 		mode: "simple",
 		buttons: defaultSimpleButtons,
-		onSelect: (result) => console.log("Selected:", result),
+		onSelect: (result: SimpleReviewResult) => console.log("Selected:", result),
 		disabled: false,
 	},
 };
@@ -27,7 +33,7 @@ export const SimpleModeDisabled: Story = {
 	args: {
 		mode: "simple",
 		buttons: defaultSimpleButtons,
-		onSelect: (result) => console.log("Selected:", result),
+		onSelect: (result: SimpleReviewResult) => console.log("Selected:", result),
 		disabled: true,
 	},
 };
@@ -37,7 +43,7 @@ export const Sm2Mode: Story = {
 	args: {
 		mode: "sm2",
 		buttons: defaultSm2Buttons,
-		onSelect: (grade) => console.log("Selected:", grade),
+		onSelect: (grade: ReviewGrade) => console.log("Selected:", grade),
 		disabled: false,
 	},
 };
@@ -46,7 +52,7 @@ export const Sm2ModeDisabled: Story = {
 	args: {
 		mode: "sm2",
 		buttons: defaultSm2Buttons,
-		onSelect: (grade) => console.log("Selected:", grade),
+		onSelect: (grade: ReviewGrade) => console.log("Selected:", grade),
 		disabled: true,
 	},
 };
@@ -61,17 +67,15 @@ export const SimpleModeCustom: Story = {
 				label: "No",
 				icon: "❌",
 				subLabel: "Try again",
-				className: "border-orange-200 hover:bg-orange-50 hover:text-orange-700",
 			},
 			{
 				result: "remembered",
 				label: "Yes",
 				icon: "✓",
 				subLabel: "Good job!",
-				className: "bg-blue-600 hover:bg-blue-700 text-white",
 			},
 		],
-		onSelect: (result) => console.log("Selected:", result),
+		onSelect: (result: SimpleReviewResult) => console.log("Selected:", result),
 		disabled: false,
 	},
 };
@@ -80,12 +84,12 @@ export const Sm2ModeWithCustomIntervals: Story = {
 	args: {
 		mode: "sm2",
 		buttons: [
-			{ grade: "again", label: "Again", variant: "destructive", subLabel: "1m" },
-			{ grade: "hard", label: "Hard", variant: "secondary", subLabel: "6h" },
-			{ grade: "good", label: "Good", variant: "default", subLabel: "1d" },
-			{ grade: "easy", label: "Easy", variant: "outline", subLabel: "4d" },
+			{ grade: "again", label: "Again", subLabel: "1m", icon: "❌" },
+			{ grade: "hard", label: "Hard", subLabel: "6h", icon: "🤔" },
+			{ grade: "good", label: "Good", subLabel: "1d", icon: "🤭" },
+			{ grade: "easy", label: "Easy", subLabel: "4d", icon: "👑" },
 		],
-		onSelect: (grade) => console.log("Selected:", grade),
+		onSelect: (grade: ReviewGrade) => console.log("Selected:", grade),
 		disabled: false,
 	},
 };

@@ -1,6 +1,5 @@
 import type { Card } from "@/lib/api/entities/card";
-
-import type { ReviewEventInsert } from "@/lib/api/entities/review-event";
+import type { ReviewEventInsert } from "@/lib/api/dtos/review-event";
 import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 
 
@@ -63,12 +62,11 @@ export class QuickReviewSession {
 	private completedIds: Set<string>;
 	private forgotCardIds: Set<string>;
 	private readonly ownerUserId: string;
-	private readonly cardPackId: string;
 	private readonly recordEvents: boolean;
 
 	constructor(
 		cards: Card[],
-		cardPackId: string,
+		_cardPackId: string,
 		options: { recordEvents?: boolean } = {},
 	) {
 		this.cards = [...cards];
@@ -76,7 +74,6 @@ export class QuickReviewSession {
 		this.completedIds = new Set();
 		this.forgotCardIds = new Set();
 		this.ownerUserId = LOCAL_OWNER_ID;
-		this.cardPackId = cardPackId;
 		this.recordEvents = options.recordEvents ?? false;
 	}
 

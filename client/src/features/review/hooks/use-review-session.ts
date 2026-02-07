@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { createApiClient } from "@/lib/api/client";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { listCards } from "@/lib/api/card";
 import { getCardPackById } from "@/lib/api/card-pack";
+import { createApiClient } from "@/lib/api/client";
 import type { Card } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
 
@@ -13,9 +13,13 @@ import {
 	listSchedulingStatesByCardIds,
 	upsertSchedulingState,
 } from "@/lib/api/scheduling-state";
-import { ReviewSession, type ReviewResult } from "@/lib/review";
-import { normalizeSm2Parameters, type Sm2Parameters } from "@/lib/scheduling/sm2";
-import type { ReviewGrade } from "@/lib/scheduling/types";
+import { type ReviewResult, ReviewSession } from "@/lib/review";
+import { normalizeSm2Parameters } from "@/lib/scheduling/sm2";
+import type {
+	ReviewGrade,
+	Sm2Parameters,
+	Sm2State,
+} from "@/lib/scheduling/types";
 
 export type ReviewSessionState = {
 	cardPack: CardPack | null;
@@ -35,6 +39,10 @@ export type UseReviewSessionReturn = ReviewSessionState & {
 	totalCards: number;
 	/** Number of cards completed (reviewed at least once, not Again) */
 	completedCount: number;
+	/** Current card's SM-2 state for previewing grade intervals */
+	currentCardState: Sm2State | null;
+	/** SM-2 parameters used in this session */
+	params: Sm2Parameters | null;
 	/** Submit a grade for the current card */
 	handleGrade: (grade: ReviewGrade) => Promise<void>;
 };
@@ -157,9 +165,11 @@ export function useReviewSession(
 				});
 
 				// 3. Persist scheduling state
-				const existingState = session.getQueueSnapshot().find(
-					(item) => item.card.id === result.reviewEvent.card_id,
-				)?.schedulingState;
+				const existingState = session
+					.getQueueSnapshot()
+					.find(
+						(item) => item.card.id === result.reviewEvent.card_id,
+					)?.schedulingState;
 
 				await upsertSchedulingState(client, existingState ?? null, {
 					...result.schedulingState,
@@ -183,7 +193,9 @@ export function useReviewSession(
 				setIsComplete(session.isComplete());
 				setError(null);
 			} catch (err) {
-				setError(err instanceof Error ? err.message : "Failed to record review");
+				setError(
+					err instanceof Error ? err.message : "Failed to record review",
+				);
 			} finally {
 				setGrading(false);
 			}
@@ -194,6 +206,8 @@ export function useReviewSession(
 	// Get stats from session
 	const totalCards = session?.getStats().totalCards ?? 0;
 	const completedCount = session?.getStats().completedCards ?? 0;
+	const currentCardState = session?.getCurrentCardState() ?? null;
+	const params = session?.getParams() ?? null;
 
 	return {
 		cardPack,
@@ -206,6 +220,8 @@ export function useReviewSession(
 		cards,
 		totalCards,
 		completedCount,
+		currentCardState,
+		params,
 		handleGrade,
 	};
 }

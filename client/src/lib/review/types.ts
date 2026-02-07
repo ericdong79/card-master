@@ -1,9 +1,9 @@
 import type { Card } from "@/lib/api/entities/card";
 import type {
 	CardSchedulingState,
-	CardSchedulingStateInsert,
 } from "@/lib/api/entities/card-scheduling-state";
-import type { ReviewEventInsert } from "@/lib/api/entities/review-event";
+import type { CardSchedulingStateInsert } from "@/lib/api/dtos/card-scheduling-state";
+import type { ReviewEventInsert } from "@/lib/api/dtos/review-event";
 
 
 /**

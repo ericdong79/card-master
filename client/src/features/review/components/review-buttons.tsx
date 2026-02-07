@@ -1,24 +1,12 @@
 import { Button } from "@/components/ui/button";
 import type { ReviewGrade } from "@/lib/scheduling/types";
 import { cn } from "@/lib/utils";
+import type {
+	SimpleButtonConfig,
+	SimpleReviewResult,
+	Sm2ButtonConfig,
+} from "./review-buttons-config";
 import classes from "./review-buttons.module.css";
-export type SimpleReviewResult = "forgot" | "remembered";
-
-export type ReviewMode = "simple" | "sm2";
-
-type BaseButtonConfig = {
-	label: string;
-	icon: string;
-	subLabel?: string;
-};
-
-type SimpleButtonConfig = BaseButtonConfig & {
-	result: SimpleReviewResult;
-};
-
-type Sm2ButtonConfig = BaseButtonConfig & {
-	grade: ReviewGrade;
-};
 
 type ReviewButtonsProps =
 	| {
@@ -33,31 +21,6 @@ type ReviewButtonsProps =
 			onSelect: (grade: ReviewGrade) => void;
 			disabled?: boolean;
 	  };
-
-/**
- * Default configurations for review buttons
- */
-export const defaultSimpleButtons: SimpleButtonConfig[] = [
-	{
-		result: "forgot",
-		label: "Forgot",
-		icon: "😕",
-		subLabel: "Try Again",
-	},
-	{
-		result: "remembered",
-		label: "Remembered",
-		icon: "✅",
-		subLabel: "Next Card",
-	},
-];
-
-export const defaultSm2Buttons: Sm2ButtonConfig[] = [
-	{ grade: "again", label: "Forgot", icon: "❌", subLabel: "< 1m" },
-	{ grade: "hard", label: "Partially Record", icon: "🤔", subLabel: "2d" },
-	{ grade: "good", label: "Recalled with effort", icon: "🤭", subLabel: "3d" },
-	{ grade: "easy", label: "Easily Recalled", icon: "👑", subLabel: "5d" },
-];
 
 /**
  * Generic review buttons component supporting multiple modes

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { Card } from "@/lib/api/entities/card";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
-import type { Sm2Parameters } from "@/lib/scheduling/sm2";
+import type { Sm2Parameters } from "@/lib/scheduling/types/sm2-types";
 import { ReviewSession } from "./review-session";
 
 // Test fixtures

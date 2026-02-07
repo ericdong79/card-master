@@ -3,14 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
 import type { ReviewGrade } from "@/lib/scheduling/types";
+import type { Sm2Parameters, Sm2State } from "@/lib/scheduling/types/sm2-types";
 import { cn } from "@/lib/utils";
 import {
+	ReviewButtons,
+} from "./review-buttons";
+import {
+	createDefaultSm2Buttons,
 	defaultSimpleButtons,
 	defaultSm2Buttons,
-	ReviewButtons,
-	type ReviewMode,
 	type SimpleReviewResult,
-} from "./review-buttons";
+} from "./review-buttons-config";
 
 type ReviewCardBaseProps = {
 	card: CardEntity;
@@ -28,15 +31,15 @@ type ReviewCardBaseProps = {
 type SimpleReviewCardProps = ReviewCardBaseProps & {
 	mode: "simple";
 	onReview: (result: SimpleReviewResult) => void;
-	/** Custom button configuration (optional) */
-	buttons?: typeof defaultSimpleButtons;
 };
 
 type Sm2ReviewCardProps = ReviewCardBaseProps & {
 	mode: "sm2";
 	onGrade: (grade: ReviewGrade) => void;
-	/** Custom button configuration (optional) */
-	buttons?: typeof defaultSm2Buttons;
+	/** Current card's SM-2 state for computing dynamic intervals */
+	state?: Sm2State | null;
+	/** SM-2 parameters */
+	params?: Sm2Parameters | null;
 };
 
 type ReviewCardProps = SimpleReviewCardProps | Sm2ReviewCardProps;
@@ -67,6 +70,8 @@ type ReviewCardProps = SimpleReviewCardProps | Sm2ReviewCardProps;
  *   learnedCount={5}
  *   totalCards={10}
  *   onGrade={(grade) => console.log(grade)}
+ *   state={sm2State}
+ *   params={sm2Params}
  * />
  * ```
  */
@@ -79,7 +84,6 @@ export function ReviewCard(props: ReviewCardProps) {
 		mode,
 		isProcessing,
 		className,
-		buttons,
 	} = props;
 
 	const [showAnswer, setShowAnswer] = useState(false);
@@ -92,6 +96,15 @@ export function ReviewCard(props: ReviewCardProps) {
 			(props as Sm2ReviewCardProps).onGrade(value as ReviewGrade);
 		}
 	};
+
+	const sm2State = mode === "sm2" ? props.state : null;
+	const sm2Params = mode === "sm2" ? props.params : null;
+	const sm2Buttons =
+		mode === "sm2"
+			? sm2Params
+				? createDefaultSm2Buttons(sm2State ?? null, sm2Params)
+				: defaultSm2Buttons
+			: null;
 
 	return (
 		<Card
@@ -182,19 +195,14 @@ export function ReviewCard(props: ReviewCardProps) {
 							{mode === "simple" ? (
 								<ReviewButtons
 									mode="simple"
-									buttons={
-										buttons ??
-										(defaultSimpleButtons as typeof defaultSimpleButtons)
-									}
+									buttons={defaultSimpleButtons}
 									onSelect={handleAction}
 									disabled={isProcessing}
 								/>
 							) : (
 								<ReviewButtons
 									mode="sm2"
-									buttons={
-										buttons ?? (defaultSm2Buttons as typeof defaultSm2Buttons)
-									}
+									buttons={sm2Buttons ?? []}
 									onSelect={handleAction}
 									disabled={isProcessing}
 								/>

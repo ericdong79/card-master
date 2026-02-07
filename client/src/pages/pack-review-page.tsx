@@ -53,6 +53,8 @@ export function PackReviewPage() {
 						totalCards={session.totalCards}
 						onGrade={session.handleGrade}
 						isProcessing={session.grading}
+						state={session.currentCardState}
+						params={session.params}
 					/>
 				)}
 			</main>

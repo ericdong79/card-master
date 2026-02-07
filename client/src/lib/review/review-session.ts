@@ -1,17 +1,14 @@
 import type { Card } from "@/lib/api/entities/card";
-import type {
-	CardSchedulingState,
-	CardSchedulingStateInsert,
-} from "@/lib/api/entities/card-scheduling-state";
-import type { ReviewEventInsert } from "@/lib/api/entities/review-event";
+import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
+import type { CardSchedulingStateInsert } from "@/lib/api/dtos/card-scheduling-state";
+import type { ReviewEventInsert } from "@/lib/api/dtos/review-event";
 import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 import { generateId, nowIso } from "@/lib/api/utils";
 import {
 	normalizeSm2Parameters,
 	sm2Scheduler,
-	type Sm2Parameters,
-	type Sm2State,
 } from "@/lib/scheduling/sm2";
+import type { Sm2Parameters, Sm2State } from "@/lib/scheduling/types/sm2-types";
 import type { ReviewGrade } from "@/lib/scheduling/types";
 import type {
 	QueueItem,
@@ -41,18 +38,18 @@ function getQueuePhase(state: Sm2State | null): QueuePhase {
 
 /**
  * ReviewSession manages the state and logic of a review session.
- * 
+ *
  * SIMPLIFIED MODEL:
  * - Each card appears at most ONCE per session (unless rated "Again")
  * - "Again" → card goes back to queue for immediate re-review
  * - "Hard/Good/Easy" → card is "session-completed", next review in future
  * - Session ends when no cards are due for immediate review
- * 
+ *
  * This is more user-friendly than requiring full graduation in one session.
  */
 export class ReviewSession {
 	private items: QueueItem[];
-	private completedIds: Set<string>;  // Cards completed in this session
+	private completedIds: Set<string>; // Cards completed in this session
 	private againCardIds: Set<string>; // Cards that need re-review (rated Again)
 	private newCardsSeen: number;
 	private readonly newCardsLimit: number;
@@ -142,12 +139,12 @@ export class ReviewSession {
 
 	/**
    * Gets the next card to review in this session.
-   * 
+   *
    * A card is "due" in this session if:
    * 1. Not yet completed in this session
    * 2. Scheduled time <= now (already due)
    * 3. For new cards: within daily quota
-   * 
+   *
    * Cards rated "Again" are immediately re-shown.
    */
 	getCurrentCard(): Card | null {
@@ -330,6 +327,22 @@ export class ReviewSession {
    */
 	getQueueSnapshot(): QueueItem[] {
 		return [...this.items];
+	}
+
+	/**
+	 * Gets the current card's SM-2 state for previewing grade options.
+	 */
+	getCurrentCardState(): Sm2State | null {
+		const item = this.getCurrentItem();
+		if (!item) return null;
+		return (item.schedulingState?.state as Sm2State) ?? null;
+	}
+
+	/**
+	 * Gets the SM-2 parameters used in this session.
+	 */
+	getParams(): Sm2Parameters {
+		return this.params;
 	}
 
 	/**

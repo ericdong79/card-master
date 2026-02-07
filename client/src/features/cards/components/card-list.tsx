@@ -24,7 +24,6 @@ export function CardList({ cards, onEdit, onDelete }: CardListProps) {
 
 	useEffect(() => {
 		let isActive = true;
-		setCardDueTimes({});
 
 		if (cardIds.length === 0) {
 			return () => {
