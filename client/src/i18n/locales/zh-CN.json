@@ -92,7 +92,7 @@
 				"description": "理解一次完整学习流程：输入、回忆、评分、排程、复习。"
 			},
 			"memoryCurve": {
-				"title": "记忆曲线（简化）",
+				"title": "记忆曲线",
 				"description": "为什么要间隔复习，以及系统是怎么安排间隔的。"
 			},
 			"faq": {
@@ -216,6 +216,12 @@
 		"profile": {
 			"title": "用户档案",
 			"defaultLanguage": "默认语言",
+			"hanziFont": "汉字练习字体",
+			"hanziFontOptions": {
+				"default": "默认",
+				"kaiti": "楷体",
+				"pixel": "像素体"
+			},
 			"resetThemeColor": "使用默认主题色",
 			"defaultColorActive": "当前使用应用默认主题色。",
 			"customColorActive": "当前已启用用户自定义主题色。"

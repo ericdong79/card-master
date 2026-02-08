@@ -10,11 +10,14 @@ import { generateId, nowIso } from "@/lib/api/utils";
 
 const STORAGE_KEY = "card-master.profiles.v1";
 
+export type HanziFontPreference = "default" | "kaiti" | "pixel";
+
 export type UserProfile = {
 	id: string;
 	nickname: string;
 	avatar_emoji: string;
 	primary_color: string | null;
+	hanzi_font: HanziFontPreference;
 	created_at: string;
 	updated_at: string | null;
 	last_used_at: string;
@@ -29,6 +32,7 @@ type CreateProfileInput = {
 	nickname: string;
 	avatarEmoji: string;
 	primaryColor?: string | null;
+	hanziFont?: HanziFontPreference;
 };
 
 type ProfileContextValue = {
@@ -41,10 +45,15 @@ type ProfileContextValue = {
 		nickname?: string;
 		avatarEmoji?: string;
 		primaryColor?: string | null;
+		hanziFont?: HanziFontPreference;
 	}) => void;
 };
 
 const ProfileContext = createContext<ProfileContextValue | null>(null);
+
+function resolveHanziFontPreference(value: unknown): HanziFontPreference {
+	return value === "kaiti" || value === "pixel" ? value : "default";
+}
 
 function loadProfileState(): StoredProfileState {
 	if (typeof window === "undefined") {
@@ -72,6 +81,12 @@ function loadProfileState(): StoredProfileState {
 						(typeof profile.primary_color === "string" ||
 							profile.primary_color === null),
 				)
+					.map((profile) => ({
+						...profile,
+						hanzi_font: resolveHanziFontPreference(
+							(profile as Partial<UserProfile>).hanzi_font,
+						),
+					}))
 			: [];
 		const currentProfileId =
 			typeof parsed.current_profile_id === "string"
@@ -127,6 +142,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 					nickname: input.nickname.trim(),
 					avatar_emoji: input.avatarEmoji,
 					primary_color: input.primaryColor ?? null,
+					hanzi_font: input.hanziFont ?? "kaiti",
 					created_at: now,
 					updated_at: null,
 					last_used_at: now,
@@ -175,6 +191,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 							updates.primaryColor === undefined
 								? profile.primary_color
 								: updates.primaryColor,
+						hanzi_font:
+							updates.hanziFont === undefined
+								? profile.hanzi_font
+								: resolveHanziFontPreference(updates.hanziFont),
 						updated_at: now,
 					};
 				});

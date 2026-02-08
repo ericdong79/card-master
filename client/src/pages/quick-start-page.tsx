@@ -1,7 +1,7 @@
 import { type ComponentType } from "react";
 import { BookOpenText, Brain, CircleHelp, Compass, Workflow } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { PageTopBar } from "@/components/page-topbar";
 import { cn } from "@/lib/utils";
@@ -42,13 +42,18 @@ const quickStartSections: QuickStartSection[] = [
 
 export default function QuickStartPage() {
 	const { t } = useTranslation();
+	const { pathname } = useLocation();
+	const currentSection =
+		quickStartSections.find((section) =>
+			pathname.endsWith(`/quick-start/${section.to}`),
+		) ?? quickStartSections[0];
 
 	return (
 		<div className="min-h-screen bg-muted/20">
 			<PageTopBar
 				breadcrumbs={[
-					{ label: t("sidebar.nav.cardPacks"), to: "/" },
-					{ label: t("sidebar.nav.quickStart") },
+					{ label: t("sidebar.nav.quickStart"), to: "/quick-start" },
+					{ label: t(currentSection.titleKey) },
 				]}
 				title={t("quickStart.title")}
 				subtitle={t("quickStart.subtitle")}

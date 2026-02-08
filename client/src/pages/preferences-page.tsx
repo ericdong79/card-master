@@ -1,6 +1,6 @@
-import { Suspense, lazy, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { Info, Palette, SlidersHorizontal, SmilePlus } from "lucide-react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,9 +12,12 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useProfile } from "@/features/profile/profile-context";
-import { setPreferredLanguage, type AppLanguage } from "@/i18n";
-import { type CardPackType } from "@/lib/api/entities/card-pack";
+import {
+	type HanziFontPreference,
+	useProfile,
+} from "@/features/profile/profile-context";
+import { type AppLanguage, setPreferredLanguage } from "@/i18n";
+import type { CardPackType } from "@/lib/api/entities/card-pack";
 import { useSystemPreferences } from "@/lib/preferences/system-preferences";
 
 const EmojiPicker = lazy(() => import("emoji-picker-react"));
@@ -22,10 +25,12 @@ const EmojiPicker = lazy(() => import("emoji-picker-react"));
 export function PreferencesPage() {
 	const { t, i18n } = useTranslation();
 	const { currentProfile, updateCurrentProfile } = useProfile();
-	const { preferences: systemPreferences, updatePreferences } = useSystemPreferences();
+	const { preferences: systemPreferences, updatePreferences } =
+		useSystemPreferences();
 	const [nickname, setNickname] = useState("");
 	const [avatarEmoji, setAvatarEmoji] = useState("😀");
 	const [primaryColor, setPrimaryColor] = useState("#0ee17f");
+	const [hanziFont, setHanziFont] = useState<HanziFontPreference>("default");
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
 	useEffect(() => {
@@ -33,6 +38,7 @@ export function PreferencesPage() {
 		setNickname(currentProfile.nickname);
 		setAvatarEmoji(currentProfile.avatar_emoji);
 		setPrimaryColor(currentProfile.primary_color ?? "#0ee17f");
+		setHanziFont(currentProfile.hanzi_font ?? "default");
 	}, [currentProfile]);
 
 	if (!currentProfile) {
@@ -56,14 +62,19 @@ export function PreferencesPage() {
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="profile-name">{t("profile.fields.nickname")}</Label>
+							<Label htmlFor="profile-name">
+								{t("profile.fields.nickname")}
+							</Label>
 							<Input
 								id="profile-name"
 								value={nickname}
 								onChange={(event) => setNickname(event.target.value)}
 								onBlur={() => {
 									const nextNickname = nickname.trim();
-									if (!nextNickname || nextNickname === currentProfile.nickname) {
+									if (
+										!nextNickname ||
+										nextNickname === currentProfile.nickname
+									) {
 										setNickname(currentProfile.nickname);
 										return;
 									}
@@ -94,10 +105,14 @@ export function PreferencesPage() {
 							</div>
 							{showEmojiPicker ? (
 								<div className="rounded-lg border p-2">
-									<Suspense fallback={<div className="h-80 w-full animate-pulse rounded bg-muted" />}>
+									<Suspense
+										fallback={
+											<div className="h-80 w-full animate-pulse rounded bg-muted" />
+										}
+									>
 										<EmojiPicker
 											width="100%"
-											height={320}
+											height={480}
 											onEmojiClick={(emojiData) => {
 												const nextEmoji = emojiData.emoji;
 												setAvatarEmoji(nextEmoji);
@@ -114,7 +129,10 @@ export function PreferencesPage() {
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="profile-color" className="flex items-center gap-1">
+							<Label
+								htmlFor="profile-color"
+								className="flex items-center gap-1"
+							>
 								<Palette className="size-4" />
 								{t("profile.fields.primaryColorOptional")}
 							</Label>
@@ -168,6 +186,32 @@ export function PreferencesPage() {
 								<option value="zh-CN">{t("language.chineseSimplified")}</option>
 							</select>
 						</div>
+
+						<div className="space-y-2">
+							<Label htmlFor="hanzi-font">
+								{t("preferences.profile.hanziFont")}
+							</Label>
+							<select
+								id="hanzi-font"
+								className="h-9 rounded border border-input bg-background px-2 text-sm"
+								value={hanziFont}
+								onChange={(event) => {
+									const nextFont = event.target.value as HanziFontPreference;
+									setHanziFont(nextFont);
+									updateCurrentProfile({ hanziFont: nextFont });
+								}}
+							>
+								<option value="default">
+									{t("preferences.profile.hanziFontOptions.default")}
+								</option>
+								<option value="kaiti">
+									{t("preferences.profile.hanziFontOptions.kaiti")}
+								</option>
+								<option value="pixel">
+									{t("preferences.profile.hanziFontOptions.pixel")}
+								</option>
+							</select>
+						</div>
 					</div>
 
 					<div className="space-y-4 rounded-lg border bg-muted/20 p-4">
@@ -215,8 +259,12 @@ export function PreferencesPage() {
 								}}
 							>
 								<option value="basic">{t("cardType.basic")}</option>
-								<option value="image-recall">{t("cardType.imageRecall")}</option>
-								<option value="pinyin-hanzi">{t("cardType.pinyinHanzi")}</option>
+								<option value="image-recall">
+									{t("cardType.imageRecall")}
+								</option>
+								<option value="pinyin-hanzi">
+									{t("cardType.pinyinHanzi")}
+								</option>
 							</select>
 							<p className="text-xs text-muted-foreground">
 								{t("preferences.system.defaultPackTypeHint")}
@@ -229,7 +277,9 @@ export function PreferencesPage() {
 							<Info className="size-4" />
 							{t("preferences.blocks.version.title")}
 						</span>
-						<span className="font-mono text-muted-foreground">v0.0.0-placeholder</span>
+						<span className="font-mono text-muted-foreground">
+							v0.0.0-placeholder
+						</span>
 					</div>
 				</CardContent>
 			</Card>

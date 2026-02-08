@@ -215,6 +215,12 @@
 		"profile": {
 			"title": "User Profile",
 			"defaultLanguage": "Default language",
+			"hanziFont": "Hanzi practice font",
+			"hanziFontOptions": {
+				"default": "Default (current)",
+				"kaiti": "KaiTi",
+				"pixel": "Pixel"
+			},
 			"resetThemeColor": "Use default color",
 			"defaultColorActive": "Using app default theme color.",
 			"customColorActive": "Custom profile theme color is active."

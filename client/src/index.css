@@ -1,6 +1,18 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@font-face {
+  font-family: "CardMasterKaiTi";
+  src: url("./assets/fonts/kaiti.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CardMasterPixel";
+  src: url("./assets/fonts/xst.woff2") format("woff2");
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

@@ -7,7 +7,7 @@ type BreadcrumbItem = {
 };
 
 type PageTopBarProps = {
-	title: string;
+	title?: string;
 	subtitle?: string;
 	breadcrumbs?: BreadcrumbItem[];
 	actions?: ReactNode;
@@ -39,7 +39,7 @@ export function PageTopBar({
 							))}
 						</nav>
 					) : null}
-					<h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+					{title ? <h1 className="text-2xl font-semibold tracking-tight">{title}</h1> : null}
 					{subtitle ? <p className="text-sm text-muted-foreground">{subtitle}</p> : null}
 				</div>
 				{actions ? <div className="flex items-center gap-2">{actions}</div> : null}

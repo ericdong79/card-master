@@ -3,12 +3,10 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { PageTopBar } from "@/components/page-topbar";
 import { Button } from "@/components/ui/button";
-import type { CardPackType } from "@/lib/api/entities/card-pack";
 
 type PackCardsHeaderProps = {
 	cardPackId: string;
 	packName?: string;
-	packType?: CardPackType;
 	onCreateClick: () => void;
 	onBulkCreateClick?: () => void;
 	showBulkCreate?: boolean;
@@ -19,7 +17,6 @@ type PackCardsHeaderProps = {
 export function PackCardsHeader({
 	cardPackId,
 	packName,
-	packType,
 	onCreateClick,
 	onBulkCreateClick,
 	showBulkCreate = false,
@@ -28,11 +25,6 @@ export function PackCardsHeader({
 }: PackCardsHeaderProps) {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
-	const packTypeLabelKey: Record<CardPackType, string> = {
-		basic: "cardType.basic",
-		"image-recall": "cardType.imageRecall",
-		"pinyin-hanzi": "cardType.pinyinHanzi",
-	};
 
 	const handleReviewClick = () => {
 		if (dueCardsCount === 0) {
@@ -48,8 +40,6 @@ export function PackCardsHeader({
 				{ label: t("cards.breadcrumbPacks"), to: "/" },
 				{ label: packName ?? t("cards.loadingPackName") },
 			]}
-			title={packName ?? t("cards.loadingPackName")}
-			subtitle={packType ? t(packTypeLabelKey[packType]) : t("cards.subtitle")}
 			actions={
 				<>
 					{showReviewButton ? (

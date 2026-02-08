@@ -1,6 +1,6 @@
-import { Suspense, lazy, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { Palette, SmilePlus } from "lucide-react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-const DEFAULT_AVATAR = "😀";
+const DEFAULT_AVATAR = "🐝";
 const DEFAULT_COLOR = "#1f1f23";
 const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -64,7 +64,9 @@ export function CreateProfileDialog({
 			<DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
 				<DialogHeader>
 					<DialogTitle>{t("profile.create.title")}</DialogTitle>
-					<DialogDescription>{t("profile.create.description")}</DialogDescription>
+					<DialogDescription>
+						{t("profile.create.description")}
+					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-4">
@@ -73,7 +75,9 @@ export function CreateProfileDialog({
 					</p>
 
 					<div className="space-y-2">
-						<Label htmlFor="profile-nickname">{t("profile.fields.nickname")}</Label>
+						<Label htmlFor="profile-nickname">
+							{t("profile.fields.nickname")}
+						</Label>
 						<Input
 							id="profile-nickname"
 							value={nickname}
@@ -108,10 +112,14 @@ export function CreateProfileDialog({
 						</div>
 						{showEmojiPicker ? (
 							<div className="rounded-lg border p-2">
-								<Suspense fallback={<div className="h-80 w-full animate-pulse rounded bg-muted" />}>
+								<Suspense
+									fallback={
+										<div className="h-80 w-full animate-pulse rounded bg-muted" />
+									}
+								>
 									<EmojiPicker
 										width="100%"
-										height={320}
+										height={480}
 										onEmojiClick={(emojiData) => {
 											setAvatarEmoji(emojiData.emoji);
 											setShowEmojiPicker(false);

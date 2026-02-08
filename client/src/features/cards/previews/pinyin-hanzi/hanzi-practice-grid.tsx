@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useProfile, type HanziFontPreference } from "@/features/profile/profile-context";
 
 type HanziPracticeGridProps = {
 	answerText: string;
@@ -7,8 +8,11 @@ type HanziPracticeGridProps = {
 	className?: string;
 };
 
-const HANZI_FONT_FAMILY =
-	'"STKaiti", "KaiTi", "Kaiti SC", "Noto Serif SC", serif';
+const HANZI_FONT_FAMILY_BY_PREFERENCE: Record<HanziFontPreference, string> = {
+	default: '"STKaiti", "KaiTi", "Kaiti SC", "Noto Serif SC", serif',
+	kaiti: '"CardMasterKaiTi", "STKaiti", "KaiTi", "Kaiti SC", "Noto Serif SC", serif',
+	pixel: '"CardMasterPixel", "Noto Sans SC", "Microsoft YaHei", sans-serif',
+};
 
 function getCharacters(answerText: string): string[] {
 	return Array.from(answerText).filter((char) => char.trim().length > 0);
@@ -20,8 +24,11 @@ export function HanziPracticeGrid({
 	size = "medium",
 	className,
 }: HanziPracticeGridProps) {
+	const { currentProfile } = useProfile();
 	const characters = getCharacters(answerText);
 	const showPinyin = Boolean(pinyinSyllables?.length);
+	const hanziFontFamily =
+		HANZI_FONT_FAMILY_BY_PREFERENCE[currentProfile?.hanzi_font ?? "default"];
 
 	if (!characters.length) return null;
 
@@ -91,7 +98,7 @@ export function HanziPracticeGrid({
 							className="relative leading-none tracking-wide text-foreground"
 							style={{
 								fontSize: "3rem",
-								fontFamily: HANZI_FONT_FAMILY,
+								fontFamily: hanziFontFamily,
 							}}
 						>
 							{char}

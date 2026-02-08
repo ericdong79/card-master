@@ -221,7 +221,6 @@ export function PackCardsPage() {
 			<PackCardsHeader
 				cardPackId={cardPackId}
 				packName={cardPack?.name}
-				packType={cardPack?.type}
 				onCreateClick={() => setCreateOpen(true)}
 				onBulkCreateClick={() => setBulkCreateOpen(true)}
 				showBulkCreate={cardPack?.type === "pinyin-hanzi"}
