@@ -5,12 +5,12 @@ import { listCards } from "@/lib/api/card";
 import { getCardPackById } from "@/lib/api/card-pack";
 import type { Card } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
-import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 import { createReviewEvent } from "@/lib/api/review-event";
 import {
 	QuickReviewSession,
 	type SimpleReviewResult,
 } from "@/lib/review/quick-review-session";
+import { useProfile } from "@/features/profile/profile-context";
 
 export type QuickReviewState = {
 	cardPack: CardPack | null;
@@ -52,7 +52,8 @@ export type UseQuickReviewReturn = QuickReviewState & {
 export function useQuickReview(cardPackId: string | undefined): UseQuickReviewReturn {
 	const { t } = useTranslation();
 	const client = useMemo(() => createApiClient(), []);
-	const ownerUserId = LOCAL_OWNER_ID;
+	const { currentProfile } = useProfile();
+	const ownerUserId = currentProfile?.id ?? null;
 
 	// UI state
 	const [cardPack, setCardPack] = useState<CardPack | null>(null);
@@ -70,7 +71,7 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 
 	// Initialize session
 	useEffect(() => {
-		if (!cardPackId) {
+		if (!cardPackId || !ownerUserId) {
 			setLoading(false);
 			return;
 		}
@@ -107,7 +108,7 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 				const newSession = QuickReviewSession.create(
 					fetchedCards,
 					cardPackId,
-					{ recordEvents: true }, // Record events for statistics
+					{ recordEvents: true, ownerUserId }, // Record events for statistics
 				);
 
 				setSession(newSession);

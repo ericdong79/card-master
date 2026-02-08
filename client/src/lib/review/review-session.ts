@@ -71,7 +71,7 @@ export class ReviewSession {
 		this.newCardsLimit = options.newCardsLimit ?? 20;
 		this.params = normalizeSm2Parameters(params);
 		this.now = options.now ?? new Date();
-		this.ownerUserId = LOCAL_OWNER_ID;
+		this.ownerUserId = options.ownerUserId ?? LOCAL_OWNER_ID;
 		this.profileId = profileId;
 	}
 

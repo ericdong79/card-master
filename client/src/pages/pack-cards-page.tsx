@@ -15,8 +15,8 @@ import { createApiClient } from "@/lib/api/client";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
-import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 import { listSchedulingStatesByCardIds } from "@/lib/api/scheduling-state";
+import { useProfile } from "@/features/profile/profile-context";
 
 type CardSubmitPayload = {
 	prompt: string;
@@ -29,7 +29,8 @@ export function PackCardsPage() {
 	const { t } = useTranslation();
 	const { cardPackId } = useParams<{ cardPackId: string }>();
 	const apiClient = useMemo(() => createApiClient(), []);
-	const ownerUserId = LOCAL_OWNER_ID;
+	const { currentProfile } = useProfile();
+	const ownerUserId = currentProfile?.id ?? null;
 
 	const [cardPack, setCardPack] = useState<CardPack | null>(null);
 	const [cards, setCards] = useState<CardEntity[]>([]);
@@ -62,7 +63,7 @@ export function PackCardsPage() {
 	}, [cards, schedulingStates]);
 
 	useEffect(() => {
-		if (!cardPackId) return;
+		if (!cardPackId || !ownerUserId) return;
 		setLoading(true);
 		setError(null);
 
@@ -101,6 +102,9 @@ export function PackCardsPage() {
 
 	if (!cardPackId) {
 		return <Navigate to="/" replace />;
+	}
+	if (!ownerUserId) {
+		return null;
 	}
 
 	const handleCreate = async (values: CardSubmitPayload) => {

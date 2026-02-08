@@ -28,7 +28,39 @@
     },
     "user": {
       "name": "Guest User",
-      "role": "Local profile (placeholder)"
+      "role": "Local profile (placeholder)",
+      "defaultName": "No Profile"
+    }
+  },
+  "profile": {
+    "create": {
+      "title": "Create your first profile",
+      "description": "Profiles isolate each learner's card packs and review history.",
+      "note": "Theme color is optional for now and will be applied in a later step."
+    },
+    "switch": {
+      "title": "Switch Profile",
+      "description": "Choose an existing profile or create a new one.",
+      "current": "Current",
+      "addProfile": "Add Profile"
+    },
+    "menu": {
+      "title": "User Settings",
+      "switchUser": "Switch User",
+      "preferences": "Preference Settings"
+    },
+    "fields": {
+      "nickname": "Nickname",
+      "nicknamePlaceholder": "e.g. Alex",
+      "avatar": "Avatar",
+      "primaryColorOptional": "Primary color (optional)"
+    },
+    "actions": {
+      "create": "Create Profile",
+      "pickEmoji": "Choose Emoji"
+    },
+    "errors": {
+      "nicknameRequired": "Nickname is required."
     }
   },
   "common": {
@@ -61,7 +93,11 @@
   },
   "preferences": {
     "title": "Preferences",
-    "subtitle": "This section will host app-level configuration and system information.",
+    "subtitle": "Manage the active profile, default language, and core app settings.",
+    "profile": {
+      "title": "User Profile",
+      "defaultLanguage": "Default language"
+    },
     "blocks": {
       "system": {
         "title": "System Parameters",

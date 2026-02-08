@@ -57,4 +57,6 @@ export interface ReviewSessionOptions {
 	newCardsLimit?: number;
 	/** Current time (for testing) */
 	now?: Date;
+	/** Active owner/profile id */
+	ownerUserId?: string;
 }

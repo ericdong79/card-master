@@ -67,13 +67,13 @@ export class QuickReviewSession {
 	constructor(
 		cards: Card[],
 		_cardPackId: string,
-		options: { recordEvents?: boolean } = {},
+		options: { recordEvents?: boolean; ownerUserId?: string } = {},
 	) {
 		this.cards = [...cards];
 		this.currentIndex = 0;
 		this.completedIds = new Set();
 		this.forgotCardIds = new Set();
-		this.ownerUserId = LOCAL_OWNER_ID;
+		this.ownerUserId = options.ownerUserId ?? LOCAL_OWNER_ID;
 		this.recordEvents = options.recordEvents ?? false;
 	}
 
@@ -83,7 +83,7 @@ export class QuickReviewSession {
 	static create(
 		cards: Card[],
 		cardPackId: string,
-		options?: { recordEvents?: boolean },
+		options?: { recordEvents?: boolean; ownerUserId?: string },
 	): QuickReviewSession {
 		return new QuickReviewSession(cards, cardPackId, options);
 	}

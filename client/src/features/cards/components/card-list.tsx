@@ -3,7 +3,6 @@ import { IconCards } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
 import type { CardPackType } from "@/lib/api/entities/card-pack";
-import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 import { listSchedulingStatesByCardIds } from "@/lib/api/scheduling-state";
 import { useApiClient } from "@/lib/hooks/use-api-client";
 
@@ -19,10 +18,7 @@ type CardListProps = {
 export function CardList({ cards, packType, onEdit, onDelete }: CardListProps) {
 	const { t } = useTranslation();
 	const client = useApiClient();
-	const ownerUserId = useMemo(
-		() => cards[0]?.owner_user_id ?? LOCAL_OWNER_ID,
-		[cards],
-	);
+	const ownerUserId = useMemo(() => cards[0]?.owner_user_id ?? null, [cards]);
 	const cardIds = useMemo(() => cards.map((card) => card.id), [cards]);
 	const [cardDueTimes, setCardDueTimes] = useState<Record<string, string>>({});
 
@@ -30,6 +26,12 @@ export function CardList({ cards, packType, onEdit, onDelete }: CardListProps) {
 		let isActive = true;
 
 		if (cardIds.length === 0) {
+			return () => {
+				isActive = false;
+			};
+		}
+		if (!ownerUserId) {
+			setCardDueTimes({});
 			return () => {
 				isActive = false;
 			};

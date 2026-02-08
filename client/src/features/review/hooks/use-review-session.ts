@@ -7,7 +7,6 @@ import type { Card } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
 
 import type { ReviewEvent } from "@/lib/api/entities/review-event";
-import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 import { createReviewEvent } from "@/lib/api/review-event";
 import { getOrCreateSchedulingProfile } from "@/lib/api/scheduling-profile";
 import {
@@ -21,6 +20,7 @@ import type {
 	Sm2Parameters,
 	Sm2State,
 } from "@/lib/scheduling/types";
+import { useProfile } from "@/features/profile/profile-context";
 
 export type ReviewSessionState = {
 	cardPack: CardPack | null;
@@ -64,7 +64,8 @@ export function useReviewSession(
 ): UseReviewSessionReturn {
 	const { t } = useTranslation();
 	const client = useMemo(() => createApiClient(), []);
-	const ownerUserId = LOCAL_OWNER_ID;
+	const { currentProfile } = useProfile();
+	const ownerUserId = currentProfile?.id ?? null;
 
 	// UI state
 	const [cardPack, setCardPack] = useState<CardPack | null>(null);
@@ -81,7 +82,7 @@ export function useReviewSession(
 
 	// Initialize session
 	useEffect(() => {
-		if (!cardPackId) {
+		if (!cardPackId || !ownerUserId) {
 			setLoading(false);
 			return;
 		}
@@ -129,7 +130,7 @@ export function useReviewSession(
 					stateList,
 					params,
 					profile.id,
-					{ newCardsLimit: 20 },
+					{ newCardsLimit: 20, ownerUserId },
 				);
 
 				setSession(newSession);

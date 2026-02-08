@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { setPreferredLanguage, type AppLanguage } from "@/i18n";
 import { cn } from "@/lib/utils";
 
 type LanguageSwitcherProps = {
@@ -20,7 +21,7 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
 				className="h-7 rounded border border-input bg-background px-2 text-xs"
 				value={i18n.language === "zh-CN" ? "zh-CN" : "en"}
 				onChange={(event) => {
-					void i18n.changeLanguage(event.target.value);
+					void setPreferredLanguage(event.target.value as AppLanguage);
 				}}
 				aria-label={t("language.label")}
 			>

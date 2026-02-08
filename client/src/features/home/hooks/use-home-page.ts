@@ -15,12 +15,13 @@ import {
 	importCardMasterData,
 	parseCardMasterExport,
 } from "@/lib/api/import-export";
-import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
+import { useProfile } from "@/features/profile/profile-context";
 
 export function useHomePage() {
 	const { t } = useTranslation();
 	const apiClient = useMemo(() => createApiClient(), []);
-	const ownerUserId = LOCAL_OWNER_ID;
+	const { currentProfile } = useProfile();
+	const ownerUserId = currentProfile?.id ?? null;
 
 	const [cardPacks, setCardPacks] = useState<CardPackWithCounts[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -34,6 +35,10 @@ export function useHomePage() {
 	const [deletingPack, setDeletingPack] = useState<CardPackWithCounts | null>(null);
 
 	const refreshCardPacks = useCallback(async () => {
+		if (!ownerUserId) {
+			setCardPacks([]);
+			return;
+		}
 		const packs = await listCardPacksWithCounts(apiClient, ownerUserId);
 		setCardPacks(packs);
 	}, [apiClient, ownerUserId]);
@@ -75,6 +80,7 @@ export function useHomePage() {
 	}, []);
 
 	const createPack = useCallback(async (name: string, type: CardPackType) => {
+		if (!ownerUserId) return;
 		try {
 			setError(null);
 			setSuccessMessage(null);
@@ -90,6 +96,7 @@ export function useHomePage() {
 	}, [apiClient, closeCreateDialog, ownerUserId, t]);
 
 	const editPack = useCallback(async (targetPack: CardPackWithCounts, name: string) => {
+		if (!ownerUserId) return;
 		try {
 			setError(null);
 			setSuccessMessage(null);
@@ -113,6 +120,7 @@ export function useHomePage() {
 	}, [apiClient, closeEditDialog, ownerUserId, t]);
 
 	const deletePack = useCallback(async (pack: CardPackWithCounts) => {
+		if (!ownerUserId) return;
 		try {
 			setError(null);
 			setSuccessMessage(null);
@@ -126,6 +134,7 @@ export function useHomePage() {
 
 	const exportPacks = useCallback(
 		async (cardPackIds: string[], includeReviewState: boolean) => {
+			if (!ownerUserId) return;
 			try {
 				setError(null);
 				setSuccessMessage(null);
@@ -144,6 +153,7 @@ export function useHomePage() {
 
 	const importPacks = useCallback(
 		async (file: File, importReviewState: boolean) => {
+			if (!ownerUserId) return;
 			try {
 				setError(null);
 				setSuccessMessage(null);

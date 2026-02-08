@@ -29,7 +29,39 @@
     },
     "user": {
       "name": "访客用户",
-      "role": "本地配置（占位）"
+      "role": "本地配置（占位）",
+      "defaultName": "未创建用户"
+    }
+  },
+  "profile": {
+    "create": {
+      "title": "创建你的第一个用户档案",
+      "description": "不同档案会隔离每位学习者的卡包与复习历史。",
+      "note": "主题色目前仅作为占位，后续会接入实际主题切换。"
+    },
+    "switch": {
+      "title": "切换用户",
+      "description": "选择已有用户档案，或创建新的档案。",
+      "current": "当前使用中",
+      "addProfile": "添加用户"
+    },
+    "menu": {
+      "title": "用户设置",
+      "switchUser": "切换用户",
+      "preferences": "首选项配置"
+    },
+    "fields": {
+      "nickname": "昵称",
+      "nicknamePlaceholder": "例如：小明",
+      "avatar": "头像",
+      "primaryColorOptional": "主题色（可选）"
+    },
+    "actions": {
+      "create": "创建档案",
+      "pickEmoji": "选择 Emoji"
+    },
+    "errors": {
+      "nicknameRequired": "请输入昵称。"
     }
   },
   "common": {
@@ -62,7 +94,11 @@
   },
   "preferences": {
     "title": "首选项配置",
-    "subtitle": "该区域将承载系统级参数配置与版本信息等功能。",
+    "subtitle": "管理当前用户档案、默认语言与应用基础设置。",
+    "profile": {
+      "title": "用户档案",
+      "defaultLanguage": "默认语言"
+    },
     "blocks": {
       "system": {
         "title": "系统参数",
