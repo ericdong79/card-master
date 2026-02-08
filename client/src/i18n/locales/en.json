@@ -8,6 +8,29 @@
     "name": "MindMemo",
     "tagline": "One Mind, One Memory"
   },
+  "sidebar": {
+    "title": "Main Navigation",
+    "sections": {
+      "navigation": "Navigation",
+      "system": "System"
+    },
+    "actions": {
+      "collapse": "Collapse sidebar",
+      "expand": "Expand sidebar",
+      "openMobile": "Open sidebar"
+    },
+    "nav": {
+      "cardPacks": "Card Packs",
+      "quickStart": "Quick Start"
+    },
+    "system": {
+      "preferences": "Preferences"
+    },
+    "user": {
+      "name": "Guest User",
+      "role": "Local profile (placeholder)"
+    }
+  },
   "common": {
     "cancel": "Cancel",
     "create": "Create",
@@ -21,6 +44,33 @@
     "export": "Export",
     "exporting": "Exporting...",
     "loadingCards": "Loading cards..."
+  },
+  "quickStart": {
+    "title": "Quick Start",
+    "subtitle": "This page will document usage, feature overview, and the learning philosophy.",
+    "blocks": {
+      "usage": {
+        "title": "How to Use",
+        "description": "Step-by-step onboarding content will be added here."
+      },
+      "principles": {
+        "title": "Core Principles",
+        "description": "Product principles and design decisions will be documented here."
+      }
+    }
+  },
+  "preferences": {
+    "title": "Preferences",
+    "subtitle": "This section will host app-level configuration and system information.",
+    "blocks": {
+      "system": {
+        "title": "System Parameters",
+        "description": "Configuration controls will be added here in a future iteration."
+      },
+      "version": {
+        "title": "Version"
+      }
+    }
   },
   "home": {
     "title": "Card Packs",

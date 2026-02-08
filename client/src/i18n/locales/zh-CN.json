@@ -9,6 +9,29 @@
     "nameEn": "MindMemo",
     "tagline": "一心一忆"
   },
+  "sidebar": {
+    "title": "主导航",
+    "sections": {
+      "navigation": "导航",
+      "system": "系统功能"
+    },
+    "actions": {
+      "collapse": "收起侧边栏",
+      "expand": "展开侧边栏",
+      "openMobile": "打开侧边栏"
+    },
+    "nav": {
+      "cardPacks": "记忆卡包",
+      "quickStart": "快速上手"
+    },
+    "system": {
+      "preferences": "首选项配置"
+    },
+    "user": {
+      "name": "访客用户",
+      "role": "本地配置（占位）"
+    }
+  },
   "common": {
     "cancel": "取消",
     "create": "创建",
@@ -22,6 +45,33 @@
     "export": "导出",
     "exporting": "导出中...",
     "loadingCards": "正在加载卡片..."
+  },
+  "quickStart": {
+    "title": "快速上手",
+    "subtitle": "该页面将用于介绍使用方式、功能总览与学习理念。",
+    "blocks": {
+      "usage": {
+        "title": "使用方式",
+        "description": "后续会在这里补充分步骤上手说明。"
+      },
+      "principles": {
+        "title": "核心理念",
+        "description": "后续会在这里说明产品设计与学习方法论。"
+      }
+    }
+  },
+  "preferences": {
+    "title": "首选项配置",
+    "subtitle": "该区域将承载系统级参数配置与版本信息等功能。",
+    "blocks": {
+      "system": {
+        "title": "系统参数",
+        "description": "后续版本将在这里补充具体配置项。"
+      },
+      "version": {
+        "title": "版本信息"
+      }
+    }
   },
   "home": {
     "title": "卡包",
