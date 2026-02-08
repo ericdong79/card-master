@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -28,6 +29,7 @@ export function CreatePackDialog({
 	onOpenChange,
 	onCreate,
 }: CreatePackDialogProps) {
+	const { t } = useTranslation();
 	const [name, setName] = useState("");
 	const [type, setType] = useState<CardPackType>(DEFAULT_CARD_PACK_TYPE);
 	const [pending, setPending] = useState(false);
@@ -54,21 +56,21 @@ export function CreatePackDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="space-y-4">
 				<DialogHeader>
-					<DialogTitle>Create card pack</DialogTitle>
-					<DialogDescription>Add a new pack to group your cards.</DialogDescription>
+					<DialogTitle>{t("home.createPack.title")}</DialogTitle>
+					<DialogDescription>{t("home.createPack.description")}</DialogDescription>
 				</DialogHeader>
 				<div className="space-y-2">
-					<Label htmlFor="new-pack-name">Name</Label>
+					<Label htmlFor="new-pack-name">{t("home.createPack.name")}</Label>
 					<Input
 						id="new-pack-name"
 						value={name}
 						onChange={(event) => setName(event.target.value)}
-						placeholder="My first pack"
+						placeholder={t("home.createPack.namePlaceholder")}
 						autoFocus
 					/>
 				</div>
 				<div className="space-y-2">
-					<Label htmlFor="new-pack-type">Type</Label>
+					<Label htmlFor="new-pack-type">{t("home.createPack.type")}</Label>
 					<select
 						id="new-pack-type"
 						value={type}
@@ -78,23 +80,23 @@ export function CreatePackDialog({
 							"focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
 						)}
 					>
-						<option value="basic">Basic</option>
-						<option value="image-recall">Image Recall</option>
-						<option value="pinyin-hanzi">Pinyin - Hanzi</option>
+						<option value="basic">{t("cardType.basic")}</option>
+						<option value="image-recall">{t("cardType.imageRecall")}</option>
+						<option value="pinyin-hanzi">{t("cardType.pinyinHanzi")}</option>
 					</select>
 				</div>
 				<DialogFooter>
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 					<Button onClick={handleSubmit} disabled={pending}>
 						{pending ? (
 							<>
 								<Spinner size="sm" className="text-primary-foreground" />
-								Creating...
+								{t("common.creating")}
 							</>
 						) : (
-							"Create"
+							t("common.create")
 						)}
 					</Button>
 				</DialogFooter>

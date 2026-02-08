@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -24,6 +25,7 @@ export function ImportPacksDialog({
 	onOpenChange,
 	onImport,
 }: ImportPacksDialogProps) {
+	const { t } = useTranslation();
 	const [file, setFile] = useState<File | null>(null);
 	const [hasReviewState, setHasReviewState] = useState(false);
 	const [importReviewState, setImportReviewState] = useState(true);
@@ -55,7 +57,7 @@ export function ImportPacksDialog({
 			setHasReviewState(Boolean(payload.review_state));
 		} catch (error) {
 			setValidationError(
-				error instanceof Error ? error.message : "Unable to read import file.",
+				error instanceof Error ? error.message : t("home.importDialog.readError"),
 			);
 		}
 	};
@@ -77,14 +79,14 @@ export function ImportPacksDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="space-y-4">
 				<DialogHeader>
-					<DialogTitle>Import card packs</DialogTitle>
+					<DialogTitle>{t("home.importDialog.title")}</DialogTitle>
 					<DialogDescription>
-						Import card packs from an exported JSON file.
+						{t("home.importDialog.description")}
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-2">
-					<Label htmlFor="import-packs-file">Export file</Label>
+					<Label htmlFor="import-packs-file">{t("home.importDialog.fileLabel")}</Label>
 					<Input
 						id="import-packs-file"
 						type="file"
@@ -104,11 +106,11 @@ export function ImportPacksDialog({
 							onChange={(event) => setImportReviewState(event.target.checked)}
 							className="size-4 rounded border-input"
 						/>
-						<span>Import review history and schedule state</span>
+						<span>{t("home.importDialog.includeReviewState")}</span>
 					</label>
 				) : file && !validationError ? (
 					<p className="text-sm text-muted-foreground">
-						This file does not include review history or schedule state.
+						{t("home.importDialog.noReviewState")}
 					</p>
 				) : null}
 
@@ -120,16 +122,16 @@ export function ImportPacksDialog({
 
 				<DialogFooter>
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 					<Button onClick={handleSubmit} disabled={!file || Boolean(validationError) || pending}>
 						{pending ? (
 							<>
 								<Spinner size="sm" className="text-primary-foreground" />
-								Importing...
+								{t("common.importing")}
 							</>
 						) : (
-							"Import"
+							t("common.import")
 						)}
 					</Button>
 				</DialogFooter>

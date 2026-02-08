@@ -1,5 +1,6 @@
 /** biome-ignore-all lint/correctness/useUniqueElementIds: <explanation> */
 import { type ChangeEvent, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -48,19 +49,19 @@ type CardFormDialogProps = {
 function readFileAsAsset(
 	file: File,
 	kind: CardMediaAsset["kind"],
+	readErrorMessage: string,
 ): Promise<CardMediaAsset> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
 		reader.onload = () => {
 			const dataUrl = reader.result;
 			if (typeof dataUrl !== "string") {
-				reject(new Error("Failed to read file."));
+				reject(new Error(readErrorMessage));
 				return;
 			}
 			resolve({ kind, mime_type: file.type, data_url: dataUrl });
 		};
-		reader.onerror = () =>
-			reject(reader.error ?? new Error("Failed to read file."));
+		reader.onerror = () => reject(reader.error ?? new Error(readErrorMessage));
 		reader.readAsDataURL(file);
 	});
 }
@@ -73,6 +74,7 @@ export function CardFormDialog({
 	card,
 	packType,
 }: CardFormDialogProps) {
+	const { t } = useTranslation();
 	const [values, setValues] = useState<CardEditorValues>(
 		createEmptyCardEditorValues(),
 	);
@@ -120,14 +122,14 @@ export function CardFormDialog({
 		const file = event.target.files?.[0];
 		if (!file) return;
 		try {
-			const asset = await readFileAsAsset(file, "image");
+			const asset = await readFileAsAsset(file, "image", t("cards.form.readFileError"));
 			setValues((prev) => ({ ...prev, questionImage: asset }));
 			setError(null);
 		} catch (uploadError) {
 			setError(
 				uploadError instanceof Error
 					? uploadError.message
-					: "Failed to load image.",
+					: t("cards.form.loadImageError"),
 			);
 		}
 	};
@@ -138,14 +140,14 @@ export function CardFormDialog({
 		const file = event.target.files?.[0];
 		if (!file) return;
 		try {
-			const asset = await readFileAsAsset(file, "audio");
+			const asset = await readFileAsAsset(file, "audio", t("cards.form.readFileError"));
 			setValues((prev) => ({ ...prev, questionAudio: asset }));
 			setError(null);
 		} catch (uploadError) {
 			setError(
 				uploadError instanceof Error
 					? uploadError.message
-					: "Failed to load audio.",
+					: t("cards.form.loadAudioError"),
 			);
 		}
 	};
@@ -153,7 +155,7 @@ export function CardFormDialog({
 	const handleConvertToPinyin = async () => {
 		const hanzi = values.answerText.trim();
 		if (!hanzi) {
-			setError("Enter Hanzi in the answer field first.");
+			setError(t("cards.form.enterHanziFirst"));
 			return;
 		}
 
@@ -166,7 +168,7 @@ export function CardFormDialog({
 			setError(
 				conversionError instanceof Error
 					? conversionError.message
-					: "Failed to convert Hanzi to pinyin.",
+					: t("cards.form.convertError"),
 			);
 		} finally {
 			setConverting(false);
@@ -178,12 +180,14 @@ export function CardFormDialog({
 			<DialogContent className="space-y-4">
 				<DialogHeader>
 					<DialogTitle>
-						{mode === "create" ? "Create card" : "Edit card"}
+						{mode === "create"
+							? t("cards.form.createTitle")
+							: t("cards.form.editTitle")}
 					</DialogTitle>
 					<DialogDescription>
 						{mode === "create"
-							? "Add a new prompt and answer."
-							: "Update this card."}
+							? t("cards.form.createDescription")
+							: t("cards.form.editDescription")}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="space-y-3">
@@ -208,14 +212,18 @@ export function CardFormDialog({
 									disabled={pending || converting}
 									className="absolute bottom-2 left-2"
 								>
-									{converting ? "Converting..." : "Convert from Hanzi"}
+									{converting
+										? t("cards.form.converting")
+										: t("cards.form.convertFromHanzi")}
 								</Button>
 							) : null}
 						</div>
 					</div>
 					{config.supportsQuestionImage ? (
 						<div className="space-y-2">
-							<Label htmlFor="card-question-image">Question image</Label>
+							<Label htmlFor="card-question-image">
+								{t("cards.form.questionImage")}
+							</Label>
 							<Input
 								id="card-question-image"
 								type="file"
@@ -226,7 +234,7 @@ export function CardFormDialog({
 								<div className="space-y-2">
 									<img
 										src={values.questionImage.data_url}
-										alt="Question preview"
+										alt={t("cards.form.questionPreview")}
 										className="max-h-48 rounded-md border object-contain"
 									/>
 									<Button
@@ -236,7 +244,7 @@ export function CardFormDialog({
 											setValues((prev) => ({ ...prev, questionImage: null }))
 										}
 									>
-										Remove image
+										{t("cards.form.removeImage")}
 									</Button>
 								</div>
 							) : null}
@@ -245,7 +253,7 @@ export function CardFormDialog({
 					{config.supportsQuestionAudio ? (
 						<div className="space-y-2">
 							<Label htmlFor="card-question-audio">
-								Question audio (optional)
+								{t("cards.form.questionAudioOptional")}
 							</Label>
 							<Input
 								id="card-question-audio"
@@ -263,7 +271,7 @@ export function CardFormDialog({
 											setValues((prev) => ({ ...prev, questionAudio: null }))
 										}
 									>
-										Remove audio
+										{t("cards.form.removeAudio")}
 									</Button>
 								</div>
 							) : null}
@@ -286,18 +294,18 @@ export function CardFormDialog({
 				</div>
 				<DialogFooter>
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 					<Button onClick={handleSubmit} disabled={pending}>
 						{pending ? (
 							<>
 								<Spinner size="sm" className="text-primary-foreground" />
-								{mode === "create" ? "Creating..." : "Saving..."}
+								{mode === "create" ? t("common.creating") : t("common.saving")}
 							</>
 						) : mode === "create" ? (
-							"Create"
+							t("common.create")
 						) : (
-							"Save"
+							t("common.save")
 						)}
 					</Button>
 				</DialogFooter>

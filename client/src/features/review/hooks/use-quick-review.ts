@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { createApiClient } from "@/lib/api/client";
 import { listCards } from "@/lib/api/card";
 import { getCardPackById } from "@/lib/api/card-pack";
@@ -49,6 +50,7 @@ export type UseQuickReviewReturn = QuickReviewState & {
  * - Optional: Records review events for statistics
  */
 export function useQuickReview(cardPackId: string | undefined): UseQuickReviewReturn {
+	const { t } = useTranslation();
 	const client = useMemo(() => createApiClient(), []);
 	const ownerUserId = LOCAL_OWNER_ID;
 
@@ -89,12 +91,12 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 				]);
 
 				if (!pack) {
-					setError("Card pack not found or inaccessible.");
+					setError(t("errors.packNotFound"));
 					return;
 				}
 
 				if (fetchedCards.length === 0) {
-					setError("No cards in this pack to review.");
+					setError(t("errors.noCardsToReview"));
 					return;
 				}
 
@@ -114,13 +116,13 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 				setLearnedCount(0);
 			} catch (err) {
 				setError(
-					err instanceof Error ? err.message : "Failed to load cards",
+					err instanceof Error ? err.message : t("errors.loadCards"),
 				);
 			} finally {
 				setLoading(false);
 			}
 		})();
-	}, [cardPackId, client, ownerUserId]);
+	}, [cardPackId, client, ownerUserId, t]);
 
 	// Handle review submission
 	const handleReview = useCallback(
@@ -155,12 +157,12 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 				setLearnedCount(session.getStats().learnedCount);
 				setError(null);
 			} catch (err) {
-				setError(err instanceof Error ? err.message : "Failed to record review");
+				setError(err instanceof Error ? err.message : t("errors.recordReview"));
 			} finally {
 				setReviewing(false);
 			}
 		},
-		[session, client, reviewing],
+		[session, client, reviewing, t],
 	);
 
 	// Skip current card

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -26,36 +27,35 @@ export function DeleteCardDialog({
 	onConfirm,
 	loading = false,
 }: DeleteCardDialogProps) {
-	const questionText = card ? getCardQuestionText(card) || card.prompt : "this card";
+	const { t } = useTranslation();
+	const questionText = card
+		? getCardQuestionText(card) || card.prompt
+		: t("cards.deleteDialog.thisCard");
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="space-y-4">
 				<DialogHeader>
-					<DialogTitle>Delete card</DialogTitle>
+					<DialogTitle>{t("cards.deleteDialog.title")}</DialogTitle>
 					<DialogDescription>
-						This will remove the card permanently. This action cannot be undone.
+						{t("cards.deleteDialog.description")}
 					</DialogDescription>
 				</DialogHeader>
 				<p className="text-sm text-muted-foreground">
-					Are you sure you want to delete{" "}
-					<span className="font-medium text-foreground">
-						{questionText}
-					</span>
-					?
+					{t("cards.deleteDialog.confirm", { question: questionText })}
 				</p>
 				<DialogFooter>
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 					<Button variant="destructive" onClick={onConfirm} disabled={loading}>
 						{loading ? (
 							<>
 								<Spinner size="sm" className="text-primary-foreground" />
-								Deleting...
+								{t("common.deleting")}
 							</>
 						) : (
-							"Delete"
+							t("common.delete")
 						)}
 					</Button>
 				</DialogFooter>

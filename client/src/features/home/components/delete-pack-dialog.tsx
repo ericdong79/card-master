@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -22,6 +23,7 @@ export function DeletePackDialog({
 	onOpenChange,
 	onDelete,
 }: DeletePackDialogProps) {
+	const { t } = useTranslation();
 	const [pending, setPending] = useState(false);
 
 	useEffect(() => {
@@ -42,30 +44,28 @@ export function DeletePackDialog({
 		<Dialog open={Boolean(deletingPack)} onOpenChange={onOpenChange}>
 			<DialogContent className="space-y-4">
 				<DialogHeader>
-					<DialogTitle>Delete card pack</DialogTitle>
+					<DialogTitle>{t("home.deletePack.title")}</DialogTitle>
 					<DialogDescription>
-						This removes the pack and its cards. This action cannot be undone.
+						{t("home.deletePack.description")}
 					</DialogDescription>
 				</DialogHeader>
 				<p className="text-sm text-muted-foreground">
-					Are you sure you want to delete{" "}
-					<span className="font-medium text-foreground">
-						{deletingPack?.name ?? "this pack"}
-					</span>
-					?
+					{t("home.deletePack.confirm", {
+						name: deletingPack?.name ?? t("home.deletePack.thisPack"),
+					})}
 				</p>
 				<DialogFooter>
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 					<Button variant="destructive" onClick={handleConfirm} disabled={pending}>
 						{pending ? (
 							<>
 								<Spinner size="sm" className="text-primary-foreground" />
-								Deleting...
+								{t("common.deleting")}
 							</>
 						) : (
-							"Delete"
+							t("common.delete")
 						)}
 					</Button>
 				</DialogFooter>

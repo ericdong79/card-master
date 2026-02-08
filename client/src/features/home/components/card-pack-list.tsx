@@ -1,4 +1,5 @@
 import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -26,11 +27,13 @@ export function CardPackList({
 	onEdit,
 	onDelete,
 }: CardPackListProps) {
+	const { t } = useTranslation();
+
 	if (loading) {
 		return (
 			<div className="flex items-center gap-2 text-muted-foreground">
 				<Spinner />
-				<span>Loading card packs...</span>
+				<span>{t("home.loadingPacks")}</span>
 			</div>
 		);
 	}
@@ -39,15 +42,15 @@ export function CardPackList({
 		return (
 			<Card className="border-dashed bg-background/60">
 				<CardHeader>
-					<CardTitle>No card packs yet</CardTitle>
+					<CardTitle>{t("home.emptyTitle")}</CardTitle>
 					<CardDescription>
-						Create your first pack to start adding cards.
+						{t("home.emptyDescription")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<Button onClick={onCreateClick}>
 						<Plus className="size-4" />
-						Create a card pack
+						{t("home.emptyAction")}
 					</Button>
 				</CardContent>
 			</Card>

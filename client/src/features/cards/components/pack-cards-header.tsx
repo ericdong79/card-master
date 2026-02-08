@@ -1,4 +1,5 @@
 import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -19,6 +20,7 @@ export function PackCardsHeader({
 	showBulkCreate = false,
 	dueCardsCount = 0,
 }: PackCardsHeaderProps) {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 
 	const handleReviewClick = () => {
@@ -35,28 +37,30 @@ export function PackCardsHeader({
 				<div>
 					<div className="flex items-center gap-2 text-sm text-muted-foreground">
 						<Link to="/" className="underline underline-offset-4">
-							Card packs
+							{t("cards.breadcrumbPacks")}
 						</Link>
 						<span>/</span>
-						<span className="text-foreground">{packName ?? "Loading..."}</span>
+						<span className="text-foreground">
+							{packName ?? t("cards.loadingPackName")}
+						</span>
 					</div>
-					<h1 className="text-2xl font-semibold">Cards</h1>
+					<h1 className="text-2xl font-semibold">{t("cards.title")}</h1>
 					<p className="text-sm text-muted-foreground">
-						View and manage cards in this pack.
+						{t("cards.subtitle")}
 					</p>
 				</div>
 				<div className="flex gap-2">
 					<Button variant="outline" onClick={handleReviewClick}>
-						Review
+						{t("cards.review")}
 					</Button>
 					{showBulkCreate && onBulkCreateClick ? (
 						<Button variant="outline" onClick={onBulkCreateClick}>
-							Bulk create
+							{t("cards.bulkCreate")}
 						</Button>
 					) : null}
 					<Button onClick={onCreateClick}>
 						<Plus className="size-4" />
-						New card
+						{t("cards.newCard")}
 					</Button>
 				</div>
 			</div>

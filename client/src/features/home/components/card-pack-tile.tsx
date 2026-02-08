@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Edit3, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -20,7 +21,7 @@ type CardPackTileProps = {
 };
 
 export function CardPackTile({ pack, onEdit, onDelete }: CardPackTileProps) {
-	const createdAt = new Date(pack.created_at).toLocaleString();
+	const { t, i18n } = useTranslation();
 	const typeLabel = getCardPackTypeLabel(resolveCardPackType(pack.type));
 
 	return (
@@ -53,11 +54,13 @@ export function CardPackTile({ pack, onEdit, onDelete }: CardPackTileProps) {
 			<CardHeader className={cn("pb-2 pr-24", pack.cards_count === 0 && "pb-4")}>
 				<CardTitle className="text-lg">{pack.name}</CardTitle>
 				<CardDescription>
-					{typeLabel} · {pack.cards_count} cards
+					{t("home.typeAndCount", { type: typeLabel, count: pack.cards_count })}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="text-sm text-muted-foreground">
-				Created {createdAt}
+				{t("home.createdAt", {
+					date: new Date(pack.created_at).toLocaleString(i18n.language),
+				})}
 			</CardContent>
 		</Card>
 	);

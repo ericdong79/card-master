@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -24,6 +25,7 @@ export function EditPackDialog({
 	onOpenChange,
 	onEdit,
 }: EditPackDialogProps) {
+	const { t } = useTranslation();
 	const [name, setName] = useState("");
 	const [pending, setPending] = useState(false);
 
@@ -46,31 +48,31 @@ export function EditPackDialog({
 		<Dialog open={Boolean(editingPack)} onOpenChange={onOpenChange}>
 			<DialogContent className="space-y-4">
 				<DialogHeader>
-					<DialogTitle>Rename card pack</DialogTitle>
-					<DialogDescription>Update the name shown on your home screen.</DialogDescription>
+					<DialogTitle>{t("home.editPack.title")}</DialogTitle>
+					<DialogDescription>{t("home.editPack.description")}</DialogDescription>
 				</DialogHeader>
 				<div className="space-y-2">
-					<Label htmlFor="edit-pack-name">Name</Label>
+					<Label htmlFor="edit-pack-name">{t("home.editPack.name")}</Label>
 					<Input
 						id="edit-pack-name"
 						value={name}
 						onChange={(event) => setName(event.target.value)}
-						placeholder="Updated card pack name"
+						placeholder={t("home.editPack.namePlaceholder")}
 						autoFocus
 					/>
 				</div>
 				<DialogFooter>
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 					<Button onClick={handleSubmit} disabled={pending}>
 						{pending ? (
 							<>
 								<Spinner size="sm" className="text-primary-foreground" />
-								Saving...
+								{t("common.saving")}
 							</>
 						) : (
-							"Save"
+							t("common.save")
 						)}
 					</Button>
 				</DialogFooter>

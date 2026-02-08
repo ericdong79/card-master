@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -25,6 +26,7 @@ export function ExportPacksDialog({
 	onOpenChange,
 	onExport,
 }: ExportPacksDialogProps) {
+	const { t } = useTranslation();
 	const [selectedPackIds, setSelectedPackIds] = useState<string[]>([]);
 	const [includeReviewState, setIncludeReviewState] = useState(false);
 	const [pending, setPending] = useState(false);
@@ -68,15 +70,15 @@ export function ExportPacksDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="space-y-4">
 				<DialogHeader>
-					<DialogTitle>Export card packs</DialogTitle>
+					<DialogTitle>{t("home.exportDialog.title")}</DialogTitle>
 					<DialogDescription>
-						Choose which packs to export into a portable JSON file.
+						{t("home.exportDialog.description")}
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-2">
 					<div className="flex items-center justify-between">
-						<Label>Select packs</Label>
+						<Label>{t("home.exportDialog.selectPacks")}</Label>
 						<div className="flex items-center gap-2">
 							<Button
 								type="button"
@@ -84,7 +86,7 @@ export function ExportPacksDialog({
 								variant="ghost"
 								onClick={() => setSelectedPackIds(cardPacks.map((pack) => pack.id))}
 							>
-								All
+								{t("home.exportDialog.all")}
 							</Button>
 							<Button
 								type="button"
@@ -92,7 +94,7 @@ export function ExportPacksDialog({
 								variant="ghost"
 								onClick={() => setSelectedPackIds([])}
 							>
-								None
+								{t("home.exportDialog.none")}
 							</Button>
 						</div>
 					</div>
@@ -109,7 +111,7 @@ export function ExportPacksDialog({
 									<span className="text-sm">{pack.name}</span>
 								</span>
 								<span className="text-xs text-muted-foreground">
-									{pack.cards_count} cards
+									{t("home.exportDialog.packCardsCount", { count: pack.cards_count })}
 								</span>
 							</label>
 						))}
@@ -123,21 +125,21 @@ export function ExportPacksDialog({
 						onChange={(event) => setIncludeReviewState(event.target.checked)}
 						className="size-4 rounded border-input"
 					/>
-					<span>Include review history and schedule state</span>
+					<span>{t("home.exportDialog.includeReviewState")}</span>
 				</label>
 
 				<DialogFooter>
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 					<Button onClick={handleSubmit} disabled={pending || selectedPackIds.length === 0}>
 						{pending ? (
 							<>
 								<Spinner size="sm" className="text-primary-foreground" />
-								Exporting...
+								{t("common.exporting")}
 							</>
 						) : (
-							"Export"
+							t("common.export")
 						)}
 					</Button>
 				</DialogFooter>

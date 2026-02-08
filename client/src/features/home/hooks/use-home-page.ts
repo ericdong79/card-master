@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { createApiClient } from "@/lib/api/client";
 import {
 	createCardPack,
@@ -17,6 +18,7 @@ import {
 import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 
 export function useHomePage() {
+	const { t } = useTranslation();
 	const apiClient = useMemo(() => createApiClient(), []);
 	const ownerUserId = LOCAL_OWNER_ID;
 
@@ -39,10 +41,10 @@ export function useHomePage() {
 	useEffect(() => {
 		refreshCardPacks()
 			.catch((err) =>
-				setError(err instanceof Error ? err.message : "Failed to load card packs"),
+				setError(err instanceof Error ? err.message : t("errors.loadCardPacks")),
 			)
 			.finally(() => setLoading(false));
-	}, [refreshCardPacks]);
+	}, [refreshCardPacks, t]);
 
 	const closeCreateDialog = useCallback(() => {
 		setIsCreateOpen(false);
@@ -83,9 +85,9 @@ export function useHomePage() {
 			setCardPacks((prev) => [...prev, { ...created, cards_count: 0 }]);
 			closeCreateDialog();
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to create card pack");
+			setError(err instanceof Error ? err.message : t("errors.createCardPack"));
 		}
-	}, [apiClient, closeCreateDialog, ownerUserId]);
+	}, [apiClient, closeCreateDialog, ownerUserId, t]);
 
 	const editPack = useCallback(async (targetPack: CardPackWithCounts, name: string) => {
 		try {
@@ -106,9 +108,9 @@ export function useHomePage() {
 			);
 			closeEditDialog();
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to update card pack");
+			setError(err instanceof Error ? err.message : t("errors.updateCardPack"));
 		}
-	}, [apiClient, closeEditDialog, ownerUserId]);
+	}, [apiClient, closeEditDialog, ownerUserId, t]);
 
 	const deletePack = useCallback(async (pack: CardPackWithCounts) => {
 		try {
@@ -118,9 +120,9 @@ export function useHomePage() {
 			setCardPacks((prev) => prev.filter((item) => item.id !== pack.id));
 			closeDeleteDialog();
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to delete card pack");
+			setError(err instanceof Error ? err.message : t("errors.deleteCardPack"));
 		}
-	}, [apiClient, closeDeleteDialog, ownerUserId]);
+	}, [apiClient, closeDeleteDialog, ownerUserId, t]);
 
 	const exportPacks = useCallback(
 		async (cardPackIds: string[], includeReviewState: boolean) => {
@@ -134,10 +136,10 @@ export function useHomePage() {
 				downloadCardMasterExport(payload);
 				closeExportDialog();
 			} catch (err) {
-				setError(err instanceof Error ? err.message : "Failed to export card packs");
+				setError(err instanceof Error ? err.message : t("errors.exportCardPacks"));
 			}
 		},
-		[apiClient, closeExportDialog, ownerUserId],
+		[apiClient, closeExportDialog, ownerUserId, t],
 	);
 
 	const importPacks = useCallback(
@@ -155,16 +157,22 @@ export function useHomePage() {
 
 				const reviewSummary =
 					result.reviewEvents > 0 || result.schedulingStates > 0
-						? ` (${result.reviewEvents} review events, ${result.schedulingStates} scheduling states).`
-						: ".";
-				setSuccessMessage(
-					`Imported ${result.cardPacks} pack(s) and ${result.cards} card(s)${reviewSummary}`,
-				);
+						? t("success.importedWithReview", {
+								packs: result.cardPacks,
+								cards: result.cards,
+								reviewEvents: result.reviewEvents,
+								schedulingStates: result.schedulingStates,
+							})
+						: t("success.importedBasic", {
+								packs: result.cardPacks,
+								cards: result.cards,
+							});
+				setSuccessMessage(reviewSummary);
 			} catch (err) {
-				setError(err instanceof Error ? err.message : "Failed to import card packs");
+				setError(err instanceof Error ? err.message : t("errors.importCardPacks"));
 			}
 		},
-		[apiClient, closeImportDialog, ownerUserId, refreshCardPacks],
+		[apiClient, closeImportDialog, ownerUserId, refreshCardPacks, t],
 	);
 
 	return {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +35,7 @@ export function BulkCreateHanziDialog({
 	onOpenChange,
 	onSubmit,
 }: BulkCreateHanziDialogProps) {
+	const { t } = useTranslation();
 	const [value, setValue] = useState("");
 	const [pending, setPending] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export function BulkCreateHanziDialog({
 	const handleSubmit = async () => {
 		const entries = getEntries();
 		if (entries.length === 0) {
-			setError("Please enter at least one Hanzi word.");
+			setError(t("cards.bulkHanzi.emptyError"));
 			return;
 		}
 
@@ -77,7 +79,7 @@ export function BulkCreateHanziDialog({
 			setError(
 				submitError instanceof Error
 					? submitError.message
-					: "Failed to create cards from hanzi list.",
+					: t("cards.bulkHanzi.createError"),
 			);
 		} finally {
 			setPending(false);
@@ -88,15 +90,14 @@ export function BulkCreateHanziDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="space-y-4">
 				<DialogHeader>
-					<DialogTitle>Bulk create Hanzi cards</DialogTitle>
+					<DialogTitle>{t("cards.bulkHanzi.title")}</DialogTitle>
 					<DialogDescription>
-						Create one card per Hanzi word with pinyin (with tone marks) as the
-						question.
+						{t("cards.bulkHanzi.description")}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="space-y-2">
 					<Label htmlFor="bulk-hanzi-input">
-						Hanzi words (space/newline separated)
+						{t("cards.bulkHanzi.label")}
 					</Label>
 					{/** biome-ignore lint/correctness/useUniqueElementIds: <explanation> */}
 					<Textarea
@@ -106,7 +107,7 @@ export function BulkCreateHanziDialog({
 							setValue(event.target.value);
 							setError(null);
 						}}
-						placeholder="葵花 贝壳 葡萄"
+						placeholder={t("cards.bulkHanzi.placeholder")}
 					/>
 				</div>
 				{error ? (
@@ -116,16 +117,16 @@ export function BulkCreateHanziDialog({
 				) : null}
 				<DialogFooter>
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 					<Button onClick={handleSubmit} disabled={pending}>
 						{pending ? (
 							<>
 								<Spinner size="sm" className="text-primary-foreground" />
-								Creating...
+								{t("common.creating")}
 							</>
 						) : (
-							"Create cards"
+							t("cards.bulkHanzi.createCards")
 						)}
 					</Button>
 				</DialogFooter>

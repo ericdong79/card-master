@@ -4,6 +4,7 @@ import {
 	IconPencil,
 	IconTrash,
 } from "@tabler/icons-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -28,7 +29,7 @@ type CardRowProps = {
 	dueAt?: string;
 };
 
-function formatDueTime(dueAt: string): string {
+function formatDueTime(dueAt: string, t: (key: string, options?: Record<string, unknown>) => string): string {
 	const due = new Date(dueAt);
 	const now = new Date();
 	const diffMs = due.getTime() - now.getTime();
@@ -37,7 +38,7 @@ function formatDueTime(dueAt: string): string {
 	const diffMinutes = Math.floor(diffMs / (1000 * 60));
 
 	if (diffMs < 0) {
-		return "Overdue";
+		return t("cards.overdue");
 	}
 	if (diffDays > 0) {
 		return `${diffDays}d`;
@@ -48,7 +49,7 @@ function formatDueTime(dueAt: string): string {
 	if (diffMinutes > 0) {
 		return `${diffMinutes}m`;
 	}
-	return "Now";
+	return t("cards.now");
 }
 
 function getDueStatusColor(dueAt: string): string {
@@ -76,7 +77,8 @@ export function CardRow({
 	onDelete,
 	dueAt,
 }: CardRowProps) {
-	const questionText = getCardQuestionText(card) || card.prompt || "card";
+	const { t, i18n } = useTranslation();
+	const questionText = getCardQuestionText(card) || card.prompt || t("cards.fallbackCard");
 	const answerText = getCardAnswerText(card) || card.answer;
 
 	return (
@@ -87,7 +89,7 @@ export function CardRow({
 					variant="ghost"
 					className="bg-background/80 hover:bg-accent"
 					onClick={() => onEdit(card)}
-					aria-label={`Edit ${questionText}`}
+					aria-label={t("cards.actions.editCard", { question: questionText })}
 				>
 					<IconPencil className="size-4" />
 				</Button>
@@ -96,35 +98,39 @@ export function CardRow({
 					variant="ghost"
 					className="bg-background/80 hover:bg-destructive/10 hover:text-destructive"
 					onClick={() => onDelete(card)}
-					aria-label={`Delete ${questionText}`}
+					aria-label={t("cards.actions.deleteCard", { question: questionText })}
 				>
 					<IconTrash className="size-4" />
 				</Button>
 			</div>
 			<CardHeader className="pb-3 pr-24">
 				<CardTitle className="text-base leading-tight">
-					{questionText || "[Untitled question]"}
+					{questionText || t("cards.untitledQuestion")}
 				</CardTitle>
 				{packType === "pinyin-hanzi" ? (
 					<CardDescription className={cn(!answerText && "italic")}>
 						{answerText ? (
 							<HanziAnswerPreview answerText={answerText} />
 						) : (
-							"No answer provided"
+							t("cards.noAnswer")
 						)}
 					</CardDescription>
 				) : (
 					<CardDescription
 						className={cn("line-clamp-2", !answerText && "italic")}
 					>
-						{answerText || "No answer provided"}
+						{answerText || t("cards.noAnswer")}
 					</CardDescription>
 				)}
 			</CardHeader>
 			<CardContent className="flex items-center gap-4 text-xs text-muted-foreground">
 				<div className="flex items-center gap-1">
 					<IconCalendar className="size-3.5" />
-					<span>Created {new Date(card.created_at).toLocaleDateString()}</span>
+					<span>
+						{t("cards.createdAt", {
+							date: new Date(card.created_at).toLocaleDateString(i18n.language),
+						})}
+					</span>
 				</div>
 				{dueAt && (
 					<div
@@ -134,7 +140,7 @@ export function CardRow({
 						)}
 					>
 						<IconClock className="size-3.5" />
-						<span>Due {formatDueTime(dueAt)}</span>
+						<span>{t("cards.due", { time: formatDueTime(dueAt, t) })}</span>
 					</div>
 				)}
 			</CardContent>

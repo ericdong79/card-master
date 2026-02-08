@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { listCards } from "@/lib/api/card";
 import { getCardPackById } from "@/lib/api/card-pack";
 import { createApiClient } from "@/lib/api/client";
@@ -61,6 +62,7 @@ export type UseReviewSessionReturn = ReviewSessionState & {
 export function useReviewSession(
 	cardPackId: string | undefined,
 ): UseReviewSessionReturn {
+	const { t } = useTranslation();
 	const client = useMemo(() => createApiClient(), []);
 	const ownerUserId = LOCAL_OWNER_ID;
 
@@ -101,7 +103,7 @@ export function useReviewSession(
 				]);
 
 				if (!pack) {
-					setError("Card pack not found or inaccessible.");
+					setError(t("errors.packNotFound"));
 					return;
 				}
 
@@ -135,13 +137,13 @@ export function useReviewSession(
 				setIsComplete(newSession.isComplete());
 			} catch (err) {
 				setError(
-					err instanceof Error ? err.message : "Failed to load review data",
+					err instanceof Error ? err.message : t("errors.loadReviewData"),
 				);
 			} finally {
 				setLoading(false);
 			}
 		})();
-	}, [cardPackId, client, ownerUserId]);
+	}, [cardPackId, client, ownerUserId, t]);
 
 	// Handle grade submission
 	const handleGrade = useCallback(
@@ -194,13 +196,13 @@ export function useReviewSession(
 				setError(null);
 			} catch (err) {
 				setError(
-					err instanceof Error ? err.message : "Failed to record review",
+					err instanceof Error ? err.message : t("errors.recordReview"),
 				);
 			} finally {
 				setGrading(false);
 			}
 		},
-		[session, client, grading],
+		[session, client, grading, t],
 	);
 
 	// Get stats from session

@@ -1,4 +1,5 @@
 import { Link, Navigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -7,6 +8,7 @@ import { ReviewSummary } from "@/features/review/components/review-summary";
 import { useQuickReview } from "@/features/review/hooks/use-quick-review";
 
 export function QuickReviewPage() {
+	const { t } = useTranslation();
 	const { cardPackId } = useParams<{ cardPackId: string }>();
 	const session = useQuickReview(cardPackId);
 
@@ -22,7 +24,7 @@ export function QuickReviewPage() {
 			<header className="border-b bg-background/80 backdrop-blur">
 				<div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
 					<Button variant="ghost" size="sm" asChild>
-						<Link to={`/pack/${cardPackId}/cards`}>← Back</Link>
+						<Link to={`/pack/${cardPackId}/cards`}>{t("review.back")}</Link>
 					</Button>
 				</div>
 			</header>
@@ -37,7 +39,7 @@ export function QuickReviewPage() {
 				{session.loading ? (
 					<div className="flex items-center justify-center gap-2 text-muted-foreground py-12">
 						<Spinner />
-						<span>Loading cards...</span>
+						<span>{t("common.loadingCards")}</span>
 					</div>
 				) : session.isComplete || !current ? (
 					<ReviewSummary

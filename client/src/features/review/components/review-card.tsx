@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
@@ -13,8 +14,8 @@ import {
 } from "./review-buttons";
 import {
 	createDefaultSm2Buttons,
-	defaultSimpleButtons,
-	defaultSm2Buttons,
+	getDefaultSimpleButtons,
+	getDefaultSm2Buttons,
 	type SimpleReviewResult,
 } from "./review-buttons-config";
 
@@ -49,6 +50,7 @@ type Sm2ReviewCardProps = ReviewCardBaseProps & {
 type ReviewCardProps = SimpleReviewCardProps | Sm2ReviewCardProps;
 
 function QuestionContent({ card, packType }: { card: CardEntity; packType: CardPackType }) {
+	const { t } = useTranslation();
 	const questionText = getCardQuestionText(card);
 
 	return (
@@ -60,14 +62,14 @@ function QuestionContent({ card, packType }: { card: CardEntity; packType: CardP
 			{packType === "image-recall" && card.question_content?.image?.data_url ? (
 				<img
 					src={card.question_content.image.data_url}
-					alt="Question"
+					alt={t("review.question")}
 					className="max-h-72 rounded-lg border object-contain"
 				/>
 			) : null}
 
 			{packType === "pinyin-hanzi" && card.question_content?.audio?.data_url ? (
 				<div className="space-y-1">
-					<p className="text-xs text-muted-foreground">Pronunciation</p>
+					<p className="text-xs text-muted-foreground">{t("review.pronunciation")}</p>
 					<audio controls src={card.question_content.audio.data_url} />
 				</div>
 			) : null}
@@ -162,6 +164,7 @@ function HanziCharacterCell({ char }: { char: string }) {
  * ```
  */
 export function ReviewCard(props: ReviewCardProps) {
+	const { t } = useTranslation();
 	const {
 		card,
 		packName,
@@ -191,7 +194,7 @@ export function ReviewCard(props: ReviewCardProps) {
 		mode === "sm2"
 			? sm2Params
 				? createDefaultSm2Buttons(sm2State ?? null, sm2Params)
-				: defaultSm2Buttons
+				: getDefaultSm2Buttons()
 			: null;
 
 	return (
@@ -210,16 +213,16 @@ export function ReviewCard(props: ReviewCardProps) {
 						<span className="font-medium text-foreground">{packName}</span>
 					)}
 					<span className="text-muted-foreground">
-						{mode === "simple" ? "Quick Review" : "Normal Review"}
+						{mode === "simple" ? t("review.quickMode") : t("review.normalMode")}
 					</span>
 				</div>
 
 				{/* Progress bar */}
 				<div className="space-y-1">
 					<div className="flex justify-between text-xs text-muted-foreground">
-						<span>Progress</span>
+						<span>{t("review.progress")}</span>
 						<span>
-							{learnedCount} / {totalCards} learned
+							{t("review.learned", { learned: learnedCount, total: totalCards })}
 						</span>
 					</div>
 					<div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -238,7 +241,7 @@ export function ReviewCard(props: ReviewCardProps) {
 				<div className="flex-1 overflow-y-auto min-h-0 space-y-6 pr-1">
 					{/* Question - always visible */}
 					<div className="space-y-2">
-						<p className="text-sm text-muted-foreground">Question</p>
+						<p className="text-sm text-muted-foreground">{t("review.question")}</p>
 						<QuestionContent card={card} packType={normalizedPackType} />
 					</div>
 
@@ -254,7 +257,7 @@ export function ReviewCard(props: ReviewCardProps) {
 						<div className="space-y-6 pb-2">
 							{/* Answer display */}
 							<div className="rounded-lg border bg-muted/40 p-4">
-								<p className="text-sm text-muted-foreground mb-2">Answer</p>
+								<p className="text-sm text-muted-foreground mb-2">{t("review.answer")}</p>
 								<AnswerContent card={card} packType={normalizedPackType} />
 							</div>
 						</div>
@@ -270,7 +273,7 @@ export function ReviewCard(props: ReviewCardProps) {
 							className="w-full"
 							size="lg"
 						>
-							Show Answer
+							{t("review.showAnswer")}
 						</Button>
 					) : (
 						<div
@@ -283,7 +286,7 @@ export function ReviewCard(props: ReviewCardProps) {
 							{mode === "simple" ? (
 								<ReviewButtons
 									mode="simple"
-									buttons={defaultSimpleButtons}
+									buttons={getDefaultSimpleButtons()}
 									onSelect={handleAction}
 									disabled={isProcessing}
 								/>
@@ -299,8 +302,8 @@ export function ReviewCard(props: ReviewCardProps) {
 							{/* Mode indicator text */}
 							<p className="text-xs text-center text-muted-foreground">
 								{mode === "simple"
-									? "Quick review does not affect your study schedule"
-									: "Grades affect the next review interval"}
+									? t("review.quickHint")
+									: t("review.normalHint")}
 							</p>
 						</div>
 					)}

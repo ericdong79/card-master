@@ -1,0 +1,209 @@
+{
+  "language": {
+    "label": "Language",
+    "english": "EN",
+    "chineseSimplified": "简体中文"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "create": "Create",
+    "creating": "Creating...",
+    "save": "Save",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "import": "Import",
+    "importing": "Importing...",
+    "export": "Export",
+    "exporting": "Exporting...",
+    "loadingCards": "Loading cards..."
+  },
+  "home": {
+    "title": "Card Packs",
+    "subtitle": "Manage your decks and keep track of what to review.",
+    "newPack": "New card pack",
+    "loadingPacks": "Loading card packs...",
+    "emptyTitle": "No card packs yet",
+    "emptyDescription": "Create your first pack to start adding cards.",
+    "emptyAction": "Create a card pack",
+    "typeAndCount": "{{type}} · {{count}} cards",
+    "createdAt": "Created {{date}}",
+    "createPack": {
+      "title": "Create card pack",
+      "description": "Add a new pack to group your cards.",
+      "name": "Name",
+      "namePlaceholder": "My first pack",
+      "type": "Type"
+    },
+    "editPack": {
+      "title": "Rename card pack",
+      "description": "Update the name shown on your home screen.",
+      "name": "Name",
+      "namePlaceholder": "Updated card pack name"
+    },
+    "deletePack": {
+      "title": "Delete card pack",
+      "description": "This removes the pack and its cards. This action cannot be undone.",
+      "confirm": "Are you sure you want to delete {{name}}?",
+      "thisPack": "this pack"
+    },
+    "exportDialog": {
+      "title": "Export card packs",
+      "description": "Choose which packs to export into a portable JSON file.",
+      "selectPacks": "Select packs",
+      "all": "All",
+      "none": "None",
+      "packCardsCount": "{{count}} cards",
+      "includeReviewState": "Include review history and schedule state"
+    },
+    "importDialog": {
+      "title": "Import card packs",
+      "description": "Import card packs from an exported JSON file.",
+      "fileLabel": "Export file",
+      "includeReviewState": "Import review history and schedule state",
+      "noReviewState": "This file does not include review history or schedule state.",
+      "readError": "Unable to read import file."
+    }
+  },
+  "cards": {
+    "breadcrumbPacks": "Card packs",
+    "loadingPackName": "Loading...",
+    "title": "Cards",
+    "subtitle": "View and manage cards in this pack.",
+    "review": "Review",
+    "bulkCreate": "Bulk create",
+    "newCard": "New card",
+    "packFallback": "Card pack",
+    "count": "{{count}} cards",
+    "emptyTitle": "No cards yet",
+    "emptyDescription": "Create one to start practicing",
+    "createdAt": "Created {{date}}",
+    "due": "Due {{time}}",
+    "overdue": "Overdue",
+    "now": "Now",
+    "noAnswer": "No answer provided",
+    "untitledQuestion": "[Untitled question]",
+    "fallbackCard": "card",
+    "actions": {
+      "editCard": "Edit {{question}}",
+      "deleteCard": "Delete {{question}}"
+    },
+    "form": {
+      "createTitle": "Create card",
+      "editTitle": "Edit card",
+      "createDescription": "Add a new prompt and answer.",
+      "editDescription": "Update this card.",
+      "convertFromHanzi": "Convert from Hanzi",
+      "converting": "Converting...",
+      "questionImage": "Question image",
+      "questionPreview": "Question preview",
+      "removeImage": "Remove image",
+      "questionAudioOptional": "Question audio (optional)",
+      "removeAudio": "Remove audio",
+      "readFileError": "Failed to read file.",
+      "loadImageError": "Failed to load image.",
+      "loadAudioError": "Failed to load audio.",
+      "enterHanziFirst": "Enter Hanzi in the answer field first.",
+      "convertError": "Failed to convert Hanzi to pinyin."
+    },
+    "bulkHanzi": {
+      "title": "Bulk create Hanzi cards",
+      "description": "Create one card per Hanzi word with pinyin (with tone marks) as the question.",
+      "label": "Hanzi words (space/newline separated)",
+      "placeholder": "葵花 贝壳 葡萄",
+      "emptyError": "Please enter at least one Hanzi word.",
+      "createError": "Failed to create cards from hanzi list.",
+      "createCards": "Create cards"
+    },
+    "deleteDialog": {
+      "title": "Delete card",
+      "description": "This will remove the card permanently. This action cannot be undone.",
+      "confirm": "Are you sure you want to delete {{question}}?",
+      "thisCard": "this card"
+    }
+  },
+  "cardType": {
+    "basic": "Basic",
+    "imageRecall": "Image Recall",
+    "pinyinHanzi": "Pinyin - Hanzi",
+    "fields": {
+      "question": "Question",
+      "answer": "Answer",
+      "pinyin": "Pinyin",
+      "hanzi": "Hanzi"
+    },
+    "placeholders": {
+      "defaultQuestion": "E.g. What is spaced repetition?",
+      "defaultAnswer": "Your answer...",
+      "imageRecallQuestion": "Optional text hint...",
+      "imageRecallAnswer": "E.g. Japan",
+      "pinyinQuestion": "E.g. zhong guo",
+      "pinyinAnswer": "E.g. 中国"
+    },
+    "validation": {
+      "questionRequired": "Question is required.",
+      "answerRequired": "Answer is required.",
+      "pinyinRequired": "Pinyin is required.",
+      "hanziRequired": "Hanzi is required.",
+      "questionOrImageRequired": "Add question text or upload an image."
+    }
+  },
+  "review": {
+    "back": "← Back",
+    "loadingQueue": "Loading review queue...",
+    "quickMode": "Quick Review",
+    "normalMode": "Normal Review",
+    "progress": "Progress",
+    "learned": "{{learned}} / {{total}} learned",
+    "question": "Question",
+    "answer": "Answer",
+    "showAnswer": "Show Answer",
+    "quickHint": "Quick review does not affect your study schedule",
+    "normalHint": "Grades affect the next review interval",
+    "pronunciation": "Pronunciation",
+    "summary": {
+      "quickComplete": "Quick review complete",
+      "complete": "Review complete",
+      "withPack": "Finished {{modeText}} for {{packName}}.",
+      "withoutPack": "Finished {{modeText}}.",
+      "modeQuick": "quick review",
+      "modeNormal": "today's cards",
+      "reviewedCount": "Reviewed {{value}} cards.",
+      "forgotTitle": "⚠️ {{value}} cards you forgot:",
+      "andMore": "... and {{value}} more",
+      "forgotHint": "Consider reviewing these cards again or using normal review mode.",
+      "backToPacks": "Back to packs",
+      "backToCards": "Back to cards"
+    },
+    "buttons": {
+      "forgot": "Forgot",
+      "tryAgain": "Try Again",
+      "remembered": "Remembered",
+      "nextCard": "Next Card",
+      "partiallyRecall": "Partially Recall",
+      "recalledWithEffort": "Recalled with effort",
+      "easilyRecalled": "Easily Recalled"
+    }
+  },
+  "errors": {
+    "packNotFound": "Card pack not found or inaccessible.",
+    "loadCards": "Failed to load cards",
+    "createCard": "Failed to create card",
+    "createCards": "Failed to create cards",
+    "updateCard": "Failed to update card",
+    "deleteCard": "Failed to delete card",
+    "loadCardPacks": "Failed to load card packs",
+    "createCardPack": "Failed to create card pack",
+    "updateCardPack": "Failed to update card pack",
+    "deleteCardPack": "Failed to delete card pack",
+    "exportCardPacks": "Failed to export card packs",
+    "importCardPacks": "Failed to import card packs",
+    "loadReviewData": "Failed to load review data",
+    "recordReview": "Failed to record review",
+    "noCardsToReview": "No cards in this pack to review."
+  },
+  "success": {
+    "importedWithReview": "Imported {{packs}} pack(s) and {{cards}} card(s) ({{reviewEvents}} review events, {{schedulingStates}} scheduling states).",
+    "importedBasic": "Imported {{packs}} pack(s) and {{cards}} card(s)."
+  }
+}

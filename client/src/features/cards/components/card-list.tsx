@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { IconCards } from "@tabler/icons-react";
+import { useTranslation } from "react-i18next";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
 import type { CardPackType } from "@/lib/api/entities/card-pack";
 import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
@@ -16,6 +17,7 @@ type CardListProps = {
 };
 
 export function CardList({ cards, packType, onEdit, onDelete }: CardListProps) {
+	const { t } = useTranslation();
 	const client = useApiClient();
 	const ownerUserId = useMemo(
 		() => cards[0]?.owner_user_id ?? LOCAL_OWNER_ID,
@@ -64,8 +66,8 @@ export function CardList({ cards, packType, onEdit, onDelete }: CardListProps) {
 			<div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed bg-background/60 px-4 py-12 text-sm text-muted-foreground">
 				<IconCards className="size-12 text-muted-foreground/50" />
 				<div className="text-center">
-					<p className="font-medium">No cards yet</p>
-					<p className="text-xs">Create one to start practicing</p>
+					<p className="font-medium">{t("cards.emptyTitle")}</p>
+					<p className="text-xs">{t("cards.emptyDescription")}</p>
 				</div>
 			</div>
 		);

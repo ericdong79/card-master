@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate, useParams } from "react-router-dom";
 
 import { BulkCreateHanziDialog } from "@/features/cards/components/bulk-create-hanzi-dialog";
@@ -25,6 +26,7 @@ type CardSubmitPayload = {
 };
 
 export function PackCardsPage() {
+	const { t } = useTranslation();
 	const { cardPackId } = useParams<{ cardPackId: string }>();
 	const apiClient = useMemo(() => createApiClient(), []);
 	const ownerUserId = LOCAL_OWNER_ID;
@@ -70,7 +72,7 @@ export function PackCardsPage() {
 		])
 			.then(async ([pack, list]) => {
 				if (!pack) {
-					setError("Card pack not found or inaccessible.");
+					setError(t("errors.packNotFound"));
 					setCardPack(null);
 					setCards([]);
 					setSchedulingStates([]);
@@ -92,10 +94,10 @@ export function PackCardsPage() {
 				}
 			})
 			.catch((err) =>
-				setError(err instanceof Error ? err.message : "Failed to load cards"),
+				setError(err instanceof Error ? err.message : t("errors.loadCards")),
 			)
 			.finally(() => setLoading(false));
-	}, [apiClient, cardPackId, ownerUserId]);
+	}, [apiClient, cardPackId, ownerUserId, t]);
 
 	if (!cardPackId) {
 		return <Navigate to="/" replace />;
@@ -116,7 +118,7 @@ export function PackCardsPage() {
 			setCreateOpen(false);
 			setError(null);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to create card");
+			setError(err instanceof Error ? err.message : t("errors.createCard"));
 		} finally {
 			setPendingAction(null);
 		}
@@ -141,7 +143,7 @@ export function PackCardsPage() {
 			setBulkCreateOpen(false);
 			setError(null);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to create cards");
+			setError(err instanceof Error ? err.message : t("errors.createCards"));
 		} finally {
 			setPendingAction(null);
 		}
@@ -168,7 +170,7 @@ export function PackCardsPage() {
 			setEditingCard(null);
 			setError(null);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to update card");
+			setError(err instanceof Error ? err.message : t("errors.updateCard"));
 		} finally {
 			setPendingAction(null);
 		}
@@ -185,7 +187,7 @@ export function PackCardsPage() {
 			setDeleteCardTarget(null);
 			setError(null);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to delete card");
+			setError(err instanceof Error ? err.message : t("errors.deleteCard"));
 		} finally {
 			setPendingAction(null);
 		}

@@ -4,6 +4,7 @@ import {
 	DEFAULT_CARD_PACK_TYPE,
 	resolveCardPackType,
 } from "@/lib/api/entities/card-pack";
+import i18n from "@/i18n";
 
 export type CardEditorValues = {
 	questionText: string;
@@ -23,58 +24,64 @@ export type CardTypeConfig = {
 	validate: (values: CardEditorValues) => string | null;
 };
 
-const DEFAULT_QUESTION_PLACEHOLDER = "E.g. What is spaced repetition?";
-const DEFAULT_ANSWER_PLACEHOLDER = "Your answer...";
-
-export const CARD_TYPE_REGISTRY: Record<CardPackType, CardTypeConfig> = {
-	basic: {
-		label: "Basic",
-		questionLabel: "Question",
-		answerLabel: "Answer",
-		questionPlaceholder: DEFAULT_QUESTION_PLACEHOLDER,
-		answerPlaceholder: DEFAULT_ANSWER_PLACEHOLDER,
-		supportsQuestionImage: false,
-		supportsQuestionAudio: false,
-		validate: (values) =>
-			values.questionText.trim() ? null : "Question is required.",
-	},
-	"image-recall": {
-		label: "Image Recall",
-		questionLabel: "Question",
-		answerLabel: "Answer",
-		questionPlaceholder: "Optional text hint...",
-		answerPlaceholder: "E.g. Japan",
-		supportsQuestionImage: true,
-		supportsQuestionAudio: false,
-		validate: (values) => {
-			if (!values.questionText.trim() && !values.questionImage) {
-				return "Add question text or upload an image.";
-			}
-			if (!values.answerText.trim()) {
-				return "Answer is required.";
-			}
-			return null;
+function buildCardTypeRegistry(): Record<CardPackType, CardTypeConfig> {
+	return {
+		basic: {
+			label: i18n.t("cardType.basic"),
+			questionLabel: i18n.t("cardType.fields.question"),
+			answerLabel: i18n.t("cardType.fields.answer"),
+			questionPlaceholder: i18n.t("cardType.placeholders.defaultQuestion"),
+			answerPlaceholder: i18n.t("cardType.placeholders.defaultAnswer"),
+			supportsQuestionImage: false,
+			supportsQuestionAudio: false,
+			validate: (values) =>
+				values.questionText.trim()
+					? null
+					: i18n.t("cardType.validation.questionRequired"),
 		},
-	},
-	"pinyin-hanzi": {
-		label: "Pinyin -> Hanzi",
-		questionLabel: "Pinyin",
-		answerLabel: "Hanzi",
-		questionPlaceholder: "E.g. zhong guo",
-		answerPlaceholder: "E.g. 中国",
-		supportsQuestionImage: false,
-		supportsQuestionAudio: true,
-		validate: (values) => {
-			if (!values.questionText.trim()) return "Pinyin is required.";
-			if (!values.answerText.trim()) return "Hanzi is required.";
-			return null;
+		"image-recall": {
+			label: i18n.t("cardType.imageRecall"),
+			questionLabel: i18n.t("cardType.fields.question"),
+			answerLabel: i18n.t("cardType.fields.answer"),
+			questionPlaceholder: i18n.t("cardType.placeholders.imageRecallQuestion"),
+			answerPlaceholder: i18n.t("cardType.placeholders.imageRecallAnswer"),
+			supportsQuestionImage: true,
+			supportsQuestionAudio: false,
+			validate: (values) => {
+				if (!values.questionText.trim() && !values.questionImage) {
+					return i18n.t("cardType.validation.questionOrImageRequired");
+				}
+				if (!values.answerText.trim()) {
+					return i18n.t("cardType.validation.answerRequired");
+				}
+				return null;
+			},
 		},
-	},
-};
+		"pinyin-hanzi": {
+			label: i18n.t("cardType.pinyinHanzi"),
+			questionLabel: i18n.t("cardType.fields.pinyin"),
+			answerLabel: i18n.t("cardType.fields.hanzi"),
+			questionPlaceholder: i18n.t("cardType.placeholders.pinyinQuestion"),
+			answerPlaceholder: i18n.t("cardType.placeholders.pinyinAnswer"),
+			supportsQuestionImage: false,
+			supportsQuestionAudio: true,
+			validate: (values) => {
+				if (!values.questionText.trim()) {
+					return i18n.t("cardType.validation.pinyinRequired");
+				}
+				if (!values.answerText.trim()) {
+					return i18n.t("cardType.validation.hanziRequired");
+				}
+				return null;
+			},
+		},
+	};
+}
 
 export function getCardTypeConfig(packType: CardPackType | undefined): CardTypeConfig {
-	return CARD_TYPE_REGISTRY[resolveCardPackType(packType)] ??
-		CARD_TYPE_REGISTRY[DEFAULT_CARD_PACK_TYPE];
+	const registry = buildCardTypeRegistry();
+	return registry[resolveCardPackType(packType)] ??
+		registry[DEFAULT_CARD_PACK_TYPE];
 }
 
 export function getCardPackTypeLabel(packType: CardPackType | undefined): string {
