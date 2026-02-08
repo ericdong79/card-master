@@ -1,4 +1,5 @@
-import { useEffect, useState, type ChangeEvent } from "react";
+/** biome-ignore-all lint/correctness/useUniqueElementIds: <explanation> */
+import { type ChangeEvent, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,31 +14,41 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
-import type { Card as CardEntity, CardMediaAsset } from "@/lib/api/entities/card";
+import type {
+	Card as CardEntity,
+	CardMediaAsset,
+} from "@/lib/api/entities/card";
 import type { CardPackType } from "@/lib/api/entities/card-pack";
+import { resolveCardPackType } from "@/lib/api/entities/card-pack";
 import {
 	buildCardPayload,
+	type CardEditorValues,
 	createEmptyCardEditorValues,
 	getCardEditorValues,
 	getCardTypeConfig,
-	type CardEditorValues,
 } from "@/lib/cards/card-type-registry";
+import { resolvePinyin } from "@/lib/pinyin/provider";
+
+type CardSubmitPayload = {
+	prompt: string;
+	answer: string;
+	question_content: CardEntity["question_content"];
+	answer_content: CardEntity["answer_content"];
+};
 
 type CardFormDialogProps = {
 	mode: "create" | "edit";
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	packType?: CardPackType;
-	onSubmit: (values: {
-		prompt: string;
-		answer: string;
-		question_content: CardEntity["question_content"];
-		answer_content: CardEntity["answer_content"];
-	}) => Promise<void>;
+	onSubmit: (values: CardSubmitPayload) => Promise<void>;
 	card?: CardEntity | null;
 };
 
-function readFileAsAsset(file: File, kind: CardMediaAsset["kind"]): Promise<CardMediaAsset> {
+function readFileAsAsset(
+	file: File,
+	kind: CardMediaAsset["kind"],
+): Promise<CardMediaAsset> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
 		reader.onload = () => {
@@ -48,7 +59,8 @@ function readFileAsAsset(file: File, kind: CardMediaAsset["kind"]): Promise<Card
 			}
 			resolve({ kind, mime_type: file.type, data_url: dataUrl });
 		};
-		reader.onerror = () => reject(reader.error ?? new Error("Failed to read file."));
+		reader.onerror = () =>
+			reject(reader.error ?? new Error("Failed to read file."));
 		reader.readAsDataURL(file);
 	});
 }
@@ -61,10 +73,14 @@ export function CardFormDialog({
 	card,
 	packType,
 }: CardFormDialogProps) {
-	const [values, setValues] = useState<CardEditorValues>(createEmptyCardEditorValues());
+	const [values, setValues] = useState<CardEditorValues>(
+		createEmptyCardEditorValues(),
+	);
 	const [pending, setPending] = useState(false);
+	const [converting, setConverting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const config = getCardTypeConfig(packType);
+	const normalizedPackType = resolveCardPackType(packType);
+	const config = getCardTypeConfig(normalizedPackType);
 
 	useEffect(() => {
 		if (open) {
@@ -98,7 +114,9 @@ export function CardFormDialog({
 		setError(null);
 	};
 
-	const handleQuestionImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+	const handleQuestionImageUpload = async (
+		event: ChangeEvent<HTMLInputElement>,
+	) => {
 		const file = event.target.files?.[0];
 		if (!file) return;
 		try {
@@ -107,12 +125,16 @@ export function CardFormDialog({
 			setError(null);
 		} catch (uploadError) {
 			setError(
-				uploadError instanceof Error ? uploadError.message : "Failed to load image.",
+				uploadError instanceof Error
+					? uploadError.message
+					: "Failed to load image.",
 			);
 		}
 	};
 
-	const handleQuestionAudioUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+	const handleQuestionAudioUpload = async (
+		event: ChangeEvent<HTMLInputElement>,
+	) => {
 		const file = event.target.files?.[0];
 		if (!file) return;
 		try {
@@ -121,8 +143,33 @@ export function CardFormDialog({
 			setError(null);
 		} catch (uploadError) {
 			setError(
-				uploadError instanceof Error ? uploadError.message : "Failed to load audio.",
+				uploadError instanceof Error
+					? uploadError.message
+					: "Failed to load audio.",
 			);
+		}
+	};
+
+	const handleConvertToPinyin = async () => {
+		const hanzi = values.answerText.trim();
+		if (!hanzi) {
+			setError("Enter Hanzi in the answer field first.");
+			return;
+		}
+
+		setConverting(true);
+		try {
+			const pinyin = await resolvePinyin(hanzi);
+			setValues((prev) => ({ ...prev, questionText: pinyin }));
+			setError(null);
+		} catch (conversionError) {
+			setError(
+				conversionError instanceof Error
+					? conversionError.message
+					: "Failed to convert Hanzi to pinyin.",
+			);
+		} finally {
+			setConverting(false);
 		}
 	};
 
@@ -130,20 +177,41 @@ export function CardFormDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="space-y-4">
 				<DialogHeader>
-					<DialogTitle>{mode === "create" ? "Create card" : "Edit card"}</DialogTitle>
+					<DialogTitle>
+						{mode === "create" ? "Create card" : "Edit card"}
+					</DialogTitle>
 					<DialogDescription>
-						{mode === "create" ? "Add a new prompt and answer." : "Update this card."}
+						{mode === "create"
+							? "Add a new prompt and answer."
+							: "Update this card."}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="space-y-3">
 					<div className="space-y-2">
 						<Label htmlFor="card-question">{config.questionLabel}</Label>
-						<Textarea
-							id="card-question"
-							value={values.questionText}
-							onChange={(event) => setQuestionText(event.target.value)}
-							placeholder={config.questionPlaceholder}
-						/>
+						<div className="relative">
+							<Textarea
+								id="card-question"
+								value={values.questionText}
+								onChange={(event) => setQuestionText(event.target.value)}
+								placeholder={config.questionPlaceholder}
+								className={
+									normalizedPackType === "pinyin-hanzi" ? "pb-10" : undefined
+								}
+							/>
+							{normalizedPackType === "pinyin-hanzi" ? (
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={handleConvertToPinyin}
+									disabled={pending || converting}
+									className="absolute bottom-2 left-2"
+								>
+									{converting ? "Converting..." : "Convert from Hanzi"}
+								</Button>
+							) : null}
+						</div>
 					</div>
 					{config.supportsQuestionImage ? (
 						<div className="space-y-2">
@@ -176,7 +244,9 @@ export function CardFormDialog({
 					) : null}
 					{config.supportsQuestionAudio ? (
 						<div className="space-y-2">
-							<Label htmlFor="card-question-audio">Question audio (optional)</Label>
+							<Label htmlFor="card-question-audio">
+								Question audio (optional)
+							</Label>
 							<Input
 								id="card-question-audio"
 								type="file"

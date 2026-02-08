@@ -6,10 +6,12 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
+import type { CardPackType } from "@/lib/api/entities/card-pack";
 import { CardList } from "./card-list";
 
 type PackCardsContentProps = {
 	packName?: string;
+	packType?: CardPackType;
 	cards: CardEntity[];
 	onEdit: (card: CardEntity) => void;
 	onDelete: (card: CardEntity) => void;
@@ -17,6 +19,7 @@ type PackCardsContentProps = {
 
 export function PackCardsContent({
 	packName,
+	packType,
 	cards,
 	onEdit,
 	onDelete,
@@ -28,7 +31,12 @@ export function PackCardsContent({
 				<CardDescription>{cards.length} cards</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				<CardList cards={cards} onEdit={onEdit} onDelete={onDelete} />
+				<CardList
+					cards={cards}
+					packType={packType}
+					onEdit={onEdit}
+					onDelete={onDelete}
+				/>
 			</CardContent>
 		</Card>
 	);

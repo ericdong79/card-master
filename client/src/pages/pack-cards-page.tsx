@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 
+import { BulkCreateHanziDialog } from "@/features/cards/components/bulk-create-hanzi-dialog";
 import { CardFormDialog } from "@/features/cards/components/card-form-dialog";
 import { DeleteCardDialog } from "@/features/cards/components/delete-card-dialog";
 import { PackCardsContent } from "@/features/cards/components/pack-cards-content";
@@ -16,6 +17,13 @@ import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-sta
 import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 import { listSchedulingStatesByCardIds } from "@/lib/api/scheduling-state";
 
+type CardSubmitPayload = {
+	prompt: string;
+	answer: string;
+	question_content: CardEntity["question_content"];
+	answer_content: CardEntity["answer_content"];
+};
+
 export function PackCardsPage() {
 	const { cardPackId } = useParams<{ cardPackId: string }>();
 	const apiClient = useMemo(() => createApiClient(), []);
@@ -30,6 +38,7 @@ export function PackCardsPage() {
 	const [error, setError] = useState<string | null>(null);
 
 	const [createOpen, setCreateOpen] = useState(false);
+	const [bulkCreateOpen, setBulkCreateOpen] = useState(false);
 	const [editingCard, setEditingCard] = useState<CardEntity | null>(null);
 	const [deleteCardTarget, setDeleteCardTarget] = useState<CardEntity | null>(
 		null,
@@ -92,12 +101,7 @@ export function PackCardsPage() {
 		return <Navigate to="/" replace />;
 	}
 
-	const handleCreate = async (values: {
-		prompt: string;
-		answer: string;
-		question_content: CardEntity["question_content"];
-		answer_content: CardEntity["answer_content"];
-	}) => {
+	const handleCreate = async (values: CardSubmitPayload) => {
 		if (!cardPackId) return;
 		setPendingAction("create");
 		try {
@@ -118,12 +122,32 @@ export function PackCardsPage() {
 		}
 	};
 
-	const handleEdit = async (values: {
-		prompt: string;
-		answer: string;
-		question_content: CardEntity["question_content"];
-		answer_content: CardEntity["answer_content"];
-	}) => {
+	const handleCreateBulk = async (values: CardSubmitPayload[]) => {
+		if (!cardPackId || values.length === 0) return;
+		setPendingAction("create");
+		try {
+			const createdCards = await Promise.all(
+				values.map((value) =>
+					createCard(apiClient, ownerUserId, {
+						card_pack_id: cardPackId,
+						prompt: value.prompt,
+						answer: value.answer,
+						question_content: value.question_content,
+						answer_content: value.answer_content,
+					}),
+				),
+			);
+			setCards((prev) => [...prev, ...createdCards]);
+			setBulkCreateOpen(false);
+			setError(null);
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Failed to create cards");
+		} finally {
+			setPendingAction(null);
+		}
+	};
+
+	const handleEdit = async (values: CardSubmitPayload) => {
 		if (!cardPackId || !editingCard) return;
 		setPendingAction("edit");
 		try {
@@ -173,6 +197,8 @@ export function PackCardsPage() {
 				cardPackId={cardPackId}
 				packName={cardPack?.name}
 				onCreateClick={() => setCreateOpen(true)}
+				onBulkCreateClick={() => setBulkCreateOpen(true)}
+				showBulkCreate={cardPack?.type === "pinyin-hanzi"}
 				dueCardsCount={dueCardsCount}
 			/>
 
@@ -184,6 +210,7 @@ export function PackCardsPage() {
 				) : (
 					<PackCardsContent
 						packName={cardPack?.name}
+						packType={cardPack?.type}
 						cards={cards}
 						onEdit={setEditingCard}
 						onDelete={setDeleteCardTarget}
@@ -197,6 +224,12 @@ export function PackCardsPage() {
 				onOpenChange={setCreateOpen}
 				packType={cardPack?.type}
 				onSubmit={handleCreate}
+			/>
+
+			<BulkCreateHanziDialog
+				open={bulkCreateOpen}
+				onOpenChange={setBulkCreateOpen}
+				onSubmit={handleCreateBulk}
 			/>
 
 			<CardFormDialog

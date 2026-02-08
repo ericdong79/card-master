@@ -6,6 +6,8 @@ type PackCardsHeaderProps = {
 	cardPackId: string;
 	packName?: string;
 	onCreateClick: () => void;
+	onBulkCreateClick?: () => void;
+	showBulkCreate?: boolean;
 	dueCardsCount?: number;
 };
 
@@ -13,6 +15,8 @@ export function PackCardsHeader({
 	cardPackId,
 	packName,
 	onCreateClick,
+	onBulkCreateClick,
+	showBulkCreate = false,
 	dueCardsCount = 0,
 }: PackCardsHeaderProps) {
 	const navigate = useNavigate();
@@ -45,6 +49,11 @@ export function PackCardsHeader({
 					<Button variant="outline" onClick={handleReviewClick}>
 						Review
 					</Button>
+					{showBulkCreate && onBulkCreateClick ? (
+						<Button variant="outline" onClick={onBulkCreateClick}>
+							Bulk create
+						</Button>
+					) : null}
 					<Button onClick={onCreateClick}>
 						<Plus className="size-4" />
 						New card

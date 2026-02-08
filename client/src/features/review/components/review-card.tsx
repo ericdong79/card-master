@@ -79,20 +79,55 @@ function AnswerContent({ card, packType }: { card: CardEntity; packType: CardPac
 	const answerText = getCardAnswerText(card);
 
 	if (packType === "pinyin-hanzi") {
-		return (
-			<p
-				className="leading-relaxed tracking-wide"
-				style={{
-					fontSize: "2.1rem",
-					fontFamily: "\"STKaiti\", \"KaiTi\", \"Kaiti SC\", \"Noto Serif SC\", serif",
-				}}
-			>
-				{answerText}
-			</p>
-		);
+		return <HanziAnswerContent answerText={answerText} />;
 	}
 
 	return <p className="text-base leading-relaxed">{answerText}</p>;
+}
+
+function HanziAnswerContent({ answerText }: { answerText: string }) {
+	const characters = Array.from(answerText).filter((char) => char.trim().length > 0);
+
+	if (!characters.length) {
+		return <p className="text-base leading-relaxed">{answerText}</p>;
+	}
+
+	return (
+		<div className="flex flex-wrap gap-2">
+			{characters.map((char, index) => (
+				<HanziCharacterCell key={`${char}-${index}`} char={char} />
+			))}
+		</div>
+	);
+}
+
+function HanziCharacterCell({ char }: { char: string }) {
+	return (
+		<div
+			className="relative flex h-[5.25rem] w-[5.25rem] items-center justify-center rounded-sm border bg-background"
+			aria-label={`Hanzi character ${char}`}
+		>
+			<svg
+				className="pointer-events-none absolute inset-0 text-border/70"
+				viewBox="0 0 100 100"
+				aria-hidden="true"
+			>
+				<line x1="50" y1="0" x2="50" y2="100" stroke="currentColor" strokeWidth="1.5" />
+				<line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeWidth="1.5" />
+				<line x1="0" y1="0" x2="100" y2="100" stroke="currentColor" strokeWidth="1.25" />
+				<line x1="100" y1="0" x2="0" y2="100" stroke="currentColor" strokeWidth="1.25" />
+			</svg>
+			<span
+				className="relative leading-none tracking-wide"
+				style={{
+					fontSize: "3rem",
+					fontFamily: "\"STKaiti\", \"KaiTi\", \"Kaiti SC\", \"Noto Serif SC\", serif",
+				}}
+			>
+				{char}
+			</span>
+		</div>
+	);
 }
 
 /**

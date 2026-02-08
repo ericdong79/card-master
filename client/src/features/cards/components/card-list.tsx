@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { IconCards } from "@tabler/icons-react";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
+import type { CardPackType } from "@/lib/api/entities/card-pack";
 import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 import { listSchedulingStatesByCardIds } from "@/lib/api/scheduling-state";
 import { useApiClient } from "@/lib/hooks/use-api-client";
@@ -9,11 +10,12 @@ import { CardRow } from "./card-row";
 
 type CardListProps = {
 	cards: CardEntity[];
+	packType?: CardPackType;
 	onEdit: (card: CardEntity) => void;
 	onDelete: (card: CardEntity) => void;
 };
 
-export function CardList({ cards, onEdit, onDelete }: CardListProps) {
+export function CardList({ cards, packType, onEdit, onDelete }: CardListProps) {
 	const client = useApiClient();
 	const ownerUserId = useMemo(
 		() => cards[0]?.owner_user_id ?? LOCAL_OWNER_ID,
@@ -75,6 +77,7 @@ export function CardList({ cards, onEdit, onDelete }: CardListProps) {
 				<CardRow
 					key={card.id}
 					card={card}
+					packType={packType}
 					onEdit={onEdit}
 					onDelete={onDelete}
 					dueAt={cardDueTimes?.[card.id]}
