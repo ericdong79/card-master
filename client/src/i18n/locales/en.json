@@ -4,6 +4,10 @@
     "english": "EN",
     "chineseSimplified": "简体中文"
   },
+  "brand": {
+    "name": "MindMemo",
+    "tagline": "One Mind, One Memory"
+  },
   "common": {
     "cancel": "Cancel",
     "create": "Create",
