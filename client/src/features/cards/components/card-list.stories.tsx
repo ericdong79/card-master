@@ -52,6 +52,7 @@ const mockCards: Card[] = [
 export const Default: Story = {
 	args: {
 		cards: mockCards,
+		onCreateClick: () => console.log("Create card"),
 		onEdit: (card) => console.log("Edit card:", card),
 		onDelete: (card) => console.log("Delete card:", card),
 	},
@@ -60,6 +61,7 @@ export const Default: Story = {
 export const Empty: Story = {
 	args: {
 		cards: [],
+		onCreateClick: () => console.log("Create card"),
 		onEdit: (card) => console.log("Edit card:", card),
 		onDelete: (card) => console.log("Delete card:", card),
 	},
@@ -68,6 +70,7 @@ export const Empty: Story = {
 export const SingleCard: Story = {
 	args: {
 		cards: [mockCards[0]],
+		onCreateClick: () => console.log("Create card"),
 		onEdit: (card) => console.log("Edit card:", card),
 		onDelete: (card) => console.log("Delete card:", card),
 	},
@@ -81,6 +84,7 @@ export const ManyCards: Story = {
 			prompt: `Question ${i + 1}: ${mockCards[i % 3].prompt}`,
 			created_at: new Date(2024, 0, i + 1).toISOString(),
 		})),
+		onCreateClick: () => console.log("Create card"),
 		onEdit: (card) => console.log("Edit card:", card),
 		onDelete: (card) => console.log("Delete card:", card),
 	},
@@ -100,6 +104,7 @@ export const MixedContent: Story = {
 					"What are the key differences between React's useEffect and useLayoutEffect hooks, and when should you use each one?",
 			},
 		],
+		onCreateClick: () => console.log("Create card"),
 		onEdit: (card) => console.log("Edit card:", card),
 		onDelete: (card) => console.log("Delete card:", card),
 	},

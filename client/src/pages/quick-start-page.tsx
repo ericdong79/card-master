@@ -1,20 +1,51 @@
+import { type ComponentType } from "react";
+import { BookOpenText, Brain, CircleHelp, Compass, Workflow } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { BookOpenText, Lightbulb, Route } from "lucide-react";
+import { NavLink, Outlet } from "react-router-dom";
 
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
-export function QuickStartPage() {
+type QuickStartSection = {
+	to: string;
+	titleKey: string;
+	descriptionKey: string;
+	icon: ComponentType<{ className?: string }>;
+};
+
+const quickStartSections: QuickStartSection[] = [
+	{
+		to: "first-steps",
+		titleKey: "quickStart.sections.firstSteps.title",
+		descriptionKey: "quickStart.sections.firstSteps.description",
+		icon: Compass,
+	},
+	{
+		to: "workflow",
+		titleKey: "quickStart.sections.workflow.title",
+		descriptionKey: "quickStart.sections.workflow.description",
+		icon: Workflow,
+	},
+	{
+		to: "memory-curve",
+		titleKey: "quickStart.sections.memoryCurve.title",
+		descriptionKey: "quickStart.sections.memoryCurve.description",
+		icon: Brain,
+	},
+	{
+		to: "faq",
+		titleKey: "quickStart.sections.faq.title",
+		descriptionKey: "quickStart.sections.faq.description",
+		icon: CircleHelp,
+	},
+];
+
+export default function QuickStartPage() {
 	const { t } = useTranslation();
 
 	return (
-		<div className="mx-auto w-full max-w-4xl px-6 py-8">
-			<Card>
+		<div className="mx-auto w-full max-w-6xl px-6 py-8">
+			<Card className="mb-6">
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2 text-xl">
 						<BookOpenText className="size-5" />
@@ -22,27 +53,44 @@ export function QuickStartPage() {
 					</CardTitle>
 					<CardDescription>{t("quickStart.subtitle")}</CardDescription>
 				</CardHeader>
-				<CardContent className="grid gap-4 pb-2 md:grid-cols-2">
-					<div className="rounded-lg border bg-muted/30 p-4">
-						<div className="mb-2 flex items-center gap-2 text-sm font-medium">
-							<Route className="size-4" />
-							{t("quickStart.blocks.usage.title")}
-						</div>
-						<p className="text-sm text-muted-foreground">
-							{t("quickStart.blocks.usage.description")}
-						</p>
-					</div>
-					<div className="rounded-lg border bg-muted/30 p-4">
-						<div className="mb-2 flex items-center gap-2 text-sm font-medium">
-							<Lightbulb className="size-4" />
-							{t("quickStart.blocks.principles.title")}
-						</div>
-						<p className="text-sm text-muted-foreground">
-							{t("quickStart.blocks.principles.description")}
-						</p>
-					</div>
-				</CardContent>
 			</Card>
+
+			<div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+				<Card className="h-fit">
+					<CardHeader className="pb-4">
+						<CardTitle className="text-base">{t("quickStart.guideTitle")}</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-2">
+						{quickStartSections.map((section) => {
+							const Icon = section.icon;
+							return (
+								<NavLink
+									key={section.to}
+									to={section.to}
+									className={({ isActive }) =>
+										cn(
+											"block rounded-lg border px-3 py-3 transition-colors",
+											isActive
+												? "border-primary/50 bg-primary/10"
+												: "hover:border-primary/30 hover:bg-muted/60",
+										)
+									}
+								>
+									<div className="mb-1 flex items-center gap-2 text-sm font-medium">
+										<Icon className="size-4" />
+										{t(section.titleKey)}
+									</div>
+									<p className="text-xs text-muted-foreground">{t(section.descriptionKey)}</p>
+								</NavLink>
+							);
+						})}
+					</CardContent>
+				</Card>
+
+				<div className="min-w-0">
+					<Outlet />
+				</div>
+			</div>
 		</div>
 	);
 }

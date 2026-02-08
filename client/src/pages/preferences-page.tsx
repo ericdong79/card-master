@@ -15,20 +15,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useProfile } from "@/features/profile/profile-context";
 import { setPreferredLanguage, type AppLanguage } from "@/i18n";
+import { type CardPackType } from "@/lib/api/entities/card-pack";
+import { useSystemPreferences } from "@/lib/preferences/system-preferences";
 
 export function PreferencesPage() {
 	const { t, i18n } = useTranslation();
 	const { currentProfile, updateCurrentProfile } = useProfile();
+	const { preferences: systemPreferences, updatePreferences } = useSystemPreferences();
 	const [nickname, setNickname] = useState("");
 	const [avatarEmoji, setAvatarEmoji] = useState("😀");
-	const [primaryColor, setPrimaryColor] = useState("#1f1f23");
+	const [primaryColor, setPrimaryColor] = useState("#0ee17f");
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
 	useEffect(() => {
 		if (!currentProfile) return;
 		setNickname(currentProfile.nickname);
 		setAvatarEmoji(currentProfile.avatar_emoji);
-		setPrimaryColor(currentProfile.primary_color ?? "#1f1f23");
+		setPrimaryColor(currentProfile.primary_color ?? "#0ee17f");
 	}, [currentProfile]);
 
 	if (!currentProfile) {
@@ -132,7 +135,7 @@ export function PreferencesPage() {
 									variant="outline"
 									size="sm"
 									onClick={() => {
-										setPrimaryColor("#1f1f23");
+										setPrimaryColor("#0ee17f");
 										updateCurrentProfile({ primaryColor: null });
 									}}
 								>
@@ -161,6 +164,60 @@ export function PreferencesPage() {
 								<option value="en">{t("language.english")}</option>
 								<option value="zh-CN">{t("language.chineseSimplified")}</option>
 							</select>
+						</div>
+					</div>
+
+					<div className="space-y-4 rounded-lg border bg-muted/20 p-4">
+						<div className="text-sm font-medium">
+							{t("preferences.blocks.system.title")}
+						</div>
+						<p className="text-xs text-muted-foreground">
+							{t("preferences.blocks.system.description")}
+						</p>
+
+						<div className="flex items-center justify-between gap-4">
+							<div className="space-y-1">
+								<Label htmlFor="multi-pack-types">
+									{t("preferences.system.enableMultiPackTypes")}
+								</Label>
+								<p className="text-xs text-muted-foreground">
+									{t("preferences.system.enableMultiPackTypesHint")}
+								</p>
+							</div>
+							<input
+								id="multi-pack-types"
+								type="checkbox"
+								checked={systemPreferences.enableMultiPackTypes}
+								onChange={(event) => {
+									updatePreferences({
+										enableMultiPackTypes: event.target.checked,
+									});
+								}}
+								className="h-4 w-4 rounded border-input accent-primary"
+							/>
+						</div>
+
+						<div className="space-y-2">
+							<Label htmlFor="default-pack-type">
+								{t("preferences.system.defaultPackType")}
+							</Label>
+							<select
+								id="default-pack-type"
+								className="h-9 w-full rounded border border-input bg-background px-2 text-sm"
+								value={systemPreferences.defaultCardPackType}
+								onChange={(event) => {
+									updatePreferences({
+										defaultCardPackType: event.target.value as CardPackType,
+									});
+								}}
+							>
+								<option value="basic">{t("cardType.basic")}</option>
+								<option value="image-recall">{t("cardType.imageRecall")}</option>
+								<option value="pinyin-hanzi">{t("cardType.pinyinHanzi")}</option>
+							</select>
+							<p className="text-xs text-muted-foreground">
+								{t("preferences.system.defaultPackTypeHint")}
+							</p>
 						</div>
 					</div>
 

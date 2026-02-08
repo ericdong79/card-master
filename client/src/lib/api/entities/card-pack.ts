@@ -1,7 +1,7 @@
 export type CardPackStatus = "active" | "suspended" | "deleted";
 export type CardPackType = "basic" | "image-recall" | "pinyin-hanzi";
 
-export const DEFAULT_CARD_PACK_TYPE: CardPackType = "basic";
+export const DEFAULT_CARD_PACK_TYPE: CardPackType = "pinyin-hanzi";
 
 export type CardPack = {
 	id: string;

@@ -1,303 +1,448 @@
 {
-  "language": {
-    "label": "语言",
-    "english": "EN",
-    "chineseSimplified": "简体中文"
-  },
-  "brand": {
-    "name": "一心一忆",
-    "nameEn": "MindMemo",
-    "tagline": "一心一忆"
-  },
-  "sidebar": {
-    "title": "主导航",
-    "sections": {
-      "navigation": "导航",
-      "system": "系统功能"
-    },
-    "actions": {
-      "collapse": "收起侧边栏",
-      "expand": "展开侧边栏",
-      "openMobile": "打开侧边栏"
-    },
-    "nav": {
-      "cardPacks": "记忆卡包",
-      "quickStart": "快速上手"
-    },
-    "system": {
-      "preferences": "首选项配置"
-    },
-    "user": {
-      "name": "访客用户",
-      "role": "本地配置（占位）",
-      "defaultName": "未创建用户"
-    }
-  },
-  "profile": {
-    "create": {
-      "title": "创建你的第一个用户档案",
-      "description": "不同档案会隔离每位学习者的卡包与复习历史。",
-      "note": "主题色目前仅作为占位，后续会接入实际主题切换。"
-    },
-    "switch": {
-      "title": "切换用户",
-      "description": "选择已有用户档案，或创建新的档案。",
-      "current": "当前使用中",
-      "addProfile": "添加用户"
-    },
-    "menu": {
-      "title": "用户设置",
-      "switchUser": "切换用户",
-      "preferences": "首选项配置"
-    },
-    "fields": {
-      "nickname": "昵称",
-      "nicknamePlaceholder": "例如：小明",
-      "avatar": "头像",
-      "primaryColorOptional": "主题色（可选）"
-    },
-    "actions": {
-      "create": "创建档案",
-      "pickEmoji": "选择 Emoji"
-    },
-    "errors": {
-      "nicknameRequired": "请输入昵称。"
-    }
-  },
-  "common": {
-    "cancel": "取消",
-    "create": "创建",
-    "creating": "创建中...",
-    "save": "保存",
-    "saving": "保存中...",
-    "delete": "删除",
-    "deleting": "删除中...",
-    "import": "导入",
-    "importing": "导入中...",
-    "export": "导出",
-    "exporting": "导出中...",
-    "loadingCards": "正在加载卡片..."
-  },
-  "quickStart": {
-    "title": "快速上手",
-    "subtitle": "该页面将用于介绍使用方式、功能总览与学习理念。",
-    "blocks": {
-      "usage": {
-        "title": "使用方式",
-        "description": "后续会在这里补充分步骤上手说明。"
-      },
-      "principles": {
-        "title": "核心理念",
-        "description": "后续会在这里说明产品设计与学习方法论。"
-      }
-    }
-  },
-  "preferences": {
-    "title": "首选项配置",
-    "subtitle": "管理当前用户档案、默认语言与应用基础设置。",
-    "profile": {
-      "title": "用户档案",
-      "defaultLanguage": "默认语言",
-      "resetThemeColor": "使用默认主题色",
-      "defaultColorActive": "当前使用应用默认主题色。",
-      "customColorActive": "当前已启用用户自定义主题色。"
-    },
-    "blocks": {
-      "system": {
-        "title": "系统参数",
-        "description": "后续版本将在这里补充具体配置项。"
-      },
-      "version": {
-        "title": "版本信息"
-      }
-    }
-  },
-  "home": {
-    "title": "卡包",
-    "subtitle": "管理你的卡组并跟踪需要复习的内容。",
-    "newPack": "新建卡包",
-    "loadingPacks": "正在加载卡包...",
-    "emptyTitle": "还没有卡包",
-    "emptyDescription": "创建你的第一个卡包并开始添加卡片。",
-    "emptyAction": "创建卡包",
-    "typeAndCount": "{{type}} · {{count}} 张卡",
-    "createdAt": "创建于 {{date}}",
-    "createPack": {
-      "title": "创建卡包",
-      "description": "添加一个新卡包来组织你的卡片。",
-      "name": "名称",
-      "namePlaceholder": "我的第一个卡包",
-      "type": "类型"
-    },
-    "editPack": {
-      "title": "重命名卡包",
-      "description": "更新主页中显示的卡包名称。",
-      "name": "名称",
-      "namePlaceholder": "更新后的卡包名称"
-    },
-    "deletePack": {
-      "title": "删除卡包",
-      "description": "这会删除该卡包及其卡片，且无法撤销。",
-      "confirm": "确定要删除 {{name}} 吗？",
-      "thisPack": "这个卡包"
-    },
-    "exportDialog": {
-      "title": "导出卡包",
-      "description": "选择要导出的卡包并保存为 JSON 文件。",
-      "selectPacks": "选择卡包",
-      "all": "全选",
-      "none": "不选",
-      "packCardsCount": "{{count}} 张卡",
-      "includeReviewState": "包含复习历史和排程状态"
-    },
-    "importDialog": {
-      "title": "导入卡包",
-      "description": "从导出的 JSON 文件中导入卡包。",
-      "fileLabel": "导出文件",
-      "includeReviewState": "导入复习历史和排程状态",
-      "noReviewState": "该文件不包含复习历史或排程状态。",
-      "readError": "无法读取导入文件。"
-    }
-  },
-  "cards": {
-    "breadcrumbPacks": "卡包",
-    "loadingPackName": "加载中...",
-    "title": "卡片",
-    "subtitle": "查看并管理这个卡包中的卡片。",
-    "review": "复习",
-    "bulkCreate": "批量创建",
-    "newCard": "新建卡片",
-    "packFallback": "卡包",
-    "count": "{{count}} 张卡",
-    "emptyTitle": "还没有卡片",
-    "emptyDescription": "创建一张卡片开始练习",
-    "createdAt": "创建于 {{date}}",
-    "due": "到期 {{time}}",
-    "overdue": "已逾期",
-    "now": "现在",
-    "noAnswer": "未提供答案",
-    "untitledQuestion": "[未命名问题]",
-    "fallbackCard": "卡片",
-    "actions": {
-      "editCard": "编辑 {{question}}",
-      "deleteCard": "删除 {{question}}"
-    },
-    "form": {
-      "createTitle": "创建卡片",
-      "editTitle": "编辑卡片",
-      "createDescription": "添加新的问题和答案。",
-      "editDescription": "更新这张卡片。",
-      "convertFromHanzi": "从汉字转换",
-      "converting": "转换中...",
-      "questionImage": "问题图片",
-      "questionPreview": "问题预览",
-      "removeImage": "移除图片",
-      "questionAudioOptional": "问题音频（可选）",
-      "removeAudio": "移除音频",
-      "readFileError": "读取文件失败。",
-      "loadImageError": "加载图片失败。",
-      "loadAudioError": "加载音频失败。",
-      "enterHanziFirst": "请先在答案输入框中输入汉字。",
-      "convertError": "汉字转拼音失败。"
-    },
-    "bulkHanzi": {
-      "title": "批量创建汉字卡片",
-      "description": "每个汉字词创建一张卡片，问题为带声调拼音。",
-      "label": "汉字词（空格/换行分隔）",
-      "placeholder": "葵花 贝壳 葡萄",
-      "emptyError": "请至少输入一个汉字词。",
-      "createError": "根据汉字列表创建卡片失败。",
-      "createCards": "创建卡片"
-    },
-    "deleteDialog": {
-      "title": "删除卡片",
-      "description": "这会永久删除该卡片，且无法撤销。",
-      "confirm": "确定要删除 {{question}} 吗？",
-      "thisCard": "这张卡片"
-    }
-  },
-  "cardType": {
-    "basic": "基础",
-    "imageRecall": "图像回忆",
-    "pinyinHanzi": "拼音 - 汉字",
-    "fields": {
-      "question": "问题",
-      "answer": "答案",
-      "pinyin": "拼音",
-      "hanzi": "汉字"
-    },
-    "placeholders": {
-      "defaultQuestion": "例如：什么是间隔重复？",
-      "defaultAnswer": "你的答案...",
-      "imageRecallQuestion": "可选文本提示...",
-      "imageRecallAnswer": "例如：日本",
-      "pinyinQuestion": "例如：zhong guo",
-      "pinyinAnswer": "例如：中国"
-    },
-    "validation": {
-      "questionRequired": "问题不能为空。",
-      "answerRequired": "答案不能为空。",
-      "pinyinRequired": "拼音不能为空。",
-      "hanziRequired": "汉字不能为空。",
-      "questionOrImageRequired": "请填写问题文本或上传图片。"
-    }
-  },
-  "review": {
-    "back": "← 返回",
-    "loadingQueue": "正在加载复习队列...",
-    "quickMode": "快速复习",
-    "normalMode": "常规复习",
-    "progress": "进度",
-    "learned": "已掌握 {{learned}} / {{total}}",
-    "question": "问题",
-    "answer": "答案",
-    "showAnswer": "显示答案",
-    "quickHint": "快速复习不会影响学习排程",
-    "normalHint": "评分会影响下次复习间隔",
-    "pronunciation": "发音",
-    "summary": {
-      "quickComplete": "快速复习完成",
-      "complete": "复习完成",
-      "withPack": "已完成 {{packName}} 的{{modeText}}。",
-      "withoutPack": "已完成{{modeText}}。",
-      "modeQuick": "快速复习",
-      "modeNormal": "今日卡片复习",
-      "reviewedCount": "已复习 {{value}} 张卡。",
-      "forgotTitle": "⚠️ 你遗忘了 {{value}} 张卡：",
-      "andMore": "……还有 {{value}} 张",
-      "forgotHint": "建议再次复习这些卡片，或使用常规复习模式。",
-      "backToPacks": "返回卡包",
-      "backToCards": "返回卡片"
-    },
-    "buttons": {
-      "forgot": "忘记了",
-      "tryAgain": "再试一次",
-      "remembered": "记住了",
-      "nextCard": "下一张",
-      "partiallyRecall": "部分回忆",
-      "recalledWithEffort": "费力回忆",
-      "easilyRecalled": "轻松回忆"
-    }
-  },
-  "errors": {
-    "packNotFound": "未找到卡包或无访问权限。",
-    "loadCards": "加载卡片失败",
-    "createCard": "创建卡片失败",
-    "createCards": "创建卡片失败",
-    "updateCard": "更新卡片失败",
-    "deleteCard": "删除卡片失败",
-    "loadCardPacks": "加载卡包失败",
-    "createCardPack": "创建卡包失败",
-    "updateCardPack": "更新卡包失败",
-    "deleteCardPack": "删除卡包失败",
-    "exportCardPacks": "导出卡包失败",
-    "importCardPacks": "导入卡包失败",
-    "loadReviewData": "加载复习数据失败",
-    "recordReview": "记录复习结果失败",
-    "noCardsToReview": "这个卡包中没有可复习的卡片。"
-  },
-  "success": {
-    "importedWithReview": "已导入 {{packs}} 个卡包和 {{cards}} 张卡（{{reviewEvents}} 条复习记录，{{schedulingStates}} 条排程状态）。",
-    "importedBasic": "已导入 {{packs}} 个卡包和 {{cards}} 张卡。"
-  }
+	"language": {
+		"label": "语言",
+		"english": "EN",
+		"chineseSimplified": "简体中文"
+	},
+	"brand": {
+		"name": "一心一忆",
+		"nameEn": "MindMemo",
+		"tagline": "一心一忆"
+	},
+	"sidebar": {
+		"title": "主导航",
+		"sections": {
+			"navigation": "导航",
+			"system": "系统功能"
+		},
+		"actions": {
+			"collapse": "收起侧边栏",
+			"expand": "展开侧边栏",
+			"openMobile": "打开侧边栏"
+		},
+		"nav": {
+			"cardPacks": "记忆卡包",
+			"quickStart": "快速上手"
+		},
+		"system": {
+			"preferences": "首选项配置"
+		},
+		"user": {
+			"name": "访客用户",
+			"role": "本地配置（占位）",
+			"defaultName": "未创建用户"
+		}
+	},
+	"profile": {
+		"create": {
+			"title": "创建你的第一个用户档案",
+			"description": "不同档案会隔离每位学习者的卡包与复习历史。",
+			"note": "主题色目前仅作为占位，后续会接入实际主题切换。"
+		},
+		"switch": {
+			"title": "切换用户",
+			"description": "选择已有用户档案，或创建新的档案。",
+			"current": "当前使用中",
+			"addProfile": "添加用户"
+		},
+		"menu": {
+			"title": "用户设置",
+			"switchUser": "切换用户",
+			"preferences": "首选项配置"
+		},
+		"fields": {
+			"nickname": "昵称",
+			"nicknamePlaceholder": "例如：小明",
+			"avatar": "头像",
+			"primaryColorOptional": "主题色（可选）"
+		},
+		"actions": {
+			"create": "创建档案",
+			"pickEmoji": "选择 Emoji"
+		},
+		"errors": {
+			"nicknameRequired": "请输入昵称。"
+		}
+	},
+	"common": {
+		"cancel": "取消",
+		"create": "创建",
+		"creating": "创建中...",
+		"save": "保存",
+		"saving": "保存中...",
+		"delete": "删除",
+		"deleting": "删除中...",
+		"import": "导入",
+		"importing": "导入中...",
+		"export": "导出",
+		"exporting": "导出中...",
+		"loadingCards": "正在加载卡片..."
+	},
+	"quickStart": {
+		"title": "新手上手指南",
+		"subtitle": "从零开始，按这四个部分走一遍，你就能用这套系统稳定记忆。",
+		"guideTitle": "阅读目录",
+		"sections": {
+			"firstSteps": {
+				"title": "第一次要做什么",
+				"description": "先建档案、建卡包、加卡片，马上开始第一轮复习。"
+			},
+			"workflow": {
+				"title": "产品怎么帮你记住",
+				"description": "理解一次完整学习流程：输入、回忆、评分、排程、复习。"
+			},
+			"memoryCurve": {
+				"title": "记忆曲线（简化）",
+				"description": "为什么要间隔复习，以及系统是怎么安排间隔的。"
+			},
+			"faq": {
+				"title": "常见问题",
+				"description": "包含卡包分享、复习频率、快速复习等高频问题。"
+			}
+		},
+		"firstStepsPage": {
+			"title": "第一次使用：先做这 4 步",
+			"lead": "你不需要先学理论，先把流程跑起来。完成这四步就能开始记忆。",
+			"startCreatePack": "开始创建卡包",
+			"steps": {
+				"1": {
+					"title": "1) 创建你的学习档案",
+					"description": "第一次进入会提示创建档案。每个档案的数据是隔离的，适合多人共用一台设备。"
+				},
+				"2": {
+					"title": "2) 新建一个卡包",
+					"description": "按主题建卡包，比如“英语高频词”“面试题”“医学术语”。一包只放一类内容，复习更聚焦。"
+				},
+				"3": {
+					"title": "3) 先加 10-20 张核心卡",
+					"description": "一开始不要贪多。先放你最近最常用、最想记住的内容，马上就能看到复习效果。"
+				},
+				"4": {
+					"title": "4) 当天完成第一轮复习",
+					"description": "进入复习页，先尝试回忆再看答案，然后按掌握程度评分。系统会自动安排下次复习时间。"
+				}
+			},
+			"checklistTitle": "开局小清单",
+			"checklist": {
+				"1": "卡片尽量短小：一张卡只记一个点。",
+				"2": "问题写具体，避免模糊问法。",
+				"3": "答案能自己说出来，就不要只靠“眼熟”。",
+				"4": "每天固定一个复习时段，比突击更有效。"
+			}
+		},
+		"workflowPage": {
+			"title": "这个产品如何帮你记住",
+			"lead": "核心不是“看很多遍”，而是“在快忘记的时候把它想起来”。",
+			"nodes": {
+				"1": {
+					"title": "输入卡片",
+					"description": "你把知识拆成可提问、可回答的最小单元。"
+				},
+				"2": {
+					"title": "主动回忆",
+					"description": "先看问题，自己回想答案。这个动作本身就在强化记忆。"
+				},
+				"3": {
+					"title": "对照并评分",
+					"description": "看完正确答案后，按“熟练/模糊/不会”等状态给反馈。"
+				},
+				"4": {
+					"title": "系统排程",
+					"description": "系统根据你的反馈调整下次间隔。越熟练，间隔越长；越不熟，越快再见。"
+				},
+				"5": {
+					"title": "循环巩固",
+					"description": "你每天只处理到期卡片，时间可控，但长期留存率更高。"
+				}
+			},
+			"tip": "实操建议：每天先清空“到期卡片”，再去学新内容，学习压力会稳定很多。"
+		},
+		"memoryCurvePage": {
+			"title": "进阶：记忆曲线和间隔复习（简化版）",
+			"lead": "艾宾浩斯记忆曲线告诉我们：新信息在前几天遗忘很快，之后趋于平缓。关键是把复习点卡在“快忘但还没忘透”的时机。",
+			"items": {
+				"1": {
+					"title": "为什么要间隔",
+					"description": "同一天连看 5 遍，短期会很熟，但掉得也快。拉开间隔后，每次回忆成本更高，记忆反而更牢。"
+				},
+				"2": {
+					"title": "评分如何影响间隔",
+					"description": "答得越轻松，下次复习会更晚；答得吃力或错误，下次会提前。这样能把时间花在最需要的卡片上。"
+				},
+				"3": {
+					"title": "你需要做的只有一件事",
+					"description": "老实给出当前掌握程度，不要“虚高评分”。系统才会给你一个靠谱的复习节奏。"
+				}
+			},
+			"intervalTitle": "一个常见的复习节奏（示意）",
+			"intervals": {
+				"1": "第 1 次记住后：当天或次日回顾",
+				"2": "第 2 次通过后：2-3 天后",
+				"3": "第 3 次通过后：约 1 周后",
+				"4": "持续稳定后：2-4 周后",
+				"5": "长期阶段：按遗忘情况动态拉长"
+			}
+		},
+		"faqPage": {
+			"title": "FAQ",
+			"lead": "先看这些高频问题，能少走很多弯路。",
+			"items": {
+				"1": {
+					"question": "怎么分享卡包给别人？",
+					"answer": "目前推荐用“导出卡包”为 JSON 文件，再发给对方；对方在自己的档案里“导入卡包”即可。"
+				},
+				"2": {
+					"question": "为什么我觉得会了，过几天又忘了？",
+					"answer": "这很正常。短期熟悉不等于长期记住。请按到期时间复习，不要只在想起来时才复习。"
+				},
+				"3": {
+					"question": "每天要复习多久？",
+					"answer": "先从 15-25 分钟开始，关键是每天都做。稳定 2 周后，再决定是否增加新卡数量。"
+				},
+				"4": {
+					"question": "快速复习和常规复习有什么区别？",
+					"answer": "快速复习不改排程，适合临时过一遍；常规复习会根据你的评分调整下次时间，建议日常优先使用。"
+				},
+				"5": {
+					"question": "一个卡包放多少张卡合适？",
+					"answer": "新手建议每包先控制在 30-80 张，内容太杂时就拆包。你应该能在 30 秒内说出这个卡包的主题。"
+				}
+			}
+		}
+	},
+	"preferences": {
+		"title": "首选项配置",
+		"subtitle": "管理当前用户档案、默认语言与应用基础设置。",
+		"profile": {
+			"title": "用户档案",
+			"defaultLanguage": "默认语言",
+			"resetThemeColor": "使用默认主题色",
+			"defaultColorActive": "当前使用应用默认主题色。",
+			"customColorActive": "当前已启用用户自定义主题色。"
+		},
+		"system": {
+			"enableMultiPackTypes": "开启多卡包类型",
+			"enableMultiPackTypesHint": "关闭时，创建卡包将始终使用默认卡包类型。",
+			"defaultPackType": "默认卡包类型",
+			"defaultPackTypeHint": "默认用于创建卡包；关闭多卡包类型后会强制使用该类型。"
+		},
+		"blocks": {
+			"system": {
+				"title": "系统参数",
+				"description": "控制卡包创建的高级行为。"
+			},
+			"version": {
+				"title": "版本信息"
+			}
+		}
+	},
+	"home": {
+		"title": "卡包",
+		"subtitle": "管理你的卡组并跟踪需要复习的内容。",
+		"newPack": "新建卡包",
+		"loadingPacks": "正在加载卡包...",
+		"emptyTitle": "还没有卡包",
+		"emptyDescription": "创建你的第一个卡包并开始添加卡片。",
+		"emptyAction": "创建卡包",
+		"cardsCount": "{{count}} 张卡",
+		"typeAndCount": "{{type}} · {{count}} 张卡",
+		"createdAt": "创建于 {{date}}",
+		"controls": {
+			"searchPlaceholder": "搜索卡包名称",
+			"sortLabel": "排序卡包",
+			"sort": {
+				"createdAtDesc": "创建时间（新到旧）",
+				"createdAtAsc": "创建时间（旧到新）",
+				"nameAsc": "名称（A-Z）",
+				"nameDesc": "名称（Z-A）",
+				"cardsCountDesc": "卡片数量（多到少）",
+				"cardsCountAsc": "卡片数量（少到多）"
+			},
+			"noResultsTitle": "未找到匹配的卡包",
+			"noResultsDescription": "试试其他关键词或排序方式。"
+		},
+		"createPack": {
+			"title": "创建卡包",
+			"description": "添加一个新卡包来组织你的卡片。",
+			"name": "名称",
+			"namePlaceholder": "我的第一个卡包",
+			"type": "类型"
+		},
+		"editPack": {
+			"title": "重命名卡包",
+			"description": "更新主页中显示的卡包名称。",
+			"name": "名称",
+			"namePlaceholder": "更新后的卡包名称"
+		},
+		"deletePack": {
+			"title": "删除卡包",
+			"description": "这会删除该卡包及其卡片，且无法撤销。",
+			"confirm": "确定要删除 {{name}} 吗？",
+			"thisPack": "这个卡包"
+		},
+		"exportDialog": {
+			"title": "导出卡包",
+			"description": "选择要导出的卡包并保存为 JSON 文件。",
+			"selectPacks": "选择卡包",
+			"all": "全选",
+			"none": "不选",
+			"packCardsCount": "{{count}} 张卡",
+			"includeReviewState": "包含复习历史和排程状态"
+		},
+		"importDialog": {
+			"title": "导入卡包",
+			"description": "从导出的 JSON 文件中导入卡包。",
+			"fileLabel": "导出文件",
+			"includeReviewState": "导入复习历史和排程状态",
+			"noReviewState": "该文件不包含复习历史或排程状态。",
+			"readError": "无法读取导入文件。"
+		}
+	},
+	"cards": {
+		"breadcrumbPacks": "卡包",
+		"loadingPackName": "加载中...",
+		"title": "卡片",
+		"subtitle": "查看并管理这个卡包中的卡片。",
+		"review": "复习",
+		"bulkCreate": "批量创建",
+		"newCard": "新建卡片",
+		"packFallback": "卡包",
+		"count": "{{count}} 张卡",
+		"summary": {
+			"total": "总计 {{count}}",
+			"learning": "学习中 {{count}}",
+			"review": "复习中 {{count}}",
+			"due": "需复习 {{count}}"
+		},
+		"emptyTitle": "还没有卡片",
+		"emptyDescription": "创建一张卡片开始练习",
+		"createdAt": "创建于 {{date}}",
+		"due": "到期 {{time}}",
+		"overdue": "已逾期",
+		"now": "现在",
+		"noAnswer": "未提供答案",
+		"untitledQuestion": "[未命名问题]",
+		"fallbackCard": "卡片",
+		"actions": {
+			"editCard": "编辑 {{question}}",
+			"deleteCard": "删除 {{question}}"
+		},
+		"form": {
+			"createTitle": "创建卡片",
+			"editTitle": "编辑卡片",
+			"createDescription": "添加新的问题和答案。",
+			"editDescription": "更新这张卡片。",
+			"convertFromHanzi": "从汉字转换",
+			"converting": "转换中...",
+			"questionImage": "问题图片",
+			"questionPreview": "问题预览",
+			"removeImage": "移除图片",
+			"questionAudioOptional": "问题音频（可选）",
+			"removeAudio": "移除音频",
+			"readFileError": "读取文件失败。",
+			"loadImageError": "加载图片失败。",
+			"loadAudioError": "加载音频失败。",
+			"enterHanziFirst": "请先在答案输入框中输入汉字。",
+			"convertError": "汉字转拼音失败。"
+		},
+		"bulkHanzi": {
+			"title": "批量创建汉字卡片",
+			"description": "每个汉字词创建一张卡片，问题为带声调拼音。",
+			"label": "汉字词（空格/换行分隔）",
+			"placeholder": "机器 知了 帆船",
+			"emptyError": "请至少输入一个汉字词。",
+			"createError": "根据汉字列表创建卡片失败。",
+			"createCards": "创建卡片"
+		},
+		"deleteDialog": {
+			"title": "删除卡片",
+			"description": "这会永久删除该卡片，且无法撤销。",
+			"confirm": "确定要删除 {{question}} 吗？",
+			"thisCard": "这张卡片"
+		}
+	},
+	"cardType": {
+		"basic": "基础",
+		"imageRecall": "图像回忆",
+		"pinyinHanzi": "拼音 - 汉字",
+		"fields": {
+			"question": "问题",
+			"answer": "答案",
+			"pinyin": "拼音",
+			"hanzi": "汉字"
+		},
+		"placeholders": {
+			"defaultQuestion": "例如：什么是间隔重复？",
+			"defaultAnswer": "你的答案...",
+			"imageRecallQuestion": "可选文本提示...",
+			"imageRecallAnswer": "例如：日本",
+			"pinyinQuestion": "例如：zhong guo",
+			"pinyinAnswer": "例如：中国"
+		},
+		"validation": {
+			"questionRequired": "问题不能为空。",
+			"answerRequired": "答案不能为空。",
+			"pinyinRequired": "拼音不能为空。",
+			"hanziRequired": "汉字不能为空。",
+			"questionOrImageRequired": "请填写问题文本或上传图片。"
+		}
+	},
+	"review": {
+		"back": "← 返回",
+		"loadingQueue": "正在加载复习队列...",
+		"quickMode": "快速复习",
+		"normalMode": "常规复习",
+		"progress": "进度",
+		"learned": "已掌握 {{learned}} / {{total}}",
+		"question": "问题",
+		"answer": "答案",
+		"showAnswer": "显示答案",
+		"quickHint": "快速复习不会影响学习排程",
+		"normalHint": "评分会影响下次复习间隔",
+		"pronunciation": "发音",
+		"summary": {
+			"quickComplete": "快速复习完成",
+			"complete": "复习完成",
+			"withPack": "已完成 {{packName}} 的{{modeText}}。",
+			"withoutPack": "已完成{{modeText}}。",
+			"modeQuick": "快速复习",
+			"modeNormal": "今日卡片复习",
+			"reviewedCount": "已复习 {{value}} 张卡。",
+			"forgotTitle": "⚠️ 你遗忘了 {{value}} 张卡：",
+			"andMore": "……还有 {{value}} 张",
+			"forgotHint": "建议再次复习这些卡片，或使用常规复习模式。",
+			"backToPacks": "返回卡包",
+			"backToCards": "返回卡片"
+		},
+		"buttons": {
+			"forgot": "忘记了",
+			"tryAgain": "再试一次",
+			"remembered": "记住了",
+			"nextCard": "下一张",
+			"partiallyRecall": "部分回忆",
+			"recalledWithEffort": "费力回忆",
+			"easilyRecalled": "轻松回忆"
+		}
+	},
+	"errors": {
+		"packNotFound": "未找到卡包或无访问权限。",
+		"loadCards": "加载卡片失败",
+		"createCard": "创建卡片失败",
+		"createCards": "创建卡片失败",
+		"updateCard": "更新卡片失败",
+		"deleteCard": "删除卡片失败",
+		"loadCardPacks": "加载卡包失败",
+		"createCardPack": "创建卡包失败",
+		"updateCardPack": "更新卡包失败",
+		"deleteCardPack": "删除卡包失败",
+		"exportCardPacks": "导出卡包失败",
+		"importCardPacks": "导入卡包失败",
+		"loadReviewData": "加载复习数据失败",
+		"recordReview": "记录复习结果失败",
+		"noCardsToReview": "这个卡包中没有可复习的卡片。"
+	},
+	"success": {
+		"importedWithReview": "已导入 {{packs}} 个卡包和 {{cards}} 张卡（{{reviewEvents}} 条复习记录，{{schedulingStates}} 条排程状态）。",
+		"importedBasic": "已导入 {{packs}} 个卡包和 {{cards}} 张卡。"
+	}
 }

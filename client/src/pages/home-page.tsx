@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { CardPackList } from "@/features/home/components/card-pack-list";
 import { CreatePackDialog } from "@/features/home/components/create-pack-dialog";
 import { DeletePackDialog } from "@/features/home/components/delete-pack-dialog";
@@ -6,9 +8,35 @@ import { ExportPacksDialog } from "@/features/home/components/export-packs-dialo
 import { HomePageHeader } from "@/features/home/components/home-page-header";
 import { ImportPacksDialog } from "@/features/home/components/import-packs-dialog";
 import { useHomePage } from "@/features/home/hooks/use-home-page";
+import { type CardPackType } from "@/lib/api/entities/card-pack";
+import { useSystemPreferences } from "@/lib/preferences/system-preferences";
 
 export function HomePage() {
 	const state = useHomePage();
+	const { setIsCreateOpen } = state;
+	const navigate = useNavigate();
+	const { preferences } = useSystemPreferences();
+	const [searchParams, setSearchParams] = useSearchParams();
+	const shouldOpenCreateDialog = searchParams.get("dialog") === "create-pack";
+
+	useEffect(() => {
+		if (!shouldOpenCreateDialog) return;
+		setIsCreateOpen(true);
+
+		const nextSearchParams = new URLSearchParams(searchParams);
+		nextSearchParams.delete("dialog");
+		setSearchParams(nextSearchParams, { replace: true });
+	}, [searchParams, setIsCreateOpen, setSearchParams, shouldOpenCreateDialog]);
+
+	const handleCreatePack = async (
+		name: string,
+		type: CardPackType,
+	) => {
+		const createdPackId = await state.createPack(name, type);
+		if (!createdPackId) return null;
+		navigate(`/pack/${createdPackId}/cards`);
+		return createdPackId;
+	};
 
 	return (
 		<div className="min-h-screen bg-muted/20">
@@ -48,7 +76,9 @@ export function HomePage() {
 					}
 					state.setIsCreateOpen(open);
 				}}
-				onCreate={state.createPack}
+				onCreate={handleCreatePack}
+				enableMultiPackTypes={preferences.enableMultiPackTypes}
+				defaultPackType={preferences.defaultCardPackType}
 			/>
 
 			<ExportPacksDialog

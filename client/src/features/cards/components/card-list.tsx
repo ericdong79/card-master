@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 import { IconCards } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
 import type { CardPackType } from "@/lib/api/entities/card-pack";
 import { listSchedulingStatesByCardIds } from "@/lib/api/scheduling-state";
@@ -11,11 +13,18 @@ import { CardRow } from "./card-row";
 type CardListProps = {
 	cards: CardEntity[];
 	packType?: CardPackType;
+	onCreateClick: () => void;
 	onEdit: (card: CardEntity) => void;
 	onDelete: (card: CardEntity) => void;
 };
 
-export function CardList({ cards, packType, onEdit, onDelete }: CardListProps) {
+export function CardList({
+	cards,
+	packType,
+	onCreateClick,
+	onEdit,
+	onDelete,
+}: CardListProps) {
 	const { t } = useTranslation();
 	const client = useApiClient();
 	const ownerUserId = useMemo(() => cards[0]?.owner_user_id ?? null, [cards]);
@@ -71,6 +80,10 @@ export function CardList({ cards, packType, onEdit, onDelete }: CardListProps) {
 					<p className="font-medium">{t("cards.emptyTitle")}</p>
 					<p className="text-xs">{t("cards.emptyDescription")}</p>
 				</div>
+				<Button variant="outline" onClick={onCreateClick}>
+					<Plus className="size-4" />
+					{t("cards.newCard")}
+				</Button>
 			</div>
 		);
 	}

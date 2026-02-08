@@ -1,302 +1,447 @@
 {
-  "language": {
-    "label": "Language",
-    "english": "EN",
-    "chineseSimplified": "简体中文"
-  },
-  "brand": {
-    "name": "MindMemo",
-    "tagline": "One Mind, One Memory"
-  },
-  "sidebar": {
-    "title": "Main Navigation",
-    "sections": {
-      "navigation": "Navigation",
-      "system": "System"
-    },
-    "actions": {
-      "collapse": "Collapse sidebar",
-      "expand": "Expand sidebar",
-      "openMobile": "Open sidebar"
-    },
-    "nav": {
-      "cardPacks": "Card Packs",
-      "quickStart": "Quick Start"
-    },
-    "system": {
-      "preferences": "Preferences"
-    },
-    "user": {
-      "name": "Guest User",
-      "role": "Local profile (placeholder)",
-      "defaultName": "No Profile"
-    }
-  },
-  "profile": {
-    "create": {
-      "title": "Create your first profile",
-      "description": "Profiles isolate each learner's card packs and review history.",
-      "note": "Theme color is optional for now and will be applied in a later step."
-    },
-    "switch": {
-      "title": "Switch Profile",
-      "description": "Choose an existing profile or create a new one.",
-      "current": "Current",
-      "addProfile": "Add Profile"
-    },
-    "menu": {
-      "title": "User Settings",
-      "switchUser": "Switch User",
-      "preferences": "Preference Settings"
-    },
-    "fields": {
-      "nickname": "Nickname",
-      "nicknamePlaceholder": "e.g. Alex",
-      "avatar": "Avatar",
-      "primaryColorOptional": "Primary color (optional)"
-    },
-    "actions": {
-      "create": "Create Profile",
-      "pickEmoji": "Choose Emoji"
-    },
-    "errors": {
-      "nicknameRequired": "Nickname is required."
-    }
-  },
-  "common": {
-    "cancel": "Cancel",
-    "create": "Create",
-    "creating": "Creating...",
-    "save": "Save",
-    "saving": "Saving...",
-    "delete": "Delete",
-    "deleting": "Deleting...",
-    "import": "Import",
-    "importing": "Importing...",
-    "export": "Export",
-    "exporting": "Exporting...",
-    "loadingCards": "Loading cards..."
-  },
-  "quickStart": {
-    "title": "Quick Start",
-    "subtitle": "This page will document usage, feature overview, and the learning philosophy.",
-    "blocks": {
-      "usage": {
-        "title": "How to Use",
-        "description": "Step-by-step onboarding content will be added here."
-      },
-      "principles": {
-        "title": "Core Principles",
-        "description": "Product principles and design decisions will be documented here."
-      }
-    }
-  },
-  "preferences": {
-    "title": "Preferences",
-    "subtitle": "Manage the active profile, default language, and core app settings.",
-    "profile": {
-      "title": "User Profile",
-      "defaultLanguage": "Default language",
-      "resetThemeColor": "Use default color",
-      "defaultColorActive": "Using app default theme color.",
-      "customColorActive": "Custom profile theme color is active."
-    },
-    "blocks": {
-      "system": {
-        "title": "System Parameters",
-        "description": "Configuration controls will be added here in a future iteration."
-      },
-      "version": {
-        "title": "Version"
-      }
-    }
-  },
-  "home": {
-    "title": "Card Packs",
-    "subtitle": "Manage your decks and keep track of what to review.",
-    "newPack": "New card pack",
-    "loadingPacks": "Loading card packs...",
-    "emptyTitle": "No card packs yet",
-    "emptyDescription": "Create your first pack to start adding cards.",
-    "emptyAction": "Create a card pack",
-    "typeAndCount": "{{type}} · {{count}} cards",
-    "createdAt": "Created {{date}}",
-    "createPack": {
-      "title": "Create card pack",
-      "description": "Add a new pack to group your cards.",
-      "name": "Name",
-      "namePlaceholder": "My first pack",
-      "type": "Type"
-    },
-    "editPack": {
-      "title": "Rename card pack",
-      "description": "Update the name shown on your home screen.",
-      "name": "Name",
-      "namePlaceholder": "Updated card pack name"
-    },
-    "deletePack": {
-      "title": "Delete card pack",
-      "description": "This removes the pack and its cards. This action cannot be undone.",
-      "confirm": "Are you sure you want to delete {{name}}?",
-      "thisPack": "this pack"
-    },
-    "exportDialog": {
-      "title": "Export card packs",
-      "description": "Choose which packs to export into a portable JSON file.",
-      "selectPacks": "Select packs",
-      "all": "All",
-      "none": "None",
-      "packCardsCount": "{{count}} cards",
-      "includeReviewState": "Include review history and schedule state"
-    },
-    "importDialog": {
-      "title": "Import card packs",
-      "description": "Import card packs from an exported JSON file.",
-      "fileLabel": "Export file",
-      "includeReviewState": "Import review history and schedule state",
-      "noReviewState": "This file does not include review history or schedule state.",
-      "readError": "Unable to read import file."
-    }
-  },
-  "cards": {
-    "breadcrumbPacks": "Card packs",
-    "loadingPackName": "Loading...",
-    "title": "Cards",
-    "subtitle": "View and manage cards in this pack.",
-    "review": "Review",
-    "bulkCreate": "Bulk create",
-    "newCard": "New card",
-    "packFallback": "Card pack",
-    "count": "{{count}} cards",
-    "emptyTitle": "No cards yet",
-    "emptyDescription": "Create one to start practicing",
-    "createdAt": "Created {{date}}",
-    "due": "Due {{time}}",
-    "overdue": "Overdue",
-    "now": "Now",
-    "noAnswer": "No answer provided",
-    "untitledQuestion": "[Untitled question]",
-    "fallbackCard": "card",
-    "actions": {
-      "editCard": "Edit {{question}}",
-      "deleteCard": "Delete {{question}}"
-    },
-    "form": {
-      "createTitle": "Create card",
-      "editTitle": "Edit card",
-      "createDescription": "Add a new prompt and answer.",
-      "editDescription": "Update this card.",
-      "convertFromHanzi": "Convert from Hanzi",
-      "converting": "Converting...",
-      "questionImage": "Question image",
-      "questionPreview": "Question preview",
-      "removeImage": "Remove image",
-      "questionAudioOptional": "Question audio (optional)",
-      "removeAudio": "Remove audio",
-      "readFileError": "Failed to read file.",
-      "loadImageError": "Failed to load image.",
-      "loadAudioError": "Failed to load audio.",
-      "enterHanziFirst": "Enter Hanzi in the answer field first.",
-      "convertError": "Failed to convert Hanzi to pinyin."
-    },
-    "bulkHanzi": {
-      "title": "Bulk create Hanzi cards",
-      "description": "Create one card per Hanzi word with pinyin (with tone marks) as the question.",
-      "label": "Hanzi words (space/newline separated)",
-      "placeholder": "葵花 贝壳 葡萄",
-      "emptyError": "Please enter at least one Hanzi word.",
-      "createError": "Failed to create cards from hanzi list.",
-      "createCards": "Create cards"
-    },
-    "deleteDialog": {
-      "title": "Delete card",
-      "description": "This will remove the card permanently. This action cannot be undone.",
-      "confirm": "Are you sure you want to delete {{question}}?",
-      "thisCard": "this card"
-    }
-  },
-  "cardType": {
-    "basic": "Basic",
-    "imageRecall": "Image Recall",
-    "pinyinHanzi": "Pinyin - Hanzi",
-    "fields": {
-      "question": "Question",
-      "answer": "Answer",
-      "pinyin": "Pinyin",
-      "hanzi": "Hanzi"
-    },
-    "placeholders": {
-      "defaultQuestion": "E.g. What is spaced repetition?",
-      "defaultAnswer": "Your answer...",
-      "imageRecallQuestion": "Optional text hint...",
-      "imageRecallAnswer": "E.g. Japan",
-      "pinyinQuestion": "E.g. zhong guo",
-      "pinyinAnswer": "E.g. 中国"
-    },
-    "validation": {
-      "questionRequired": "Question is required.",
-      "answerRequired": "Answer is required.",
-      "pinyinRequired": "Pinyin is required.",
-      "hanziRequired": "Hanzi is required.",
-      "questionOrImageRequired": "Add question text or upload an image."
-    }
-  },
-  "review": {
-    "back": "← Back",
-    "loadingQueue": "Loading review queue...",
-    "quickMode": "Quick Review",
-    "normalMode": "Normal Review",
-    "progress": "Progress",
-    "learned": "{{learned}} / {{total}} learned",
-    "question": "Question",
-    "answer": "Answer",
-    "showAnswer": "Show Answer",
-    "quickHint": "Quick review does not affect your study schedule",
-    "normalHint": "Grades affect the next review interval",
-    "pronunciation": "Pronunciation",
-    "summary": {
-      "quickComplete": "Quick review complete",
-      "complete": "Review complete",
-      "withPack": "Finished {{modeText}} for {{packName}}.",
-      "withoutPack": "Finished {{modeText}}.",
-      "modeQuick": "quick review",
-      "modeNormal": "today's cards",
-      "reviewedCount": "Reviewed {{value}} cards.",
-      "forgotTitle": "⚠️ {{value}} cards you forgot:",
-      "andMore": "... and {{value}} more",
-      "forgotHint": "Consider reviewing these cards again or using normal review mode.",
-      "backToPacks": "Back to packs",
-      "backToCards": "Back to cards"
-    },
-    "buttons": {
-      "forgot": "Forgot",
-      "tryAgain": "Try Again",
-      "remembered": "Remembered",
-      "nextCard": "Next Card",
-      "partiallyRecall": "Partially Recall",
-      "recalledWithEffort": "Recalled with effort",
-      "easilyRecalled": "Easily Recalled"
-    }
-  },
-  "errors": {
-    "packNotFound": "Card pack not found or inaccessible.",
-    "loadCards": "Failed to load cards",
-    "createCard": "Failed to create card",
-    "createCards": "Failed to create cards",
-    "updateCard": "Failed to update card",
-    "deleteCard": "Failed to delete card",
-    "loadCardPacks": "Failed to load card packs",
-    "createCardPack": "Failed to create card pack",
-    "updateCardPack": "Failed to update card pack",
-    "deleteCardPack": "Failed to delete card pack",
-    "exportCardPacks": "Failed to export card packs",
-    "importCardPacks": "Failed to import card packs",
-    "loadReviewData": "Failed to load review data",
-    "recordReview": "Failed to record review",
-    "noCardsToReview": "No cards in this pack to review."
-  },
-  "success": {
-    "importedWithReview": "Imported {{packs}} pack(s) and {{cards}} card(s) ({{reviewEvents}} review events, {{schedulingStates}} scheduling states).",
-    "importedBasic": "Imported {{packs}} pack(s) and {{cards}} card(s)."
-  }
+	"language": {
+		"label": "Language",
+		"english": "EN",
+		"chineseSimplified": "简体中文"
+	},
+	"brand": {
+		"name": "MindMemo",
+		"tagline": "One Mind, One Memory"
+	},
+	"sidebar": {
+		"title": "Main Navigation",
+		"sections": {
+			"navigation": "Navigation",
+			"system": "System"
+		},
+		"actions": {
+			"collapse": "Collapse sidebar",
+			"expand": "Expand sidebar",
+			"openMobile": "Open sidebar"
+		},
+		"nav": {
+			"cardPacks": "Card Packs",
+			"quickStart": "Quick Start"
+		},
+		"system": {
+			"preferences": "Preferences"
+		},
+		"user": {
+			"name": "Guest User",
+			"role": "Local profile (placeholder)",
+			"defaultName": "No Profile"
+		}
+	},
+	"profile": {
+		"create": {
+			"title": "Create your first profile",
+			"description": "Profiles isolate each learner's card packs and review history.",
+			"note": "Theme color is optional for now and will be applied in a later step."
+		},
+		"switch": {
+			"title": "Switch Profile",
+			"description": "Choose an existing profile or create a new one.",
+			"current": "Current",
+			"addProfile": "Add Profile"
+		},
+		"menu": {
+			"title": "User Settings",
+			"switchUser": "Switch User",
+			"preferences": "Preference Settings"
+		},
+		"fields": {
+			"nickname": "Nickname",
+			"nicknamePlaceholder": "e.g. Alex",
+			"avatar": "Avatar",
+			"primaryColorOptional": "Primary color (optional)"
+		},
+		"actions": {
+			"create": "Create Profile",
+			"pickEmoji": "Choose Emoji"
+		},
+		"errors": {
+			"nicknameRequired": "Nickname is required."
+		}
+	},
+	"common": {
+		"cancel": "Cancel",
+		"create": "Create",
+		"creating": "Creating...",
+		"save": "Save",
+		"saving": "Saving...",
+		"delete": "Delete",
+		"deleting": "Deleting...",
+		"import": "Import",
+		"importing": "Importing...",
+		"export": "Export",
+		"exporting": "Exporting...",
+		"loadingCards": "Loading cards..."
+	},
+	"quickStart": {
+		"title": "Beginner Guide",
+		"subtitle": "Start from zero. These four sections are enough to get your memory workflow running.",
+		"guideTitle": "Guide Sections",
+		"sections": {
+			"firstSteps": {
+				"title": "What to do first",
+				"description": "Create a profile, create a pack, add cards, and finish your first review."
+			},
+			"workflow": {
+				"title": "How this app helps memory",
+				"description": "Understand the full loop: input, recall, grade, schedule, repeat."
+			},
+			"memoryCurve": {
+				"title": "Memory curve (simple)",
+				"description": "Why spaced review works and how intervals are adjusted."
+			},
+			"faq": {
+				"title": "FAQ",
+				"description": "Common questions, including how to share card packs."
+			}
+		},
+		"firstStepsPage": {
+			"title": "First-time setup in 4 steps",
+			"lead": "Skip theory for now and run the workflow once. These four steps are enough to start.",
+			"startCreatePack": "Start Creating a Pack",
+			"steps": {
+				"1": {
+					"title": "1) Create your learning profile",
+					"description": "On first launch, create a profile. Data is isolated per profile, so multiple learners can share one device."
+				},
+				"2": {
+					"title": "2) Create one card pack",
+					"description": "Organize by topic, like \"Interview Q&A\" or \"Medical terms\". One topic per pack keeps reviews focused."
+				},
+				"3": {
+					"title": "3) Add 10-20 core cards",
+					"description": "Do not start too big. Add the highest-value items you need soon so you can see results quickly."
+				},
+				"4": {
+					"title": "4) Finish your first review today",
+					"description": "Recall first, reveal answer second, then grade honestly. The app schedules the next review automatically."
+				}
+			},
+			"checklistTitle": "Starting checklist",
+			"checklist": {
+				"1": "Keep cards short: one idea per card.",
+				"2": "Write specific prompts, not vague ones.",
+				"3": "Prioritize active recall over passive familiarity.",
+				"4": "Use a fixed daily review window."
+			}
+		},
+		"workflowPage": {
+			"title": "How this product helps you remember",
+			"lead": "The core is not rereading often. It is recalling at the moment you are close to forgetting.",
+			"nodes": {
+				"1": {
+					"title": "Create cards",
+					"description": "Break knowledge into small units that can be asked and answered."
+				},
+				"2": {
+					"title": "Recall actively",
+					"description": "See the prompt first and try to answer before revealing."
+				},
+				"3": {
+					"title": "Check and grade",
+					"description": "Compare with the correct answer and grade your current mastery."
+				},
+				"4": {
+					"title": "Auto scheduling",
+					"description": "Better recall extends intervals; weak recall shortens them."
+				},
+				"5": {
+					"title": "Repeat loop",
+					"description": "You only handle due cards each day, which keeps study time controlled."
+				}
+			},
+			"tip": "Practical order: clear due cards first, then add new learning. This keeps pressure stable."
+		},
+		"memoryCurvePage": {
+			"title": "Advanced: memory curve and spaced review",
+			"lead": "The forgetting curve shows fast loss in the first days, then a slower decline. The goal is to review when memory is weak but not gone.",
+			"items": {
+				"1": {
+					"title": "Why spacing matters",
+					"description": "Cramming feels easy now but fades quickly. Spaced recall is harder, and that effort builds stronger memory."
+				},
+				"2": {
+					"title": "How grades change intervals",
+					"description": "If recall is easy, the next review moves later. If recall is weak, the next review comes sooner."
+				},
+				"3": {
+					"title": "Your one job",
+					"description": "Grade honestly. Inflated grades break scheduling quality."
+				}
+			},
+			"intervalTitle": "Typical interval pattern (example)",
+			"intervals": {
+				"1": "After first successful recall: same day or next day",
+				"2": "After second successful recall: in 2-3 days",
+				"3": "After third successful recall: around 1 week",
+				"4": "After stable retention: every 2-4 weeks",
+				"5": "Long-term stage: adapt based on forgetting signals"
+			}
+		},
+		"faqPage": {
+			"title": "FAQ",
+			"lead": "These are common beginner questions.",
+			"items": {
+				"1": {
+					"question": "How do I share a card pack?",
+					"answer": "Use Export to generate a JSON file and send it. The other person imports it into their own profile."
+				},
+				"2": {
+					"question": "Why do I still forget after I feel confident?",
+					"answer": "That is normal. Short-term familiarity is not long-term retention. Follow due reviews instead of reviewing only when you remember."
+				},
+				"3": {
+					"question": "How long should I review each day?",
+					"answer": "Start with 15-25 minutes daily. Keep it consistent for two weeks before increasing new cards."
+				},
+				"4": {
+					"question": "Quick Review vs Normal Review?",
+					"answer": "Quick Review does not update scheduling. Normal Review updates intervals from your grades, so use it as your default."
+				},
+				"5": {
+					"question": "How many cards should one pack contain?",
+					"answer": "For beginners, start around 30-80 cards per pack. Split the pack if the topic becomes too broad."
+				}
+			}
+		}
+	},
+	"preferences": {
+		"title": "Preferences",
+		"subtitle": "Manage the active profile, default language, and core app settings.",
+		"profile": {
+			"title": "User Profile",
+			"defaultLanguage": "Default language",
+			"resetThemeColor": "Use default color",
+			"defaultColorActive": "Using app default theme color.",
+			"customColorActive": "Custom profile theme color is active."
+		},
+		"system": {
+			"enableMultiPackTypes": "Enable multiple card pack types",
+			"enableMultiPackTypesHint": "If disabled, creating a pack will always use the default pack type.",
+			"defaultPackType": "Default card pack type",
+			"defaultPackTypeHint": "Used for pack creation by default, and always used when multi-type is off."
+		},
+		"blocks": {
+			"system": {
+				"title": "System Parameters",
+				"description": "Control advanced pack creation behavior."
+			},
+			"version": {
+				"title": "Version"
+			}
+		}
+	},
+	"home": {
+		"title": "Card Packs",
+		"subtitle": "Manage your decks and keep track of what to review.",
+		"newPack": "New card pack",
+		"loadingPacks": "Loading card packs...",
+		"emptyTitle": "No card packs yet",
+		"emptyDescription": "Create your first pack to start adding cards.",
+		"emptyAction": "Create a card pack",
+		"cardsCount": "{{count}} cards",
+		"typeAndCount": "{{type}} · {{count}} cards",
+		"createdAt": "Created {{date}}",
+		"controls": {
+			"searchPlaceholder": "Search card pack name",
+			"sortLabel": "Sort packs",
+			"sort": {
+				"createdAtDesc": "Created time (newest first)",
+				"createdAtAsc": "Created time (oldest first)",
+				"nameAsc": "Name (A-Z)",
+				"nameDesc": "Name (Z-A)",
+				"cardsCountDesc": "Card count (high to low)",
+				"cardsCountAsc": "Card count (low to high)"
+			},
+			"noResultsTitle": "No matching card packs",
+			"noResultsDescription": "Try a different keyword or sort option."
+		},
+		"createPack": {
+			"title": "Create card pack",
+			"description": "Add a new pack to group your cards.",
+			"name": "Name",
+			"namePlaceholder": "My first pack",
+			"type": "Type"
+		},
+		"editPack": {
+			"title": "Rename card pack",
+			"description": "Update the name shown on your home screen.",
+			"name": "Name",
+			"namePlaceholder": "Updated card pack name"
+		},
+		"deletePack": {
+			"title": "Delete card pack",
+			"description": "This removes the pack and its cards. This action cannot be undone.",
+			"confirm": "Are you sure you want to delete {{name}}?",
+			"thisPack": "this pack"
+		},
+		"exportDialog": {
+			"title": "Export card packs",
+			"description": "Choose which packs to export into a portable JSON file.",
+			"selectPacks": "Select packs",
+			"all": "All",
+			"none": "None",
+			"packCardsCount": "{{count}} cards",
+			"includeReviewState": "Include review history and schedule state"
+		},
+		"importDialog": {
+			"title": "Import card packs",
+			"description": "Import card packs from an exported JSON file.",
+			"fileLabel": "Export file",
+			"includeReviewState": "Import review history and schedule state",
+			"noReviewState": "This file does not include review history or schedule state.",
+			"readError": "Unable to read import file."
+		}
+	},
+	"cards": {
+		"breadcrumbPacks": "Card packs",
+		"loadingPackName": "Loading...",
+		"title": "Cards",
+		"subtitle": "View and manage cards in this pack.",
+		"review": "Review",
+		"bulkCreate": "Bulk create",
+		"newCard": "New card",
+		"packFallback": "Card pack",
+		"count": "{{count}} cards",
+		"summary": {
+			"total": "Total {{count}}",
+			"learning": "Learning {{count}}",
+			"review": "Review {{count}}",
+			"due": "Due {{count}}"
+		},
+		"emptyTitle": "No cards yet",
+		"emptyDescription": "Create one to start practicing",
+		"createdAt": "Created {{date}}",
+		"due": "Due {{time}}",
+		"overdue": "Overdue",
+		"now": "Now",
+		"noAnswer": "No answer provided",
+		"untitledQuestion": "[Untitled question]",
+		"fallbackCard": "card",
+		"actions": {
+			"editCard": "Edit {{question}}",
+			"deleteCard": "Delete {{question}}"
+		},
+		"form": {
+			"createTitle": "Create card",
+			"editTitle": "Edit card",
+			"createDescription": "Add a new prompt and answer.",
+			"editDescription": "Update this card.",
+			"convertFromHanzi": "Convert from Hanzi",
+			"converting": "Converting...",
+			"questionImage": "Question image",
+			"questionPreview": "Question preview",
+			"removeImage": "Remove image",
+			"questionAudioOptional": "Question audio (optional)",
+			"removeAudio": "Remove audio",
+			"readFileError": "Failed to read file.",
+			"loadImageError": "Failed to load image.",
+			"loadAudioError": "Failed to load audio.",
+			"enterHanziFirst": "Enter Hanzi in the answer field first.",
+			"convertError": "Failed to convert Hanzi to pinyin."
+		},
+		"bulkHanzi": {
+			"title": "Bulk create Hanzi cards",
+			"description": "Create one card per Hanzi word with pinyin (with tone marks) as the question.",
+			"label": "Hanzi words (space/newline separated)",
+			"placeholder": "机器 知了 帆船",
+			"emptyError": "Please enter at least one Hanzi word.",
+			"createError": "Failed to create cards from hanzi list.",
+			"createCards": "Create cards"
+		},
+		"deleteDialog": {
+			"title": "Delete card",
+			"description": "This will remove the card permanently. This action cannot be undone.",
+			"confirm": "Are you sure you want to delete {{question}}?",
+			"thisCard": "this card"
+		}
+	},
+	"cardType": {
+		"basic": "Basic",
+		"imageRecall": "Image Recall",
+		"pinyinHanzi": "Pinyin - Hanzi",
+		"fields": {
+			"question": "Question",
+			"answer": "Answer",
+			"pinyin": "Pinyin",
+			"hanzi": "Hanzi"
+		},
+		"placeholders": {
+			"defaultQuestion": "E.g. What is spaced repetition?",
+			"defaultAnswer": "Your answer...",
+			"imageRecallQuestion": "Optional text hint...",
+			"imageRecallAnswer": "E.g. Japan",
+			"pinyinQuestion": "E.g. zhong guo",
+			"pinyinAnswer": "E.g. 中国"
+		},
+		"validation": {
+			"questionRequired": "Question is required.",
+			"answerRequired": "Answer is required.",
+			"pinyinRequired": "Pinyin is required.",
+			"hanziRequired": "Hanzi is required.",
+			"questionOrImageRequired": "Add question text or upload an image."
+		}
+	},
+	"review": {
+		"back": "← Back",
+		"loadingQueue": "Loading review queue...",
+		"quickMode": "Quick Review",
+		"normalMode": "Normal Review",
+		"progress": "Progress",
+		"learned": "{{learned}} / {{total}} learned",
+		"question": "Question",
+		"answer": "Answer",
+		"showAnswer": "Show Answer",
+		"quickHint": "Quick review does not affect your study schedule",
+		"normalHint": "Grades affect the next review interval",
+		"pronunciation": "Pronunciation",
+		"summary": {
+			"quickComplete": "Quick review complete",
+			"complete": "Review complete",
+			"withPack": "Finished {{modeText}} for {{packName}}.",
+			"withoutPack": "Finished {{modeText}}.",
+			"modeQuick": "quick review",
+			"modeNormal": "today's cards",
+			"reviewedCount": "Reviewed {{value}} cards.",
+			"forgotTitle": "⚠️ {{value}} cards you forgot:",
+			"andMore": "... and {{value}} more",
+			"forgotHint": "Consider reviewing these cards again or using normal review mode.",
+			"backToPacks": "Back to packs",
+			"backToCards": "Back to cards"
+		},
+		"buttons": {
+			"forgot": "Forgot",
+			"tryAgain": "Try Again",
+			"remembered": "Remembered",
+			"nextCard": "Next Card",
+			"partiallyRecall": "Partially Recall",
+			"recalledWithEffort": "Recalled with effort",
+			"easilyRecalled": "Easily Recalled"
+		}
+	},
+	"errors": {
+		"packNotFound": "Card pack not found or inaccessible.",
+		"loadCards": "Failed to load cards",
+		"createCard": "Failed to create card",
+		"createCards": "Failed to create cards",
+		"updateCard": "Failed to update card",
+		"deleteCard": "Failed to delete card",
+		"loadCardPacks": "Failed to load card packs",
+		"createCardPack": "Failed to create card pack",
+		"updateCardPack": "Failed to update card pack",
+		"deleteCardPack": "Failed to delete card pack",
+		"exportCardPacks": "Failed to export card packs",
+		"importCardPacks": "Failed to import card packs",
+		"loadReviewData": "Failed to load review data",
+		"recordReview": "Failed to record review",
+		"noCardsToReview": "No cards in this pack to review."
+	},
+	"success": {
+		"importedWithReview": "Imported {{packs}} pack(s) and {{cards}} card(s) ({{reviewEvents}} review events, {{schedulingStates}} scheduling states).",
+		"importedBasic": "Imported {{packs}} pack(s) and {{cards}} card(s)."
+	}
 }

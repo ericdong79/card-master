@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { CardTypeBadge } from "@/components/card-type-badge";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -12,41 +13,42 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import {
-	DEFAULT_CARD_PACK_TYPE,
-	type CardPackType,
-} from "@/lib/api/entities/card-pack";
+import { type CardPackType } from "@/lib/api/entities/card-pack";
 import { cn } from "@/lib/utils";
 
 type CreatePackDialogProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	onCreate: (name: string, type: CardPackType) => Promise<void>;
+	onCreate: (name: string, type: CardPackType) => Promise<string | null>;
+	enableMultiPackTypes: boolean;
+	defaultPackType: CardPackType;
 };
 
 export function CreatePackDialog({
 	open,
 	onOpenChange,
 	onCreate,
+	enableMultiPackTypes,
+	defaultPackType,
 }: CreatePackDialogProps) {
 	const { t } = useTranslation();
 	const [name, setName] = useState("");
-	const [type, setType] = useState<CardPackType>(DEFAULT_CARD_PACK_TYPE);
+	const [type, setType] = useState<CardPackType>(defaultPackType);
 	const [pending, setPending] = useState(false);
 
 	useEffect(() => {
+		setType(defaultPackType);
 		if (!open) {
 			setName("");
-			setType(DEFAULT_CARD_PACK_TYPE);
 			setPending(false);
 		}
-	}, [open]);
+	}, [defaultPackType, open]);
 
 	const handleSubmit = async () => {
 		if (!name.trim()) return;
 		setPending(true);
 		try {
-			await onCreate(name, type);
+			await onCreate(name, enableMultiPackTypes ? type : defaultPackType);
 		} finally {
 			setPending(false);
 		}
@@ -69,22 +71,29 @@ export function CreatePackDialog({
 						autoFocus
 					/>
 				</div>
-				<div className="space-y-2">
-					<Label htmlFor="new-pack-type">{t("home.createPack.type")}</Label>
-					<select
-						id="new-pack-type"
-						value={type}
-						onChange={(event) => setType(event.target.value as CardPackType)}
-						className={cn(
-							"border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm",
-							"focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
-						)}
-					>
-						<option value="basic">{t("cardType.basic")}</option>
-						<option value="image-recall">{t("cardType.imageRecall")}</option>
-						<option value="pinyin-hanzi">{t("cardType.pinyinHanzi")}</option>
-					</select>
-				</div>
+				{enableMultiPackTypes ? (
+					<div className="space-y-2">
+						<Label htmlFor="new-pack-type">{t("home.createPack.type")}</Label>
+						<select
+							id="new-pack-type"
+							value={type}
+							onChange={(event) => setType(event.target.value as CardPackType)}
+							className={cn(
+								"border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm",
+								"focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+							)}
+						>
+							<option value="basic">{t("cardType.basic")}</option>
+							<option value="image-recall">{t("cardType.imageRecall")}</option>
+							<option value="pinyin-hanzi">{t("cardType.pinyinHanzi")}</option>
+						</select>
+					</div>
+				) : (
+					<div className="space-y-2">
+						<Label>{t("home.createPack.type")}</Label>
+						<CardTypeBadge type={defaultPackType} />
+					</div>
+				)}
 				<DialogFooter>
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
 						{t("common.cancel")}

@@ -211,11 +211,11 @@ export function AppShell() {
 	}, [mustCreateProfile]);
 
 	return (
-		<div className="min-h-screen bg-muted/20">
-			<div className="flex min-h-screen">
+		<div className="h-screen overflow-hidden bg-muted/20">
+			<div className="flex h-full">
 				<aside
 					className={cn(
-						"hidden border-r border-sidebar-border bg-sidebar transition-[width] duration-200 md:block",
+						"hidden h-screen border-r border-sidebar-border bg-sidebar transition-[width] duration-200 md:block",
 						collapsed ? "w-16" : "w-72",
 					)}
 				>
@@ -230,7 +230,7 @@ export function AppShell() {
 					/>
 				</aside>
 
-				<div className="flex min-h-screen min-w-0 flex-1 flex-col">
+				<div className="flex h-full min-w-0 flex-1 flex-col overflow-y-auto">
 					<header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b bg-background/85 px-4 backdrop-blur md:hidden">
 						<Button
 							variant="ghost"

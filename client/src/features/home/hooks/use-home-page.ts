@@ -80,7 +80,7 @@ export function useHomePage() {
 	}, []);
 
 	const createPack = useCallback(async (name: string, type: CardPackType) => {
-		if (!ownerUserId) return;
+		if (!ownerUserId) return null;
 		try {
 			setError(null);
 			setSuccessMessage(null);
@@ -90,8 +90,10 @@ export function useHomePage() {
 			});
 			setCardPacks((prev) => [...prev, { ...created, cards_count: 0 }]);
 			closeCreateDialog();
+			return created.id;
 		} catch (err) {
 			setError(err instanceof Error ? err.message : t("errors.createCardPack"));
+			return null;
 		}
 	}, [apiClient, closeCreateDialog, ownerUserId, t]);
 

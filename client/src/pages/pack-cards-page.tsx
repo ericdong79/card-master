@@ -15,6 +15,7 @@ import { createApiClient } from "@/lib/api/client";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
+import type { Sm2State } from "@/lib/scheduling/types";
 import { listSchedulingStatesByCardIds } from "@/lib/api/scheduling-state";
 import { useProfile } from "@/features/profile/profile-context";
 
@@ -50,16 +51,34 @@ export function PackCardsPage() {
 		"create" | "edit" | "delete" | null
 	>(null);
 
-	// Calculate due cards count based on scheduling states
-	const dueCardsCount = useMemo(() => {
+	const cardStatusCounts = useMemo(() => {
 		const now = new Date();
 		const stateMap = new Map(schedulingStates.map((s) => [s.card_id, s]));
+		let learning = 0;
+		let review = 0;
+		let due = 0;
 
-		return cards.filter((card) => {
+		for (const card of cards) {
 			const state = stateMap.get(card.id);
-			if (!state) return true; // New cards (no state) are considered due
-			return new Date(state.due_at) <= now;
-		}).length;
+			const sm2State = (state?.state as Sm2State | null) ?? null;
+
+			if (sm2State?.phase === "learning" || sm2State?.phase === "relearning") {
+				learning += 1;
+			}
+			if (sm2State?.phase === "review") {
+				review += 1;
+			}
+			if (!state || new Date(state.due_at) <= now) {
+				due += 1;
+			}
+		}
+
+		return {
+			total: cards.length,
+			learning,
+			review,
+			due,
+		};
 	}, [cards, schedulingStates]);
 
 	useEffect(() => {
@@ -202,10 +221,12 @@ export function PackCardsPage() {
 			<PackCardsHeader
 				cardPackId={cardPackId}
 				packName={cardPack?.name}
+				packType={cardPack?.type}
 				onCreateClick={() => setCreateOpen(true)}
 				onBulkCreateClick={() => setBulkCreateOpen(true)}
 				showBulkCreate={cardPack?.type === "pinyin-hanzi"}
-				dueCardsCount={dueCardsCount}
+				showReviewButton={cards.length > 0}
+				dueCardsCount={cardStatusCounts.due}
 			/>
 
 			<main className="mx-auto flex max-w-5xl flex-col gap-4 px-6 py-8">
@@ -217,7 +238,12 @@ export function PackCardsPage() {
 					<PackCardsContent
 						packName={cardPack?.name}
 						packType={cardPack?.type}
+						totalCards={cardStatusCounts.total}
+						learningCards={cardStatusCounts.learning}
+						reviewCards={cardStatusCounts.review}
+						dueCards={cardStatusCounts.due}
 						cards={cards}
+						onCreateClick={() => setCreateOpen(true)}
 						onEdit={setEditingCard}
 						onDelete={setDeleteCardTarget}
 					/>

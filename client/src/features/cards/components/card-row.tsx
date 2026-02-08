@@ -84,7 +84,7 @@ export function CardRow({
 
 	return (
 		<Card className="group relative transition hover:-translate-y-0.5 hover:shadow-md">
-			<div className="absolute right-3 top-3 flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
+			<div className="card-row-actions absolute right-3 top-3 flex items-center gap-2 transition-opacity">
 				<Button
 					size="icon-sm"
 					variant="ghost"

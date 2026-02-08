@@ -61,6 +61,7 @@ export const WithCards: Story = {
 	args: {
 		packName: "React Fundamentals",
 		cards: mockCards,
+		onCreateClick: () => console.log("Create card"),
 		onEdit: (card) => console.log("Edit card:", card),
 		onDelete: (card) => console.log("Delete card:", card),
 	},
@@ -70,6 +71,7 @@ export const Empty: Story = {
 	args: {
 		packName: "Empty Pack",
 		cards: [],
+		onCreateClick: () => console.log("Create card"),
 		onEdit: (card) => console.log("Edit card:", card),
 		onDelete: (card) => console.log("Delete card:", card),
 	},
@@ -79,6 +81,7 @@ export const Loading: Story = {
 	args: {
 		packName: undefined,
 		cards: [],
+		onCreateClick: () => console.log("Create card"),
 		onEdit: (card) => console.log("Edit card:", card),
 		onDelete: (card) => console.log("Delete card:", card),
 	},
@@ -88,6 +91,7 @@ export const SingleCard: Story = {
 	args: {
 		packName: "Single Card Pack",
 		cards: [mockCards[0]],
+		onCreateClick: () => console.log("Create card"),
 		onEdit: (card) => console.log("Edit card:", card),
 		onDelete: (card) => console.log("Delete card:", card),
 	},
@@ -102,6 +106,7 @@ export const ManyCards: Story = {
 			prompt: `Question ${i + 1}: ${mockCards[i % 3].prompt}`,
 			created_at: new Date(2024, 0, i + 1).toISOString(),
 		})),
+		onCreateClick: () => console.log("Create card"),
 		onEdit: (card) => console.log("Edit card:", card),
 		onDelete: (card) => console.log("Delete card:", card),
 	},
