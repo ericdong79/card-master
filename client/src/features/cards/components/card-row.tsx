@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
-	CardDescription,
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
@@ -20,6 +19,7 @@ import {
 	getCardQuestionText,
 } from "@/lib/cards/card-type-registry";
 import { cn } from "@/lib/utils";
+import { CardPreviewContent } from "./card-preview-content";
 
 type CardRowProps = {
 	card: CardEntity;
@@ -80,6 +80,7 @@ export function CardRow({
 	const { t, i18n } = useTranslation();
 	const questionText = getCardQuestionText(card) || card.prompt || t("cards.fallbackCard");
 	const answerText = getCardAnswerText(card) || card.answer;
+	const shouldShowQuestionTitle = packType !== "pinyin-hanzi";
 
 	return (
 		<Card className="group relative transition hover:-translate-y-0.5 hover:shadow-md">
@@ -104,24 +105,18 @@ export function CardRow({
 				</Button>
 			</div>
 			<CardHeader className="pb-3 pr-24">
-				<CardTitle className="text-base leading-tight">
-					{questionText || t("cards.untitledQuestion")}
-				</CardTitle>
-				{packType === "pinyin-hanzi" ? (
-					<CardDescription className={cn(!answerText && "italic")}>
-						{answerText ? (
-							<HanziAnswerPreview answerText={answerText} />
-						) : (
-							t("cards.noAnswer")
-						)}
-					</CardDescription>
-				) : (
-					<CardDescription
-						className={cn("line-clamp-2", !answerText && "italic")}
-					>
-						{answerText || t("cards.noAnswer")}
-					</CardDescription>
-				)}
+				{shouldShowQuestionTitle ? (
+					<CardTitle className="text-base leading-tight">
+						{questionText || t("cards.untitledQuestion")}
+					</CardTitle>
+				) : null}
+				<CardPreviewContent
+					card={card}
+					packType={packType}
+					questionText={questionText}
+					answerText={answerText}
+					noAnswerText={t("cards.noAnswer")}
+				/>
 			</CardHeader>
 			<CardContent className="flex items-center gap-4 text-xs text-muted-foreground">
 				<div className="flex items-center gap-1">
@@ -145,71 +140,5 @@ export function CardRow({
 				)}
 			</CardContent>
 		</Card>
-	);
-}
-
-function HanziAnswerPreview({ answerText }: { answerText: string }) {
-	const characters = Array.from(answerText).filter(
-		(char) => char.trim().length > 0,
-	);
-
-	return (
-		<div className="mt-1 flex flex-wrap gap-0.5">
-			{characters.map((char, index) => (
-				<div
-					key={`${char}-${index}`}
-					className="relative flex h-9 w-9 items-center justify-center rounded-sm border bg-background"
-				>
-					<svg
-						className="pointer-events-none absolute inset-0 text-border/70"
-						viewBox="0 0 100 100"
-						aria-hidden="true"
-					>
-						<line
-							x1="50"
-							y1="0"
-							x2="50"
-							y2="100"
-							stroke="currentColor"
-							strokeWidth="1.5"
-						/>
-						<line
-							x1="0"
-							y1="50"
-							x2="100"
-							y2="50"
-							stroke="currentColor"
-							strokeWidth="1.5"
-						/>
-						<line
-							x1="0"
-							y1="0"
-							x2="100"
-							y2="100"
-							stroke="currentColor"
-							strokeWidth="1.25"
-						/>
-						<line
-							x1="100"
-							y1="0"
-							x2="0"
-							y2="100"
-							stroke="currentColor"
-							strokeWidth="1.25"
-						/>
-					</svg>
-					<span
-						className="relative leading-none tracking-wide text-foreground"
-						style={{
-							fontSize: "1.5rem",
-							fontFamily:
-								'"STKaiti", "KaiTi", "Kaiti SC", "Noto Serif SC", serif',
-						}}
-					>
-						{char}
-					</span>
-				</div>
-			))}
-		</div>
 	);
 }
