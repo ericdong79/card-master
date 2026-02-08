@@ -92,7 +92,12 @@ export function PackCardsPage() {
 		return <Navigate to="/" replace />;
 	}
 
-	const handleCreate = async (values: { prompt: string; answer: string }) => {
+	const handleCreate = async (values: {
+		prompt: string;
+		answer: string;
+		question_content: CardEntity["question_content"];
+		answer_content: CardEntity["answer_content"];
+	}) => {
 		if (!cardPackId) return;
 		setPendingAction("create");
 		try {
@@ -100,6 +105,8 @@ export function PackCardsPage() {
 				card_pack_id: cardPackId,
 				prompt: values.prompt,
 				answer: values.answer,
+				question_content: values.question_content,
+				answer_content: values.answer_content,
 			});
 			setCards((prev) => [...prev, created]);
 			setCreateOpen(false);
@@ -111,7 +118,12 @@ export function PackCardsPage() {
 		}
 	};
 
-	const handleEdit = async (values: { prompt: string; answer: string }) => {
+	const handleEdit = async (values: {
+		prompt: string;
+		answer: string;
+		question_content: CardEntity["question_content"];
+		answer_content: CardEntity["answer_content"];
+	}) => {
 		if (!cardPackId || !editingCard) return;
 		setPendingAction("edit");
 		try {
@@ -119,7 +131,12 @@ export function PackCardsPage() {
 				apiClient,
 				editingCard.id,
 				ownerUserId,
-				values,
+				{
+					prompt: values.prompt,
+					answer: values.answer,
+					question_content: values.question_content,
+					answer_content: values.answer_content,
+				},
 			);
 			setCards((prev) =>
 				prev.map((card) => (card.id === editingCard.id ? updated : card)),
@@ -178,6 +195,7 @@ export function PackCardsPage() {
 				mode="create"
 				open={createOpen}
 				onOpenChange={setCreateOpen}
+				packType={cardPack?.type}
 				onSubmit={handleCreate}
 			/>
 
@@ -188,6 +206,7 @@ export function PackCardsPage() {
 				onOpenChange={(open) => {
 					if (!open) setEditingCard(null);
 				}}
+				packType={cardPack?.type}
 				onSubmit={handleEdit}
 			/>
 

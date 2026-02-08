@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
+import { getCardQuestionText } from "@/lib/cards/card-type-registry";
 
 type DeleteCardDialogProps = {
 	card: CardEntity | null;
@@ -25,6 +26,8 @@ export function DeleteCardDialog({
 	onConfirm,
 	loading = false,
 }: DeleteCardDialogProps) {
+	const questionText = card ? getCardQuestionText(card) || card.prompt : "this card";
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="space-y-4">
@@ -37,7 +40,7 @@ export function DeleteCardDialog({
 				<p className="text-sm text-muted-foreground">
 					Are you sure you want to delete{" "}
 					<span className="font-medium text-foreground">
-						{card?.prompt ?? "this card"}
+						{questionText}
 					</span>
 					?
 				</p>

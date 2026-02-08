@@ -62,6 +62,8 @@ export async function createCard(
 		owner_user_id: payload.owner_user_id,
 		prompt: payload.prompt,
 		answer: payload.answer,
+		question_content: payload.question_content ?? null,
+		answer_content: payload.answer_content ?? null,
 		status: payload.status ?? DEFAULT_CARD.status,
 		created_at: now,
 		updated_at: payload.updated_at ?? null,

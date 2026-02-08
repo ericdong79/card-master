@@ -1,6 +1,7 @@
 import type { ApiClient } from "./client";
 import type { CardPackInsert, CardPackUpdate } from "./dtos/card-pack";
 import type { CardPack } from "./entities/card-pack";
+import { DEFAULT_CARD_PACK_TYPE } from "./entities/card-pack";
 import { generateId, nowIso } from "./utils";
 
 const DEFAULT_CARD_PACK: Pick<CardPackInsert, "status"> = {
@@ -72,6 +73,7 @@ export async function createCardPack(
 	const record: CardPack = {
 		id: generateId(),
 		name: payload.name,
+		type: payload.type ?? DEFAULT_CARD_PACK_TYPE,
 		owner_user_id: payload.owner_user_id,
 		status: payload.status ?? DEFAULT_CARD_PACK.status,
 		created_at: now,

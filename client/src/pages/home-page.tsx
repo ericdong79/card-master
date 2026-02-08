@@ -16,6 +16,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import {
+	DEFAULT_CARD_PACK_TYPE,
+	type CardPackType,
+	resolveCardPackType,
+} from "@/lib/api/entities/card-pack";
+import {
 	createCardPack,
 	deleteCardPack,
 	listCardPacksWithCounts,
@@ -23,6 +28,7 @@ import {
 	updateCardPack,
 } from "@/lib/api/card-pack";
 import { createApiClient } from "@/lib/api/client";
+import { getCardPackTypeLabel } from "@/lib/cards/card-type-registry";
 import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +44,9 @@ export function HomePage() {
 
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [newPackName, setNewPackName] = useState("");
+	const [newPackType, setNewPackType] = useState<CardPackType>(
+		DEFAULT_CARD_PACK_TYPE,
+	);
 
 	const [editingPack, setEditingPack] = useState<CardPackWithCounts | null>(null);
 	const [editName, setEditName] = useState("");
@@ -73,10 +82,12 @@ export function HomePage() {
 		try {
 			const created = await createCardPack(apiClient, ownerUserId, {
 				name: newPackName.trim(),
+				type: newPackType,
 			});
 			setCardPacks((prev) => [...prev, { ...created, cards_count: 0 }]);
 			setIsCreateOpen(false);
 			setNewPackName("");
+			setNewPackType(DEFAULT_CARD_PACK_TYPE);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to create card pack");
 		} finally {
@@ -201,6 +212,22 @@ export function HomePage() {
 							autoFocus
 						/>
 					</div>
+					<div className="space-y-2">
+						<Label htmlFor="new-pack-type">Type</Label>
+						<select
+							id="new-pack-type"
+							value={newPackType}
+							onChange={(e) => setNewPackType(e.target.value as CardPackType)}
+							className={cn(
+								"border-input bg-background ring-offset-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm",
+								"focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+							)}
+						>
+							<option value="basic">Basic</option>
+							<option value="image-recall">Image Recall</option>
+							<option value="pinyin-hanzi">Pinyin - Hanzi</option>
+						</select>
+					</div>
 					<DialogFooter>
 						<Button variant="ghost" onClick={() => setIsCreateOpen(false)}>
 							Cancel
@@ -315,6 +342,7 @@ type CardPackTileProps = {
 
 function CardPackTile({ pack, onEdit, onDelete }: CardPackTileProps) {
 	const createdAt = new Date(pack.created_at).toLocaleString();
+	const typeLabel = getCardPackTypeLabel(resolveCardPackType(pack.type));
 
 	return (
 		<Card className="group relative overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md">
@@ -345,7 +373,9 @@ function CardPackTile({ pack, onEdit, onDelete }: CardPackTileProps) {
 			</div>
 			<CardHeader className={cn("pb-2 pr-24", pack.cards_count === 0 && "pb-4")}>
 				<CardTitle className="text-lg">{pack.name}</CardTitle>
-				<CardDescription>{pack.cards_count} cards</CardDescription>
+				<CardDescription>
+					{typeLabel} · {pack.cards_count} cards
+				</CardDescription>
 			</CardHeader>
 			<CardContent className="text-sm text-muted-foreground">
 				Created {createdAt}

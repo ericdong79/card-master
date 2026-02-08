@@ -51,6 +51,7 @@ export function QuickReviewPage() {
 						mode="simple"
 						card={current}
 						packName={session.cardPack?.name}
+						packType={session.cardPack?.type}
 						learnedCount={session.learnedCount}
 						totalCards={session.totalCards}
 						onReview={session.handleReview}

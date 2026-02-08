@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
+import type { CardPackType } from "@/lib/api/entities/card-pack";
+import { resolveCardPackType } from "@/lib/api/entities/card-pack";
+import { getCardAnswerText, getCardQuestionText } from "@/lib/cards/card-type-registry";
 import type { ReviewGrade } from "@/lib/scheduling/types";
 import type { Sm2Parameters, Sm2State } from "@/lib/scheduling/types/sm2-types";
 import { cn } from "@/lib/utils";
@@ -18,6 +21,7 @@ import {
 type ReviewCardBaseProps = {
 	card: CardEntity;
 	packName?: string;
+	packType?: CardPackType;
 	/** Progress shown as "X learned" (cards marked as remembered/completed at least once) */
 	learnedCount: number;
 	/** Total cards in the session */
@@ -43,6 +47,53 @@ type Sm2ReviewCardProps = ReviewCardBaseProps & {
 };
 
 type ReviewCardProps = SimpleReviewCardProps | Sm2ReviewCardProps;
+
+function QuestionContent({ card, packType }: { card: CardEntity; packType: CardPackType }) {
+	const questionText = getCardQuestionText(card);
+
+	return (
+		<div className="space-y-3">
+			{questionText ? (
+				<p className="text-lg font-medium leading-relaxed">{questionText}</p>
+			) : null}
+
+			{packType === "image-recall" && card.question_content?.image?.data_url ? (
+				<img
+					src={card.question_content.image.data_url}
+					alt="Question"
+					className="max-h-72 rounded-lg border object-contain"
+				/>
+			) : null}
+
+			{packType === "pinyin-hanzi" && card.question_content?.audio?.data_url ? (
+				<div className="space-y-1">
+					<p className="text-xs text-muted-foreground">Pronunciation</p>
+					<audio controls src={card.question_content.audio.data_url} />
+				</div>
+			) : null}
+		</div>
+	);
+}
+
+function AnswerContent({ card, packType }: { card: CardEntity; packType: CardPackType }) {
+	const answerText = getCardAnswerText(card);
+
+	if (packType === "pinyin-hanzi") {
+		return (
+			<p
+				className="leading-relaxed tracking-wide"
+				style={{
+					fontSize: "2.1rem",
+					fontFamily: "\"STKaiti\", \"KaiTi\", \"Kaiti SC\", \"Noto Serif SC\", serif",
+				}}
+			>
+				{answerText}
+			</p>
+		);
+	}
+
+	return <p className="text-base leading-relaxed">{answerText}</p>;
+}
 
 /**
  * Unified Review Card Component
@@ -79,12 +130,14 @@ export function ReviewCard(props: ReviewCardProps) {
 	const {
 		card,
 		packName,
+		packType,
 		learnedCount,
 		totalCards,
 		mode,
 		isProcessing,
 		className,
 	} = props;
+	const normalizedPackType = resolveCardPackType(packType);
 
 	const [showAnswer, setShowAnswer] = useState(false);
 
@@ -151,7 +204,7 @@ export function ReviewCard(props: ReviewCardProps) {
 					{/* Question - always visible */}
 					<div className="space-y-2">
 						<p className="text-sm text-muted-foreground">Question</p>
-						<p className="text-lg font-medium leading-relaxed">{card.prompt}</p>
+						<QuestionContent card={card} packType={normalizedPackType} />
 					</div>
 
 					{/* Answer Section - expands with animation */}
@@ -167,7 +220,7 @@ export function ReviewCard(props: ReviewCardProps) {
 							{/* Answer display */}
 							<div className="rounded-lg border bg-muted/40 p-4">
 								<p className="text-sm text-muted-foreground mb-2">Answer</p>
-								<p className="text-base leading-relaxed">{card.answer}</p>
+								<AnswerContent card={card} packType={normalizedPackType} />
 							</div>
 						</div>
 					</div>

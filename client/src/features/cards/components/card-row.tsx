@@ -13,6 +13,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
+import { getCardAnswerText, getCardQuestionText } from "@/lib/cards/card-type-registry";
 import { cn } from "@/lib/utils";
 
 type CardRowProps = {
@@ -64,6 +65,9 @@ function getDueStatusColor(dueAt: string): string {
 }
 
 export function CardRow({ card, onEdit, onDelete, dueAt }: CardRowProps) {
+	const questionText = getCardQuestionText(card) || card.prompt || "card";
+	const answerText = getCardAnswerText(card) || card.answer;
+
 	return (
 		<Card className="group relative transition hover:-translate-y-0.5 hover:shadow-md">
 			<div className="absolute right-3 top-3 flex items-center gap-2 opacity-0 transition group-hover:opacity-100">
@@ -72,7 +76,7 @@ export function CardRow({ card, onEdit, onDelete, dueAt }: CardRowProps) {
 					variant="ghost"
 					className="bg-background/80 hover:bg-accent"
 					onClick={() => onEdit(card)}
-					aria-label={`Edit ${card.prompt}`}
+					aria-label={`Edit ${questionText}`}
 				>
 					<IconPencil className="size-4" />
 				</Button>
@@ -81,17 +85,19 @@ export function CardRow({ card, onEdit, onDelete, dueAt }: CardRowProps) {
 					variant="ghost"
 					className="bg-background/80 hover:bg-destructive/10 hover:text-destructive"
 					onClick={() => onDelete(card)}
-					aria-label={`Delete ${card.prompt}`}
+					aria-label={`Delete ${questionText}`}
 				>
 					<IconTrash className="size-4" />
 				</Button>
 			</div>
 			<CardHeader className="pb-3 pr-24">
-				<CardTitle className="text-base leading-tight">{card.prompt}</CardTitle>
+				<CardTitle className="text-base leading-tight">
+					{questionText || "[Untitled question]"}
+				</CardTitle>
 				<CardDescription
-					className={cn("line-clamp-2", !card.answer && "italic")}
+					className={cn("line-clamp-2", !answerText && "italic")}
 				>
-					{card.answer || "No answer provided"}
+					{answerText || "No answer provided"}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex items-center gap-4 text-xs text-muted-foreground">

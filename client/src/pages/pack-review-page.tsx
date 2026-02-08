@@ -49,6 +49,7 @@ export function PackReviewPage() {
 						mode="sm2"
 						card={current}
 						packName={session.cardPack?.name}
+						packType={session.cardPack?.type}
 						learnedCount={session.completedCount}
 						totalCards={session.totalCards}
 						onGrade={session.handleGrade}
