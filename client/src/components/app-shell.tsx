@@ -1,5 +1,4 @@
 import {
-	BookCopy,
 	ChevronLeft,
 	ChevronRight,
 	CircleUserRound,
@@ -12,7 +11,7 @@ import {
 import { type ComponentType, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-
+import logoImage from "@/assets/logo/logo.png";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { CreateProfileDialog } from "@/features/profile/components/create-profile-dialog";
@@ -83,9 +82,11 @@ function SidebarPanel({
 						className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-sidebar-foreground/90"
 						onClick={onNavigate}
 					>
-						<span className="flex size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-							<BookCopy className="size-4" />
-						</span>
+						<img
+							src={logoImage}
+							alt={t("brand.name")}
+							className="size-5 rounded-sm object-contain"
+						/>
 						<div className="min-w-0">
 							<div className="truncate text-sm font-semibold">
 								{t("brand.name")}
@@ -177,13 +178,13 @@ function SidebarPanel({
 								<CircleUserRound className="size-4" />
 							)}
 						</div>
-							{collapsed ? null : (
-								<div className="min-w-0 text-left">
-									<p className="truncate text-sm font-medium">
-										{currentUserName}
-									</p>
-								</div>
-							)}
+						{collapsed ? null : (
+							<div className="min-w-0 text-left">
+								<p className="truncate text-sm font-medium">
+									{currentUserName}
+								</p>
+							</div>
+						)}
 					</div>
 				</button>
 			</div>
