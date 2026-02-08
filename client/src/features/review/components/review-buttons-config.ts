@@ -52,6 +52,7 @@ export function createDefaultSm2Buttons(
 	const previews = getGradePreviews(state, params, now);
 	return defaultSm2ButtonMeta.map((button) => ({
 		...button,
-		subLabel: previews[button.grade],
+		// Session behavior re-queues "Again" shortly, so show a short effective delay.
+		subLabel: button.grade === "again" ? "1m" : previews[button.grade],
 	}));
 }
