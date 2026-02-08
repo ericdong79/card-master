@@ -127,7 +127,23 @@ export function PreferencesPage() {
 								<span className="font-mono text-xs text-muted-foreground">
 									{primaryColor}
 								</span>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={() => {
+										setPrimaryColor("#1f1f23");
+										updateCurrentProfile({ primaryColor: null });
+									}}
+								>
+									{t("preferences.profile.resetThemeColor")}
+								</Button>
 							</div>
+							<p className="text-xs text-muted-foreground">
+								{currentProfile.primary_color
+									? t("preferences.profile.customColorActive")
+									: t("preferences.profile.defaultColorActive")}
+							</p>
 						</div>
 
 						<div className="space-y-2">

@@ -97,7 +97,10 @@
     "subtitle": "管理当前用户档案、默认语言与应用基础设置。",
     "profile": {
       "title": "用户档案",
-      "defaultLanguage": "默认语言"
+      "defaultLanguage": "默认语言",
+      "resetThemeColor": "使用默认主题色",
+      "defaultColorActive": "当前使用应用默认主题色。",
+      "customColorActive": "当前已启用用户自定义主题色。"
     },
     "blocks": {
       "system": {

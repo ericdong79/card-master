@@ -96,7 +96,10 @@
     "subtitle": "Manage the active profile, default language, and core app settings.",
     "profile": {
       "title": "User Profile",
-      "defaultLanguage": "Default language"
+      "defaultLanguage": "Default language",
+      "resetThemeColor": "Use default color",
+      "defaultColorActive": "Using app default theme color.",
+      "customColorActive": "Custom profile theme color is active."
     },
     "blocks": {
       "system": {
