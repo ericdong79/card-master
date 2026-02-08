@@ -1,7 +1,7 @@
 import { Brain, Files, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
-import { CardTypeBadge } from "@/components/card-type-badge";
+import { useNavigate } from "react-router-dom";
+import { PageTopBar } from "@/components/page-topbar";
 import { Button } from "@/components/ui/button";
 import type { CardPackType } from "@/lib/api/entities/card-pack";
 
@@ -28,6 +28,11 @@ export function PackCardsHeader({
 }: PackCardsHeaderProps) {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
+	const packTypeLabelKey: Record<CardPackType, string> = {
+		basic: "cardType.basic",
+		"image-recall": "cardType.imageRecall",
+		"pinyin-hanzi": "cardType.pinyinHanzi",
+	};
 
 	const handleReviewClick = () => {
 		if (dueCardsCount === 0) {
@@ -38,19 +43,15 @@ export function PackCardsHeader({
 	};
 
 	return (
-		<header className="border-b bg-background/80 backdrop-blur">
-			<div className="mx-auto flex max-w-5xl flex-col gap-2 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-2 text-sm text-muted-foreground">
-					<Link to="/" className="underline underline-offset-4">
-						{t("cards.breadcrumbPacks")}
-					</Link>
-					<span>/</span>
-					<span className="text-foreground">
-						{packName ?? t("cards.loadingPackName")}
-					</span>
-					{packType ? <CardTypeBadge type={packType} /> : null}
-				</div>
-				<div className="flex gap-2">
+		<PageTopBar
+			breadcrumbs={[
+				{ label: t("cards.breadcrumbPacks"), to: "/" },
+				{ label: packName ?? t("cards.loadingPackName") },
+			]}
+			title={packName ?? t("cards.loadingPackName")}
+			subtitle={packType ? t(packTypeLabelKey[packType]) : t("cards.subtitle")}
+			actions={
+				<>
 					{showReviewButton ? (
 						<Button
 							onClick={handleReviewClick}
@@ -70,8 +71,8 @@ export function PackCardsHeader({
 						<Plus className="size-4" />
 						{t("cards.newCard")}
 					</Button>
-				</div>
-			</div>
-		</header>
+				</>
+			}
+		/>
 	);
 }

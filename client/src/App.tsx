@@ -3,11 +3,29 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AppShell } from "@/components/app-shell";
 import { Spinner } from "@/components/ui/spinner";
-import { HomePage } from "@/pages/home-page";
-import { PackCardsPage } from "@/pages/pack-cards-page";
-import { PackReviewPage } from "@/pages/pack-review-page";
-import { PreferencesPage } from "@/pages/preferences-page";
-import { QuickReviewPage } from "@/pages/quick-review-page";
+const HomePage = lazy(() =>
+	import("@/pages/home-page").then((module) => ({ default: module.HomePage })),
+);
+const PackCardsPage = lazy(() =>
+	import("@/pages/pack-cards-page").then((module) => ({
+		default: module.PackCardsPage,
+	})),
+);
+const PackReviewPage = lazy(() =>
+	import("@/pages/pack-review-page").then((module) => ({
+		default: module.PackReviewPage,
+	})),
+);
+const QuickReviewPage = lazy(() =>
+	import("@/pages/quick-review-page").then((module) => ({
+		default: module.QuickReviewPage,
+	})),
+);
+const PreferencesPage = lazy(() =>
+	import("@/pages/preferences-page").then((module) => ({
+		default: module.PreferencesPage,
+	})),
+);
 
 const QuickStartPage = lazy(() => import("@/pages/quick-start-page"));
 const QuickStartFirstStepsPage = lazy(
@@ -33,10 +51,38 @@ function App() {
 	return (
 		<Routes>
 			<Route element={<AppShell />}>
-				<Route path="/" element={<HomePage />} />
-				<Route path="/pack/:cardPackId/cards" element={<PackCardsPage />} />
-				<Route path="/pack/:cardPackId/review" element={<PackReviewPage />} />
-				<Route path="/pack/:cardPackId/quick-review" element={<QuickReviewPage />} />
+				<Route
+					path="/"
+					element={
+						<Suspense fallback={<RouteFallback />}>
+							<HomePage />
+						</Suspense>
+					}
+				/>
+				<Route
+					path="/pack/:cardPackId/cards"
+					element={
+						<Suspense fallback={<RouteFallback />}>
+							<PackCardsPage />
+						</Suspense>
+					}
+				/>
+				<Route
+					path="/pack/:cardPackId/review"
+					element={
+						<Suspense fallback={<RouteFallback />}>
+							<PackReviewPage />
+						</Suspense>
+					}
+				/>
+				<Route
+					path="/pack/:cardPackId/quick-review"
+					element={
+						<Suspense fallback={<RouteFallback />}>
+							<QuickReviewPage />
+						</Suspense>
+					}
+				/>
 				<Route
 					path="/quick-start"
 					element={
@@ -79,7 +125,14 @@ function App() {
 						}
 					/>
 				</Route>
-				<Route path="/preferences" element={<PreferencesPage />} />
+				<Route
+					path="/preferences"
+					element={
+						<Suspense fallback={<RouteFallback />}>
+							<PreferencesPage />
+						</Suspense>
+					}
+				/>
 				<Route path="*" element={<Navigate to="/" replace />} />
 			</Route>
 		</Routes>

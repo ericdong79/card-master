@@ -1,5 +1,6 @@
 import { Download, Plus, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { PageTopBar } from "@/components/page-topbar";
 import { Button } from "@/components/ui/button";
 
 type HomePageHeaderProps = {
@@ -16,15 +17,11 @@ export function HomePageHeader({
 	const { t } = useTranslation();
 
 	return (
-		<header className="border-b bg-background/80 backdrop-blur">
-			<div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
-				<div>
-					<h1 className="text-2xl font-semibold">{t("home.title")}</h1>
-					<p className="text-sm text-muted-foreground">
-						{t("home.subtitle")}
-					</p>
-				</div>
-				<div className="flex items-center gap-2">
+		<PageTopBar
+			title={t("home.title")}
+			subtitle={t("home.subtitle")}
+			actions={
+				<>
 					<Button variant="outline" onClick={onExportClick}>
 						<Download className="size-4" />
 						{t("common.export")}
@@ -37,8 +34,8 @@ export function HomePageHeader({
 						<Plus className="size-4" />
 						{t("home.newPack")}
 					</Button>
-				</div>
-			</div>
-		</header>
+				</>
+			}
+		/>
 	);
 }

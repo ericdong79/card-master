@@ -1,8 +1,6 @@
 import { CircleHelp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 type FaqItem = {
 	questionKey: string;
 	answerKey: string;
@@ -35,22 +33,22 @@ export default function QuickStartFaqPage() {
 	const { t } = useTranslation();
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle className="flex items-center gap-2 text-lg">
+		<div className="space-y-4">
+			<div>
+				<h2 className="flex items-center gap-2 text-lg font-semibold">
 					<CircleHelp className="size-5" />
 					{t("quickStart.faqPage.title")}
-				</CardTitle>
-				<p className="text-sm text-muted-foreground">{t("quickStart.faqPage.lead")}</p>
-			</CardHeader>
-			<CardContent className="space-y-3">
+				</h2>
+				<p className="mt-1 text-sm text-muted-foreground">{t("quickStart.faqPage.lead")}</p>
+			</div>
+			<div className="space-y-3">
 				{faqItems.map((item) => (
-					<div key={item.questionKey} className="rounded-lg border bg-muted/20 p-4">
+					<div key={item.questionKey} className="rounded-lg border px-4 py-3">
 						<div className="mb-1 text-sm font-semibold">{t(item.questionKey)}</div>
 						<p className="text-sm text-muted-foreground">{t(item.answerKey)}</p>
 					</div>
 				))}
-			</CardContent>
-		</Card>
+			</div>
+		</div>
 	);
 }

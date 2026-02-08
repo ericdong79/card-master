@@ -1,5 +1,3 @@
-import { pinyin as toPinyin } from "pinyin-pro";
-
 export interface PinyinResolverProvider {
 	resolvePinyin(hanzi: string): Promise<string>;
 }
@@ -18,6 +16,7 @@ class PinyinProResolverProvider implements PinyinResolverProvider {
 			throw new PinyinResolutionError("Hanzi cannot be empty.");
 		}
 
+		const toPinyin = await getToPinyin();
 		const resolved = toPinyin(trimmed, { toneType: "symbol" }).trim();
 		if (!resolved) {
 			throw new PinyinResolutionError(`Unable to resolve pinyin for "${trimmed}".`);
@@ -28,6 +27,15 @@ class PinyinProResolverProvider implements PinyinResolverProvider {
 }
 
 let activeResolverProvider: PinyinResolverProvider = new PinyinProResolverProvider();
+let pinyinModulePromise: Promise<typeof import("pinyin-pro")> | null = null;
+
+async function getToPinyin() {
+	if (!pinyinModulePromise) {
+		pinyinModulePromise = import("pinyin-pro");
+	}
+	const module = await pinyinModulePromise;
+	return module.pinyin;
+}
 
 export function setPinyinResolverProvider(provider: PinyinResolverProvider) {
 	activeResolverProvider = provider;

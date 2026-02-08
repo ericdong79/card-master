@@ -2,8 +2,6 @@ import { type ComponentType } from "react";
 import { BarChart3, Clock3, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 type TheoryItem = {
 	titleKey: string;
 	descriptionKey: string;
@@ -40,17 +38,17 @@ export default function QuickStartMemoryCurvePage() {
 	const { t } = useTranslation();
 
 	return (
-		<div className="space-y-4">
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-lg">{t("quickStart.memoryCurvePage.title")}</CardTitle>
-					<p className="text-sm text-muted-foreground">{t("quickStart.memoryCurvePage.lead")}</p>
-				</CardHeader>
-				<CardContent className="space-y-3">
+		<div className="space-y-6">
+			<section className="space-y-4">
+				<div>
+					<h2 className="text-lg font-semibold">{t("quickStart.memoryCurvePage.title")}</h2>
+					<p className="mt-1 text-sm text-muted-foreground">{t("quickStart.memoryCurvePage.lead")}</p>
+				</div>
+				<div className="space-y-3">
 					{theoryItems.map((item) => {
 						const Icon = item.icon;
 						return (
-							<div key={item.titleKey} className="rounded-lg border bg-muted/30 p-4">
+							<div key={item.titleKey} className="rounded-lg border px-4 py-3">
 								<div className="mb-1 flex items-center gap-2 text-sm font-semibold">
 									<Icon className="size-4" />
 									{t(item.titleKey)}
@@ -59,21 +57,19 @@ export default function QuickStartMemoryCurvePage() {
 							</div>
 						);
 					})}
-				</CardContent>
-			</Card>
+				</div>
+			</section>
 
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-base">{t("quickStart.memoryCurvePage.intervalTitle")}</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-2">
+			<section className="space-y-3 rounded-lg border bg-muted/20 p-4">
+				<h3 className="text-sm font-semibold">{t("quickStart.memoryCurvePage.intervalTitle")}</h3>
+				<div className="space-y-2">
 					{intervals.map((key) => (
-						<p key={key} className="rounded-md border bg-muted/20 px-3 py-2 text-sm">
+						<p key={key} className="text-sm">
 							{t(key)}
 						</p>
 					))}
-				</CardContent>
-			</Card>
+				</div>
+			</section>
 		</div>
 	);
 }

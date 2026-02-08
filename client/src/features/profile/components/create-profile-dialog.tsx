@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import EmojiPicker from "emoji-picker-react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Palette, SmilePlus } from "lucide-react";
 
@@ -18,6 +17,7 @@ import { cn } from "@/lib/utils";
 
 const DEFAULT_AVATAR = "😀";
 const DEFAULT_COLOR = "#1f1f23";
+const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
 type CreateProfileDialogProps = {
 	open: boolean;
@@ -108,17 +108,19 @@ export function CreateProfileDialog({
 						</div>
 						{showEmojiPicker ? (
 							<div className="rounded-lg border p-2">
-								<EmojiPicker
-									width="100%"
-									height={320}
-									onEmojiClick={(emojiData) => {
-										setAvatarEmoji(emojiData.emoji);
-										setShowEmojiPicker(false);
-									}}
-									lazyLoadEmojis
-									searchDisabled={false}
-									skinTonesDisabled
-								/>
+								<Suspense fallback={<div className="h-80 w-full animate-pulse rounded bg-muted" />}>
+									<EmojiPicker
+										width="100%"
+										height={320}
+										onEmojiClick={(emojiData) => {
+											setAvatarEmoji(emojiData.emoji);
+											setShowEmojiPicker(false);
+										}}
+										lazyLoadEmojis
+										searchDisabled={false}
+										skinTonesDisabled
+									/>
+								</Suspense>
 							</div>
 						) : null}
 					</div>

@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import EmojiPicker from "emoji-picker-react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Info, Palette, SlidersHorizontal, SmilePlus } from "lucide-react";
 
@@ -17,6 +16,8 @@ import { useProfile } from "@/features/profile/profile-context";
 import { setPreferredLanguage, type AppLanguage } from "@/i18n";
 import { type CardPackType } from "@/lib/api/entities/card-pack";
 import { useSystemPreferences } from "@/lib/preferences/system-preferences";
+
+const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
 export function PreferencesPage() {
 	const { t, i18n } = useTranslation();
@@ -93,19 +94,21 @@ export function PreferencesPage() {
 							</div>
 							{showEmojiPicker ? (
 								<div className="rounded-lg border p-2">
-									<EmojiPicker
-										width="100%"
-										height={320}
-										onEmojiClick={(emojiData) => {
-											const nextEmoji = emojiData.emoji;
-											setAvatarEmoji(nextEmoji);
-											updateCurrentProfile({ avatarEmoji: nextEmoji });
-											setShowEmojiPicker(false);
-										}}
-										lazyLoadEmojis
-										searchDisabled={false}
-										skinTonesDisabled
-									/>
+									<Suspense fallback={<div className="h-80 w-full animate-pulse rounded bg-muted" />}>
+										<EmojiPicker
+											width="100%"
+											height={320}
+											onEmojiClick={(emojiData) => {
+												const nextEmoji = emojiData.emoji;
+												setAvatarEmoji(nextEmoji);
+												updateCurrentProfile({ avatarEmoji: nextEmoji });
+												setShowEmojiPicker(false);
+											}}
+											lazyLoadEmojis
+											searchDisabled={false}
+											skinTonesDisabled
+										/>
+									</Suspense>
 								</div>
 							) : null}
 						</div>
