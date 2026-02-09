@@ -1,33 +1,43 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
 
 type ReviewSummaryProps = {
 	packName: string | null;
 	totalReviewed: number;
+	backToCardsPath?: string;
 	mode?: "normal" | "quick";
 	forgotCards?: CardEntity[];
 };
 
-export function ReviewSummary({ 
-	packName, 
-	totalReviewed, 
+export function ReviewSummary({
+	packName,
+	totalReviewed,
+	backToCardsPath,
 	mode = "normal",
-	forgotCards = []
+	forgotCards = [],
 }: ReviewSummaryProps) {
 	const { t } = useTranslation();
 	const hasForgotCards = forgotCards.length > 0;
-	
+
 	return (
 		<Card className="text-center">
 			<CardHeader>
 				<CardTitle className="text-xl">
-					{mode === "quick" ? t("review.summary.quickComplete") : t("review.summary.complete")}
+					{mode === "quick"
+						? t("review.summary.quickComplete")
+						: t("review.summary.complete")}
 				</CardTitle>
 				<CardDescription>
-					{packName 
+					{packName
 						? t("review.summary.withPack", {
 								modeText:
 									mode === "quick"
@@ -47,7 +57,7 @@ export function ReviewSummary({
 				<div className="text-sm text-muted-foreground">
 					{t("review.summary.reviewedCount", { value: totalReviewed })}
 				</div>
-				
+
 				{mode === "quick" && hasForgotCards && (
 					<div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-left">
 						<p className="text-sm font-medium text-amber-800 mb-2">
@@ -61,7 +71,9 @@ export function ReviewSummary({
 							))}
 							{forgotCards.length > 5 && (
 								<li className="text-xs text-amber-600">
-									{t("review.summary.andMore", { value: forgotCards.length - 5 })}
+									{t("review.summary.andMore", {
+										value: forgotCards.length - 5,
+									})}
 								</li>
 							)}
 						</ul>
@@ -70,13 +82,15 @@ export function ReviewSummary({
 						</p>
 					</div>
 				)}
-				
+
 				<div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
 					<Button asChild>
 						<Link to="/">{t("review.summary.backToPacks")}</Link>
 					</Button>
 					<Button asChild variant="outline">
-						<Link to="..">{t("review.summary.backToCards")}</Link>
+						<Link to={backToCardsPath ?? "/"}>
+							{t("review.summary.backToCards")}
+						</Link>
 					</Button>
 				</div>
 			</CardContent>

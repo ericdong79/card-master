@@ -45,6 +45,7 @@ export function QuickReviewPage() {
 					<ReviewSummary
 						packName={session.cardPack?.name ?? null}
 						totalReviewed={session.position.total}
+						backToCardsPath={`/pack/${cardPackId}/cards`}
 						mode="quick"
 						forgotCards={session.forgotCards}
 					/>

@@ -45,6 +45,7 @@ export function PackReviewPage() {
 					<ReviewSummary
 						packName={session.cardPack?.name ?? null}
 						totalReviewed={session.totalReviewed}
+						backToCardsPath={`/pack/${cardPackId}/cards`}
 					/>
 				) : (
 					<ReviewCard
