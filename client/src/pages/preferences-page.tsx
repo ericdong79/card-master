@@ -1,7 +1,8 @@
 import { Info, Palette, SlidersHorizontal, SmilePlus } from "lucide-react";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { SafeEmojiPicker } from "@/components/safe-emoji-picker";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -19,8 +20,6 @@ import {
 import { type AppLanguage, setPreferredLanguage } from "@/i18n";
 import type { CardPackType } from "@/lib/api/entities/card-pack";
 import { useSystemPreferences } from "@/lib/preferences/system-preferences";
-
-const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
 export function PreferencesPage() {
 	const { t, i18n } = useTranslation();
@@ -105,25 +104,19 @@ export function PreferencesPage() {
 							</div>
 							{showEmojiPicker ? (
 								<div className="rounded-lg border p-2">
-									<Suspense
-										fallback={
-											<div className="h-80 w-full animate-pulse rounded bg-muted" />
-										}
-									>
-										<EmojiPicker
-											width="100%"
-											height={480}
-											onEmojiClick={(emojiData) => {
-												const nextEmoji = emojiData.emoji;
-												setAvatarEmoji(nextEmoji);
-												updateCurrentProfile({ avatarEmoji: nextEmoji });
-												setShowEmojiPicker(false);
-											}}
-											lazyLoadEmojis
-											searchDisabled={false}
-											skinTonesDisabled
-										/>
-									</Suspense>
+									<SafeEmojiPicker
+										width="100%"
+										height={480}
+										onEmojiClick={(emojiData) => {
+											const nextEmoji = emojiData.emoji;
+											setAvatarEmoji(nextEmoji);
+											updateCurrentProfile({ avatarEmoji: nextEmoji });
+											setShowEmojiPicker(false);
+										}}
+										lazyLoadEmojis
+										searchDisabled={false}
+										skinTonesDisabled
+									/>
 								</div>
 							) : null}
 						</div>
