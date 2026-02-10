@@ -1,5 +1,11 @@
-import { type ComponentType } from "react";
-import { BookOpenText, Brain, CircleHelp, Compass, Workflow } from "lucide-react";
+import {
+	BookOpenText,
+	Brain,
+	CircleHelp,
+	Compass,
+	Workflow,
+} from "lucide-react";
+import type { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
@@ -49,7 +55,7 @@ export default function QuickStartPage() {
 		) ?? quickStartSections[0];
 
 	return (
-		<div className="min-h-screen bg-muted/20">
+		<div className="min-h-dvh bg-muted/20">
 			<PageTopBar
 				breadcrumbs={[
 					{ label: t("sidebar.nav.quickStart"), to: "/quick-start" },
@@ -89,7 +95,9 @@ export default function QuickStartPage() {
 									<Icon className="size-4" />
 									{t(section.titleKey)}
 								</div>
-								<p className="text-xs text-muted-foreground">{t(section.descriptionKey)}</p>
+								<p className="text-xs text-muted-foreground">
+									{t(section.descriptionKey)}
+								</p>
 							</NavLink>
 						);
 					})}

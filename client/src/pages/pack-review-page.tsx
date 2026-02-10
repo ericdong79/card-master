@@ -1,5 +1,5 @@
-import { Link, Navigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Link, Navigate, useParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -19,7 +19,7 @@ export function PackReviewPage() {
 	const current = session.currentCard;
 
 	return (
-		<div className="min-h-screen bg-muted/20">
+		<div className="min-h-dvh bg-muted/20">
 			{/* Minimal header */}
 			<header className="border-b bg-background/80 backdrop-blur">
 				<div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">

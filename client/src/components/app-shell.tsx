@@ -85,7 +85,7 @@ function SidebarPanel({
 						<img
 							src={logoImage}
 							alt={t("brand.name")}
-							className="size-5 rounded-sm object-contain"
+							className="size-8 rounded-sm object-contain"
 						/>
 						<div className="min-w-0">
 							<div className="truncate text-sm font-semibold">
@@ -211,11 +211,11 @@ export function AppShell() {
 	}, [mustCreateProfile]);
 
 	return (
-		<div className="h-screen overflow-hidden bg-muted/20">
+		<div className="h-dvh overflow-hidden bg-muted/20">
 			<div className="flex h-full">
 				<aside
 					className={cn(
-						"hidden h-screen border-r border-sidebar-border bg-sidebar transition-[width] duration-200 md:block",
+						"hidden h-dvh border-r border-sidebar-border bg-sidebar transition-[width] duration-200 md:block",
 						collapsed ? "w-16" : "w-72",
 					)}
 				>

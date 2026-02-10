@@ -9,15 +9,15 @@ import { PackCardsContent } from "@/features/cards/components/pack-cards-content
 import { PackCardsError } from "@/features/cards/components/pack-cards-error";
 import { PackCardsHeader } from "@/features/cards/components/pack-cards-header";
 import { PackCardsLoading } from "@/features/cards/components/pack-cards-loading";
+import { useProfile } from "@/features/profile/profile-context";
 import { createCard, deleteCard, listCards, updateCard } from "@/lib/api/card";
 import { getCardPackById } from "@/lib/api/card-pack";
 import { createApiClient } from "@/lib/api/client";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
-import type { Sm2State } from "@/lib/scheduling/types";
 import { listSchedulingStatesByCardIds } from "@/lib/api/scheduling-state";
-import { useProfile } from "@/features/profile/profile-context";
+import type { Sm2State } from "@/lib/scheduling/types";
 
 type CardSubmitPayload = {
 	prompt: string;
@@ -176,17 +176,12 @@ export function PackCardsPage() {
 		if (!cardPackId || !editingCard) return;
 		setPendingAction("edit");
 		try {
-			const updated = await updateCard(
-				apiClient,
-				editingCard.id,
-				ownerUserId,
-				{
-					prompt: values.prompt,
-					answer: values.answer,
-					question_content: values.question_content,
-					answer_content: values.answer_content,
-				},
-			);
+			const updated = await updateCard(apiClient, editingCard.id, ownerUserId, {
+				prompt: values.prompt,
+				answer: values.answer,
+				question_content: values.question_content,
+				answer_content: values.answer_content,
+			});
 			setCards((prev) =>
 				prev.map((card) => (card.id === editingCard.id ? updated : card)),
 			);
@@ -217,7 +212,7 @@ export function PackCardsPage() {
 	};
 
 	return (
-		<div className="min-h-screen bg-muted/20">
+		<div className="min-h-dvh bg-muted/20">
 			<PackCardsHeader
 				cardPackId={cardPackId}
 				packName={cardPack?.name}

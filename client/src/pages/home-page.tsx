@@ -8,7 +8,7 @@ import { ExportPacksDialog } from "@/features/home/components/export-packs-dialo
 import { HomePageHeader } from "@/features/home/components/home-page-header";
 import { ImportPacksDialog } from "@/features/home/components/import-packs-dialog";
 import { useHomePage } from "@/features/home/hooks/use-home-page";
-import { type CardPackType } from "@/lib/api/entities/card-pack";
+import type { CardPackType } from "@/lib/api/entities/card-pack";
 import { useSystemPreferences } from "@/lib/preferences/system-preferences";
 
 export function HomePage() {
@@ -28,10 +28,7 @@ export function HomePage() {
 		setSearchParams(nextSearchParams, { replace: true });
 	}, [searchParams, setIsCreateOpen, setSearchParams, shouldOpenCreateDialog]);
 
-	const handleCreatePack = async (
-		name: string,
-		type: CardPackType,
-	) => {
+	const handleCreatePack = async (name: string, type: CardPackType) => {
 		const createdPackId = await state.createPack(name, type);
 		if (!createdPackId) return null;
 		navigate(`/pack/${createdPackId}/cards`);
@@ -39,7 +36,7 @@ export function HomePage() {
 	};
 
 	return (
-		<div className="min-h-screen bg-muted/20">
+		<div className="min-h-dvh bg-muted/20">
 			<HomePageHeader
 				onExportClick={() => state.setIsExportOpen(true)}
 				onImportClick={() => state.setIsImportOpen(true)}
