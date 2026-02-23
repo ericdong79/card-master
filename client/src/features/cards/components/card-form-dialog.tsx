@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/correctness/useUniqueElementIds: <explanation> */
-import { type ChangeEvent, useEffect, useState } from "react";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -80,16 +80,24 @@ export function CardFormDialog({
 	);
 	const [pending, setPending] = useState(false);
 	const [converting, setConverting] = useState(false);
+	const [questionManuallyEdited, setQuestionManuallyEdited] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const normalizedPackType = resolveCardPackType(packType);
+	const isPinyinHanziPack = normalizedPackType === "pinyin-hanzi";
 	const config = getCardTypeConfig(normalizedPackType);
+	const questionManuallyEditedRef = useRef(questionManuallyEdited);
 
 	useEffect(() => {
 		if (open) {
 			setValues(getCardEditorValues(card));
+			setQuestionManuallyEdited(false);
 			setError(null);
 		}
 	}, [open, card]);
+
+	useEffect(() => {
+		questionManuallyEditedRef.current = questionManuallyEdited;
+	}, [questionManuallyEdited]);
 
 	const handleSubmit = async () => {
 		const validationError = config.validate(values);
@@ -106,8 +114,14 @@ export function CardFormDialog({
 		}
 	};
 
-	const setQuestionText = (questionText: string) => {
+	const setQuestionText = (
+		questionText: string,
+		source: "manual" | "auto" = "manual",
+	) => {
 		setValues((prev) => ({ ...prev, questionText }));
+		if (source === "manual" && isPinyinHanziPack) {
+			setQuestionManuallyEdited(true);
+		}
 		setError(null);
 	};
 
@@ -162,8 +176,7 @@ export function CardFormDialog({
 		setConverting(true);
 		try {
 			const pinyin = await resolvePinyin(hanzi);
-			setValues((prev) => ({ ...prev, questionText: pinyin }));
-			setError(null);
+			setQuestionText(pinyin, "auto");
 		} catch (conversionError) {
 			setError(
 				conversionError instanceof Error
@@ -174,6 +187,38 @@ export function CardFormDialog({
 			setConverting(false);
 		}
 	};
+
+	useEffect(() => {
+		if (!isPinyinHanziPack) return;
+		if (questionManuallyEdited) return;
+		if (values.questionText.trim()) return;
+
+		const hanzi = values.answerText.trim();
+		if (!hanzi) return;
+
+		const timer = setTimeout(async () => {
+			if (questionManuallyEditedRef.current) return;
+			try {
+				const pinyin = await resolvePinyin(hanzi);
+				if (questionManuallyEditedRef.current) return;
+				setValues((prev) => {
+					if (prev.answerText.trim() !== hanzi || prev.questionText.trim()) {
+						return prev;
+					}
+					return { ...prev, questionText: pinyin };
+				});
+			} catch {
+				// Ignore auto-conversion errors while the user is typing.
+			}
+		}, 350);
+
+		return () => clearTimeout(timer);
+	}, [
+		isPinyinHanziPack,
+		questionManuallyEdited,
+		values.answerText,
+		values.questionText,
+	]);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -191,34 +236,53 @@ export function CardFormDialog({
 					</DialogDescription>
 				</DialogHeader>
 				<div className="space-y-3">
-					<div className="space-y-2">
-						<Label htmlFor="card-question">{config.questionLabel}</Label>
-						<div className="relative">
+					{isPinyinHanziPack ? (
+						<>
+							<div className="space-y-2">
+								<div className="flex items-center justify-between gap-2">
+									<Label htmlFor="card-answer">{config.answerLabel}</Label>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={handleConvertToPinyin}
+										disabled={pending || converting || !values.answerText.trim()}
+									>
+										{converting
+											? t("cards.form.converting")
+											: t("cards.form.convertFromHanzi")}
+									</Button>
+								</div>
+								<Textarea
+									id="card-answer"
+									value={values.answerText}
+									onChange={(event) => setAnswerText(event.target.value)}
+									placeholder={config.answerPlaceholder}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="card-question">{config.questionLabel}</Label>
+								<Textarea
+									id="card-question"
+									value={values.questionText}
+									onChange={(event) =>
+										setQuestionText(event.target.value, "manual")
+									}
+									placeholder={config.questionPlaceholder}
+								/>
+							</div>
+						</>
+					) : (
+						<div className="space-y-2">
+							<Label htmlFor="card-question">{config.questionLabel}</Label>
 							<Textarea
 								id="card-question"
 								value={values.questionText}
 								onChange={(event) => setQuestionText(event.target.value)}
 								placeholder={config.questionPlaceholder}
-								className={
-									normalizedPackType === "pinyin-hanzi" ? "pb-10" : undefined
-								}
 							/>
-							{normalizedPackType === "pinyin-hanzi" ? (
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									onClick={handleConvertToPinyin}
-									disabled={pending || converting}
-									className="absolute bottom-2 left-2"
-								>
-									{converting
-										? t("cards.form.converting")
-										: t("cards.form.convertFromHanzi")}
-								</Button>
-							) : null}
 						</div>
-					</div>
+					)}
 					{config.supportsQuestionImage ? (
 						<div className="space-y-2">
 							<Label htmlFor="card-question-image">
@@ -277,15 +341,17 @@ export function CardFormDialog({
 							) : null}
 						</div>
 					) : null}
-					<div className="space-y-2">
-						<Label htmlFor="card-answer">{config.answerLabel}</Label>
-						<Textarea
-							id="card-answer"
-							value={values.answerText}
-							onChange={(event) => setAnswerText(event.target.value)}
-							placeholder={config.answerPlaceholder}
-						/>
-					</div>
+					{isPinyinHanziPack ? null : (
+						<div className="space-y-2">
+							<Label htmlFor="card-answer">{config.answerLabel}</Label>
+							<Textarea
+								id="card-answer"
+								value={values.answerText}
+								onChange={(event) => setAnswerText(event.target.value)}
+								placeholder={config.answerPlaceholder}
+							/>
+						</div>
+					)}
 					{error ? (
 						<p className="text-sm text-destructive" role="alert">
 							{error}
