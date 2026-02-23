@@ -15,6 +15,12 @@ import { getCardPackById } from "@/lib/api/card-pack";
 import { createApiClient } from "@/lib/api/client";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
+import {
+	findDuplicateReason,
+	isHardDuplicate,
+	splitBulkByDuplicateRules,
+	type DuplicateReason,
+} from "@/lib/cards/deduplication";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
 import { listSchedulingStatesByCardIds } from "@/lib/api/scheduling-state";
 import type { Sm2State } from "@/lib/scheduling/types";
@@ -25,6 +31,22 @@ type CardSubmitPayload = {
 	question_content: CardEntity["question_content"];
 	answer_content: CardEntity["answer_content"];
 };
+
+function getDuplicateErrorMessage(
+	reason: DuplicateReason,
+	t: (key: string) => string,
+): string {
+	switch (reason) {
+		case "same-question-and-answer":
+			return t("cards.dedup.sameQuestionAndAnswer");
+		case "same-question-different-answer":
+			return t("cards.dedup.sameQuestionDifferentAnswer");
+		case "same-answer-different-question":
+			return t("cards.dedup.sameAnswerDifferentQuestionPinyinHanzi");
+		default:
+			return t("errors.createCard");
+	}
+}
 
 export function PackCardsPage() {
 	const { t } = useTranslation();
@@ -40,6 +62,7 @@ export function PackCardsPage() {
 	>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [notice, setNotice] = useState<string | null>(null);
 
 	const [createOpen, setCreateOpen] = useState(false);
 	const [bulkCreateOpen, setBulkCreateOpen] = useState(false);
@@ -128,6 +151,21 @@ export function PackCardsPage() {
 
 	const handleCreate = async (values: CardSubmitPayload) => {
 		if (!cardPackId) return;
+
+		const duplicateReason = findDuplicateReason(cards, {
+			questionText: values.question_content?.text ?? values.prompt,
+			answerText: values.answer_content?.text ?? values.answer,
+		});
+		if (duplicateReason) {
+			if (isHardDuplicate(duplicateReason, cardPack?.type)) {
+				throw new Error(getDuplicateErrorMessage(duplicateReason, t));
+			}
+			const shouldContinue = window.confirm(
+				t("cards.dedup.answerConflictConfirm"),
+			);
+			if (!shouldContinue) return;
+		}
+
 		setPendingAction("create");
 		try {
 			const created = await createCard(apiClient, ownerUserId, {
@@ -140,8 +178,11 @@ export function PackCardsPage() {
 			setCards((prev) => [...prev, created]);
 			setCreateOpen(false);
 			setError(null);
+			setNotice(null);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : t("errors.createCard"));
+			throw new Error(
+				err instanceof Error ? err.message : t("errors.createCard"),
+			);
 		} finally {
 			setPendingAction(null);
 		}
@@ -149,24 +190,52 @@ export function PackCardsPage() {
 
 	const handleCreateBulk = async (values: CardSubmitPayload[]) => {
 		if (!cardPackId || values.length === 0) return;
+
+		const candidatePairs = values.map((value) => ({
+			questionText: value.question_content?.text ?? value.prompt,
+			answerText: value.answer_content?.text ?? value.answer,
+		}));
+		const { accepted, skippedCount } = splitBulkByDuplicateRules(
+			cards,
+			candidatePairs,
+			cardPack?.type,
+		);
+
+		if (accepted.length === 0) {
+			setNotice(
+				t("cards.dedup.bulkSkippedOnly", {
+					count: skippedCount,
+				}),
+			);
+			setBulkCreateOpen(false);
+			return;
+		}
+
 		setPendingAction("create");
 		try {
 			const createdCards = await Promise.all(
-				values.map((value) =>
+				accepted.map((value) =>
 					createCard(apiClient, ownerUserId, {
 						card_pack_id: cardPackId,
-						prompt: value.prompt,
-						answer: value.answer,
-						question_content: value.question_content,
-						answer_content: value.answer_content,
+						prompt: value.questionText.trim(),
+						answer: value.answerText.trim(),
+						question_content: { text: value.questionText.trim() },
+						answer_content: { text: value.answerText.trim() },
 					}),
 				),
 			);
 			setCards((prev) => [...prev, ...createdCards]);
 			setBulkCreateOpen(false);
 			setError(null);
+			setNotice(
+				skippedCount > 0
+					? t("cards.dedup.bulkSkipped", { count: skippedCount })
+					: null,
+			);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : t("errors.createCards"));
+			throw new Error(
+				err instanceof Error ? err.message : t("errors.createCards"),
+			);
 		} finally {
 			setPendingAction(null);
 		}
@@ -174,6 +243,25 @@ export function PackCardsPage() {
 
 	const handleEdit = async (values: CardSubmitPayload) => {
 		if (!cardPackId || !editingCard) return;
+
+		const duplicateReason = findDuplicateReason(
+			cards,
+			{
+				questionText: values.question_content?.text ?? values.prompt,
+				answerText: values.answer_content?.text ?? values.answer,
+			},
+			{ excludeCardId: editingCard.id },
+		);
+		if (duplicateReason) {
+			if (isHardDuplicate(duplicateReason, cardPack?.type)) {
+				throw new Error(getDuplicateErrorMessage(duplicateReason, t));
+			}
+			const shouldContinue = window.confirm(
+				t("cards.dedup.answerConflictConfirm"),
+			);
+			if (!shouldContinue) return;
+		}
+
 		setPendingAction("edit");
 		try {
 			const updated = await updateCard(apiClient, editingCard.id, ownerUserId, {
@@ -187,8 +275,11 @@ export function PackCardsPage() {
 			);
 			setEditingCard(null);
 			setError(null);
+			setNotice(null);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : t("errors.updateCard"));
+			throw new Error(
+				err instanceof Error ? err.message : t("errors.updateCard"),
+			);
 		} finally {
 			setPendingAction(null);
 		}
@@ -204,6 +295,7 @@ export function PackCardsPage() {
 			);
 			setDeleteCardTarget(null);
 			setError(null);
+			setNotice(null);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : t("errors.deleteCard"));
 		} finally {
@@ -224,6 +316,14 @@ export function PackCardsPage() {
 			/>
 
 			<main className="mx-auto flex max-w-5xl flex-col gap-4 px-6 py-8">
+				{notice ? (
+					<p
+						className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+						role="status"
+					>
+						{notice}
+					</p>
+				) : null}
 				{error ? <PackCardsError message={error} /> : null}
 
 				{loading ? (

@@ -109,6 +109,14 @@ export function CardFormDialog({
 		setPending(true);
 		try {
 			await onSubmit(buildCardPayload(packType, values));
+		} catch (submitError) {
+			setError(
+				submitError instanceof Error
+					? submitError.message
+					: mode === "create"
+						? t("errors.createCard")
+						: t("errors.updateCard"),
+			);
 		} finally {
 			setPending(false);
 		}

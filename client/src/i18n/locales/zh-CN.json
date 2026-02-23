@@ -360,6 +360,14 @@
 			"createError": "根据汉字列表创建卡片失败。",
 			"createCards": "创建卡片"
 		},
+		"dedup": {
+			"sameQuestionAndAnswer": "检测到重复：同一问题和答案的卡片已存在。",
+			"sameQuestionDifferentAnswer": "检测到冲突：同一问题已存在不同答案。",
+			"sameAnswerDifferentQuestionPinyinHanzi": "检测到冲突：该汉字已存在不同拼音，不允许创建。",
+			"answerConflictConfirm": "检测到同一答案已存在于其他问题。仍要继续创建吗？",
+			"bulkSkipped": "已创建卡片，忽略了 {{count}} 条重复项。",
+			"bulkSkippedOnly": "本次未创建新卡片：有 {{count}} 条因重复被忽略。"
+		},
 		"deleteDialog": {
 			"title": "删除卡片",
 			"description": "这会永久删除该卡片，且无法撤销。",

@@ -359,6 +359,14 @@
 			"createError": "Failed to create cards from hanzi list.",
 			"createCards": "Create cards"
 		},
+		"dedup": {
+			"sameQuestionAndAnswer": "Duplicate detected: a card with the same question and answer already exists.",
+			"sameQuestionDifferentAnswer": "Conflict detected: the same question already has a different answer.",
+			"sameAnswerDifferentQuestionPinyinHanzi": "Conflict detected: this Hanzi already maps to a different pinyin and cannot be created.",
+			"answerConflictConfirm": "A different question already uses the same answer. Do you still want to create this card?",
+			"bulkSkipped": "Cards created. {{count}} duplicate entries were skipped.",
+			"bulkSkippedOnly": "No new cards were created: {{count}} entries were skipped as duplicates."
+		},
 		"deleteDialog": {
 			"title": "Delete card",
 			"description": "This will remove the card permanently. This action cannot be undone.",
