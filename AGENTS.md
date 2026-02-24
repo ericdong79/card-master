@@ -26,6 +26,31 @@ This file documents the current project state for future coding agents.
   - `/quick-start`
   - `/preferences`
 
+## Card Creation UX (Latest)
+
+- `pinyin-hanzi` card form (`client/src/features/cards/components/card-form-dialog.tsx`):
+  - Input order is `Hanzi (answer)` first, then `Pinyin (question)`.
+  - Convert button is placed next to Hanzi field and is disabled when Hanzi is empty.
+  - Auto-convert runs when Hanzi is entered and Pinyin is still empty.
+  - If user manually edits Pinyin, auto-convert no longer overwrites it.
+
+## Duplicate Handling Rules
+
+- Dedup logic is centralized at:
+  - `client/src/lib/cards/deduplication.ts`
+- Applied in:
+  - `client/src/pages/pack-cards-page.tsx` for create / edit / bulk-create flows
+- Rule matrix:
+  - Hard-block for all pack types:
+    - Same question + same answer
+    - Same question + different answer
+  - Same answer + different question:
+    - `pinyin-hanzi`: hard-block (assume one-to-one mapping)
+    - Other pack types: warning + user confirmation allows continue
+- Bulk create behavior:
+  - Duplicates are skipped (non-blocking).
+  - UI shows a notice with skipped count.
+
 ## Profile System (Multi-user)
 
 - Profile context: `client/src/features/profile/profile-context.tsx`
@@ -82,4 +107,3 @@ This file documents the current project state for future coding agents.
 - When adding new user-scoped data, ensure it is tied to current profile id.
 - Build command:
   - `cd client && npm run build`
-

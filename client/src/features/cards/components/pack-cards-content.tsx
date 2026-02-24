@@ -8,6 +8,7 @@ import {
 import { Activity, CirclePlay, Clock3, LibraryBig } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { CardTypeBadge } from "@/components/card-type-badge";
+import type { CardMasteryState } from "@/lib/api/entities/card-mastery-state";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
 import type { CardPackType } from "@/lib/api/entities/card-pack";
 import { CardList } from "./card-list";
@@ -20,6 +21,10 @@ type PackCardsContentProps = {
 	reviewCards?: number;
 	dueCards?: number;
 	cards: CardEntity[];
+	dueTimesByCardId?: Record<string, string>;
+	masteryByCardId?: Record<string, CardMasteryState>;
+	masteryThemeId?: string | null;
+	showMastery?: boolean;
 	onCreateClick: () => void;
 	onEdit: (card: CardEntity) => void;
 	onDelete: (card: CardEntity) => void;
@@ -33,6 +38,10 @@ export function PackCardsContent({
 	reviewCards = 0,
 	dueCards = 0,
 	cards,
+	dueTimesByCardId,
+	masteryByCardId,
+	masteryThemeId,
+	showMastery = true,
 	onCreateClick,
 	onEdit,
 	onDelete,
@@ -77,6 +86,10 @@ export function PackCardsContent({
 				<CardList
 					cards={cards}
 					packType={packType}
+					dueTimesByCardId={dueTimesByCardId}
+					masteryByCardId={masteryByCardId}
+					masteryThemeId={masteryThemeId}
+					showMastery={showMastery}
 					onCreateClick={onCreateClick}
 					onEdit={onEdit}
 					onDelete={onDelete}

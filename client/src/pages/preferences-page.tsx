@@ -2,6 +2,13 @@ import { Info, Palette, SlidersHorizontal, SmilePlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import {
+	getMasteryPresentationEnabled,
+	getMasteryThemePreference,
+	listMasteryPresentationPlugins,
+	setMasteryPresentationEnabled,
+	setMasteryThemePreference,
+} from "@/features/mastery";
 import { SafeEmojiPicker } from "@/components/safe-emoji-picker";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
 	type HanziFontPreference,
+	type SidebarBackgroundPreference,
 	useProfile,
 } from "@/features/profile/profile-context";
 import { type AppLanguage, setPreferredLanguage } from "@/i18n";
@@ -30,7 +38,16 @@ export function PreferencesPage() {
 	const [avatarEmoji, setAvatarEmoji] = useState("😀");
 	const [primaryColor, setPrimaryColor] = useState("#0ee17f");
 	const [hanziFont, setHanziFont] = useState<HanziFontPreference>("default");
+	const [sidebarBackground, setSidebarBackground] =
+		useState<SidebarBackgroundPreference>("nav-illustration");
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+	const [masteryEnabled, setMasteryEnabled] = useState(true);
+	const [masteryThemeId, setMasteryThemeId] = useState("default-academic");
+	const masteryThemes = listMasteryPresentationPlugins();
+	const resolveThemeName = (nameKey: string, fallback: string) => {
+		const translated = t(nameKey);
+		return translated === nameKey ? fallback : translated;
+	};
 
 	useEffect(() => {
 		if (!currentProfile) return;
@@ -38,6 +55,11 @@ export function PreferencesPage() {
 		setAvatarEmoji(currentProfile.avatar_emoji);
 		setPrimaryColor(currentProfile.primary_color ?? "#0ee17f");
 		setHanziFont(currentProfile.hanzi_font ?? "default");
+		setSidebarBackground(currentProfile.sidebar_background ?? "nav-illustration");
+		setMasteryEnabled(getMasteryPresentationEnabled(currentProfile.id));
+		setMasteryThemeId(
+			getMasteryThemePreference(currentProfile.id) ?? "default-academic",
+		);
 	}, [currentProfile]);
 
 	if (!currentProfile) {
@@ -181,6 +203,32 @@ export function PreferencesPage() {
 						</div>
 
 						<div className="space-y-2">
+							<Label htmlFor="sidebar-background">
+								{t("preferences.profile.sidebarBackground")}
+							</Label>
+							<select
+								id="sidebar-background"
+								className="h-9 rounded border border-input bg-background px-2 text-sm"
+								value={sidebarBackground}
+								onChange={(event) => {
+									const nextBackground = event.target
+										.value as SidebarBackgroundPreference;
+									setSidebarBackground(nextBackground);
+									updateCurrentProfile({
+										sidebarBackground: nextBackground,
+									});
+								}}
+							>
+								<option value="nav-illustration">
+									{t("preferences.profile.sidebarBackgroundOptions.illustration")}
+								</option>
+								<option value="none">
+									{t("preferences.profile.sidebarBackgroundOptions.none")}
+								</option>
+							</select>
+						</div>
+
+						<div className="space-y-2">
 							<Label htmlFor="hanzi-font">
 								{t("preferences.profile.hanziFont")}
 							</Label>
@@ -204,6 +252,52 @@ export function PreferencesPage() {
 									{t("preferences.profile.hanziFontOptions.pixel")}
 								</option>
 							</select>
+						</div>
+
+						<div className="space-y-3 rounded-md border bg-background/60 p-3">
+							<div className="flex items-center justify-between gap-4">
+								<div className="space-y-1">
+									<Label htmlFor="mastery-enabled">
+										{t("preferences.profile.mastery.enabled")}
+									</Label>
+									<p className="text-xs text-muted-foreground">
+										{t("preferences.profile.mastery.enabledHint")}
+									</p>
+								</div>
+								<input
+									id="mastery-enabled"
+									type="checkbox"
+									checked={masteryEnabled}
+									onChange={(event) => {
+										const nextValue = event.target.checked;
+										setMasteryEnabled(nextValue);
+										setMasteryPresentationEnabled(currentProfile.id, nextValue);
+									}}
+									className="h-4 w-4 rounded border-input accent-primary"
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="mastery-theme">
+									{t("preferences.profile.mastery.theme")}
+								</Label>
+								<select
+									id="mastery-theme"
+									disabled={!masteryEnabled}
+									className="h-9 w-full rounded border border-input bg-background px-2 text-sm disabled:opacity-60"
+									value={masteryThemeId}
+									onChange={(event) => {
+										const nextTheme = event.target.value;
+										setMasteryThemeId(nextTheme);
+										setMasteryThemePreference(currentProfile.id, nextTheme);
+									}}
+								>
+									{masteryThemes.map((theme) => (
+										<option key={theme.id} value={theme.id}>
+											{resolveThemeName(theme.nameKey, theme.name)}
+										</option>
+									))}
+								</select>
+							</div>
 						</div>
 					</div>
 

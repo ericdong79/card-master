@@ -216,11 +216,21 @@
 		"profile": {
 			"title": "用户档案",
 			"defaultLanguage": "默认语言",
+			"sidebarBackground": "侧边栏背景图",
+			"sidebarBackgroundOptions": {
+				"illustration": "插画背景",
+				"none": "无背景图"
+			},
 			"hanziFont": "汉字练习字体",
 			"hanziFontOptions": {
 				"default": "默认",
 				"kaiti": "楷体",
 				"pixel": "像素体"
+			},
+			"mastery": {
+				"enabled": "开启掌握度反馈",
+				"enabledHint": "在卡片列表显示掌握度标签，并在复习后显示变化通知。",
+				"theme": "掌握度主题"
 			},
 			"resetThemeColor": "使用默认主题色",
 			"defaultColorActive": "当前使用应用默认主题色。",
@@ -399,6 +409,61 @@
 			"pinyinRequired": "拼音不能为空。",
 			"hanziRequired": "汉字不能为空。",
 			"questionOrImageRequired": "请填写问题文本或上传图片。"
+		}
+	},
+	"mastery": {
+		"states": {
+			"unseen": "未学习",
+			"learning": "学习中",
+			"graduated": "已毕业",
+			"reviewing": "复习中",
+			"mastered": "已掌握"
+		},
+		"themes": {
+			"defaultAcademic": "学术默认",
+			"plantGrowth": "植物成长",
+			"storybookImage": "绘本图片"
+		},
+		"progress": {
+			"mastery": "掌握度 {{score}}%",
+			"growth": "成长值 {{score}}%"
+		},
+		"feedback": {
+			"stateChanged": "状态更新：{{state}}",
+			"improved": "记忆更稳了",
+			"needReview": "需要再巩固一下",
+			"noChange": "状态保持不变",
+			"delta": "变化 {{delta}}"
+		},
+		"plant": {
+			"states": {
+				"seed": "种子",
+				"sprout": "发芽",
+				"stem": "长根茎",
+				"growing": "生长中",
+				"tree": "大树"
+			},
+			"feedback": {
+				"firstLearn": "种子发芽了！",
+				"decreased": "小树有点摇晃，继续浇水吧",
+				"stage": "{{stage}}阶段",
+				"delta": "成长值 {{delta}}"
+			}
+		},
+		"storyImage": {
+			"states": {
+				"unseen": "种子",
+				"learning": "发芽",
+				"graduated": "根茎",
+				"reviewing": "生长",
+				"mastered": "大树"
+			},
+			"feedback": {
+				"first": "第一次发芽解锁",
+				"up": "小树长高了",
+				"down": "小树需要更多照顾",
+				"delta": "成长值 {{delta}}"
+			}
 		}
 	},
 	"review": {

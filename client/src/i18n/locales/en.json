@@ -215,11 +215,21 @@
 		"profile": {
 			"title": "User Profile",
 			"defaultLanguage": "Default language",
+			"sidebarBackground": "Sidebar background image",
+			"sidebarBackgroundOptions": {
+				"illustration": "Illustration",
+				"none": "No image"
+			},
 			"hanziFont": "Hanzi practice font",
 			"hanziFontOptions": {
 				"default": "Default (current)",
 				"kaiti": "KaiTi",
 				"pixel": "Pixel"
+			},
+			"mastery": {
+				"enabled": "Enable mastery feedback",
+				"enabledHint": "Show mastery badges in card list and review result notifications.",
+				"theme": "Mastery theme"
 			},
 			"resetThemeColor": "Use default color",
 			"defaultColorActive": "Using app default theme color.",
@@ -398,6 +408,61 @@
 			"pinyinRequired": "Pinyin is required.",
 			"hanziRequired": "Hanzi is required.",
 			"questionOrImageRequired": "Add question text or upload an image."
+		}
+	},
+	"mastery": {
+		"states": {
+			"unseen": "Unseen",
+			"learning": "Learning",
+			"graduated": "Graduated",
+			"reviewing": "Reviewing",
+			"mastered": "Mastered"
+		},
+		"themes": {
+			"defaultAcademic": "Academic",
+			"plantGrowth": "Plant Growth",
+			"storybookImage": "Storybook Images"
+		},
+		"progress": {
+			"mastery": "Mastery {{score}}%",
+			"growth": "Growth {{score}}%"
+		},
+		"feedback": {
+			"stateChanged": "State updated: {{state}}",
+			"improved": "Memory is getting stronger",
+			"needReview": "Needs more reinforcement",
+			"noChange": "State unchanged",
+			"delta": "Change {{delta}}"
+		},
+		"plant": {
+			"states": {
+				"seed": "Seed",
+				"sprout": "Sprout",
+				"stem": "Stem",
+				"growing": "Growing",
+				"tree": "Tree"
+			},
+			"feedback": {
+				"firstLearn": "The seed has sprouted!",
+				"decreased": "The plant shook a bit, keep watering it",
+				"stage": "{{stage}} stage",
+				"delta": "Growth {{delta}}"
+			}
+		},
+		"storyImage": {
+			"states": {
+				"unseen": "Seed",
+				"learning": "Sprout",
+				"graduated": "Stem",
+				"reviewing": "Growing",
+				"mastered": "Tree"
+			},
+			"feedback": {
+				"first": "First sprout unlocked",
+				"up": "Your plant grew taller",
+				"down": "Your plant needs more care",
+				"delta": "Growth {{delta}}"
+			}
 		}
 	},
 	"review": {

@@ -11,6 +11,7 @@ import { generateId, nowIso } from "@/lib/api/utils";
 const STORAGE_KEY = "card-master.profiles.v1";
 
 export type HanziFontPreference = "default" | "kaiti" | "pixel";
+export type SidebarBackgroundPreference = "none" | "nav-illustration";
 
 export type UserProfile = {
 	id: string;
@@ -18,6 +19,7 @@ export type UserProfile = {
 	avatar_emoji: string;
 	primary_color: string | null;
 	hanzi_font: HanziFontPreference;
+	sidebar_background: SidebarBackgroundPreference;
 	created_at: string;
 	updated_at: string | null;
 	last_used_at: string;
@@ -33,6 +35,7 @@ type CreateProfileInput = {
 	avatarEmoji: string;
 	primaryColor?: string | null;
 	hanziFont?: HanziFontPreference;
+	sidebarBackground?: SidebarBackgroundPreference;
 };
 
 type ProfileContextValue = {
@@ -46,6 +49,7 @@ type ProfileContextValue = {
 		avatarEmoji?: string;
 		primaryColor?: string | null;
 		hanziFont?: HanziFontPreference;
+		sidebarBackground?: SidebarBackgroundPreference;
 	}) => void;
 };
 
@@ -53,6 +57,12 @@ const ProfileContext = createContext<ProfileContextValue | null>(null);
 
 function resolveHanziFontPreference(value: unknown): HanziFontPreference {
 	return value === "kaiti" || value === "pixel" ? value : "default";
+}
+
+function resolveSidebarBackgroundPreference(
+	value: unknown,
+): SidebarBackgroundPreference {
+	return value === "none" ? value : "nav-illustration";
 }
 
 function loadProfileState(): StoredProfileState {
@@ -85,6 +95,9 @@ function loadProfileState(): StoredProfileState {
 						...profile,
 						hanzi_font: resolveHanziFontPreference(
 							(profile as Partial<UserProfile>).hanzi_font,
+						),
+						sidebar_background: resolveSidebarBackgroundPreference(
+							(profile as Partial<UserProfile>).sidebar_background,
 						),
 					}))
 			: [];
@@ -143,6 +156,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 					avatar_emoji: input.avatarEmoji,
 					primary_color: input.primaryColor ?? null,
 					hanzi_font: input.hanziFont ?? "kaiti",
+					sidebar_background: input.sidebarBackground ?? "nav-illustration",
 					created_at: now,
 					updated_at: null,
 					last_used_at: now,
@@ -195,6 +209,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 							updates.hanziFont === undefined
 								? profile.hanzi_font
 								: resolveHanziFontPreference(updates.hanziFont),
+						sidebar_background:
+							updates.sidebarBackground === undefined
+								? profile.sidebar_background
+								: resolveSidebarBackgroundPreference(updates.sidebarBackground),
 						updated_at: now,
 					};
 				});

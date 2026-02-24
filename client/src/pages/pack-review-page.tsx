@@ -1,7 +1,14 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
+import {
+	getMasteryPresentationEnabled,
+	getMasteryThemePreference,
+} from "@/features/mastery";
+import { useProfile } from "@/features/profile/profile-context";
+import { MasteryToast } from "@/features/review/components/mastery-toast";
 import { Spinner } from "@/components/ui/spinner";
 import { ReviewCard } from "@/features/review/components/review-card";
 import { ReviewSummary } from "@/features/review/components/review-summary";
@@ -10,7 +17,24 @@ import { useReviewSession } from "@/features/review/hooks/use-review-session";
 export function PackReviewPage() {
 	const { t } = useTranslation();
 	const { cardPackId } = useParams<{ cardPackId: string }>();
+	const { currentProfile } = useProfile();
 	const session = useReviewSession(cardPackId);
+	const [toastFeedback, setToastFeedback] = useState<typeof session.lastMasteryFeedback>(null);
+	const masteryEnabled = currentProfile
+		? getMasteryPresentationEnabled(currentProfile.id)
+		: false;
+	const masteryThemeId = currentProfile
+		? getMasteryThemePreference(currentProfile.id)
+		: null;
+
+	useEffect(() => {
+		if (!session.lastMasteryFeedback || !masteryEnabled) return;
+		setToastFeedback(session.lastMasteryFeedback);
+		const timer = window.setTimeout(() => {
+			setToastFeedback(null);
+		}, 2800);
+		return () => window.clearTimeout(timer);
+	}, [session.lastMasteryFeedback, masteryEnabled]);
 
 	if (!cardPackId) {
 		return <Navigate to="/" replace />;
@@ -62,6 +86,9 @@ export function PackReviewPage() {
 					/>
 				)}
 			</main>
+			{masteryEnabled && toastFeedback ? (
+				<MasteryToast feedback={toastFeedback} themeId={masteryThemeId} />
+			) : null}
 		</div>
 	);
 }

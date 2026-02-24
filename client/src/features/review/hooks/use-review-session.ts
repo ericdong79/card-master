@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { computeMasteryUpdate } from "@/features/mastery";
 import { listCards } from "@/lib/api/card";
+import {
+	getMasteryStateByCardId,
+	upsertMasteryState,
+} from "@/lib/api/card-mastery-state";
 import { getCardPackById } from "@/lib/api/card-pack";
 import { createApiClient } from "@/lib/api/client";
 import type { Card } from "@/lib/api/entities/card";
+import type { MasteryState } from "@/lib/api/entities/card-mastery-state";
 import type { CardPack } from "@/lib/api/entities/card-pack";
 
 import type { ReviewEvent } from "@/lib/api/entities/review-event";
@@ -44,6 +50,18 @@ export type UseReviewSessionReturn = ReviewSessionState & {
 	currentCardState: Sm2State | null;
 	/** SM-2 parameters used in this session */
 	params: Sm2Parameters | null;
+	lastMasteryFeedback: {
+		cardId: string;
+		transition: {
+			beforeScore: number;
+			afterScore: number;
+			beforeState: MasteryState;
+			afterState: MasteryState;
+			delta: number;
+		};
+		rating: ReviewGrade;
+		isFirstLearn: boolean;
+	} | null;
 	/** Submit a grade for the current card */
 	handleGrade: (grade: ReviewGrade) => Promise<void>;
 };
@@ -75,6 +93,18 @@ export function useReviewSession(
 	const [grading, setGrading] = useState(false);
 	const [totalReviewed, setTotalReviewed] = useState(0);
 	const [isComplete, setIsComplete] = useState(false);
+	const [lastMasteryFeedback, setLastMasteryFeedback] = useState<{
+		cardId: string;
+		transition: {
+			beforeScore: number;
+			afterScore: number;
+			beforeState: MasteryState;
+			afterState: MasteryState;
+			delta: number;
+		};
+		rating: ReviewGrade;
+		isFirstLearn: boolean;
+	} | null>(null);
 
 	// Core review session (pure TypeScript class)
 	const [session, setSession] = useState<ReviewSession | null>(null);
@@ -93,6 +123,7 @@ export function useReviewSession(
 		setIsComplete(false);
 		setTotalReviewed(0);
 		setCurrentCard(null);
+		setLastMasteryFeedback(null);
 
 		(async () => {
 			try {
@@ -149,7 +180,7 @@ export function useReviewSession(
 	// Handle grade submission
 	const handleGrade = useCallback(
 		async (grade: ReviewGrade) => {
-			if (!session || grading) return;
+			if (!session || grading || !ownerUserId) return;
 
 			setGrading(true);
 
@@ -179,7 +210,33 @@ export function useReviewSession(
 					last_event_id: event.id,
 				});
 
-				// 4. Update session state
+				// 4. Persist mastery state (independent from SM-2 scheduling)
+				const existingMastery = await getMasteryStateByCardId(
+					client,
+					ownerUserId,
+					result.reviewEvent.card_id,
+				);
+				const masteryUpdate = computeMasteryUpdate({
+					existing: existingMastery,
+					ownerUserId,
+					cardId: result.reviewEvent.card_id,
+					grade,
+					now: new Date(result.reviewEvent.reviewed_at),
+					previousDueAt: existingState ? new Date(existingState.due_at) : null,
+					nextDueAt: result.nextDueAt,
+					previousSm2State: (existingState?.state as Sm2State | null) ?? null,
+					nextSm2State: result.schedulingState.state as Sm2State,
+				});
+
+				await upsertMasteryState(client, existingMastery, masteryUpdate.nextMastery);
+				setLastMasteryFeedback({
+					cardId: result.reviewEvent.card_id,
+					transition: masteryUpdate.transition,
+					rating: grade,
+					isFirstLearn: masteryUpdate.isFirstLearn,
+				});
+
+				// 5. Update session state
 				const updatedResult: ReviewResult = {
 					...result,
 					schedulingState: {
@@ -190,7 +247,7 @@ export function useReviewSession(
 
 				session.moveToNext(updatedResult, grade);
 
-				// 5. Update React state
+				// 6. Update React state
 				setTotalReviewed((count) => count + 1);
 				setCurrentCard(session.getCurrentCard());
 				setIsComplete(session.isComplete());
@@ -203,7 +260,7 @@ export function useReviewSession(
 				setGrading(false);
 			}
 		},
-		[session, client, grading, t],
+		[session, client, grading, ownerUserId, t],
 	);
 
 	// Get stats from session
@@ -225,6 +282,7 @@ export function useReviewSession(
 		completedCount,
 		currentCardState,
 		params,
+		lastMasteryFeedback,
 		handleGrade,
 	};
 }

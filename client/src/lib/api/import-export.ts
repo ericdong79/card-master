@@ -1,5 +1,6 @@
 import type { ApiClient } from "./client";
 import type { Card } from "./entities/card";
+import type { CardMasteryState } from "./entities/card-mastery-state";
 import type { CardPack } from "./entities/card-pack";
 import type { CardSchedulingState } from "./entities/card-scheduling-state";
 import type { ReviewEvent } from "./entities/review-event";
@@ -13,6 +14,7 @@ type ExportReviewState = {
 	scheduling_profiles: SchedulingProfile[];
 	scheduling_states: CardSchedulingState[];
 	review_events: ReviewEvent[];
+	card_mastery_states?: CardMasteryState[];
 };
 
 export type CardMasterExportPayload = {
@@ -58,6 +60,11 @@ function assertPayload(value: unknown): asserts value is CardMasterExportPayload
 	if (payload.review_state != null && typeof payload.review_state !== "object") {
 		throw new Error("Invalid export file: malformed review_state.");
 	}
+
+	const reviewState = payload.review_state as Record<string, unknown> | undefined;
+	if (reviewState?.card_mastery_states != null && !Array.isArray(reviewState.card_mastery_states)) {
+		throw new Error("Invalid export file: malformed review_state.card_mastery_states.");
+	}
 }
 
 export async function buildCardMasterExport(
@@ -95,7 +102,7 @@ export async function buildCardMasterExport(
 	}
 
 	const cardIdSet = new Set(cards.map((card) => card.id));
-	const [schedulingStates, reviewEvents] = await Promise.all([
+	const [schedulingStates, reviewEvents, masteryStates] = await Promise.all([
 		client.list("card_scheduling_state", {
 			filter: (state) =>
 				state.owner_user_id === ownerUserId && cardIdSet.has(state.card_id),
@@ -103,6 +110,10 @@ export async function buildCardMasterExport(
 		client.list("review_event", {
 			filter: (event) =>
 				event.owner_user_id === ownerUserId && cardIdSet.has(event.card_id),
+		}),
+		client.list("card_mastery_state", {
+			filter: (state) =>
+				state.owner_user_id === ownerUserId && cardIdSet.has(state.card_id),
 		}),
 	]);
 
@@ -120,6 +131,7 @@ export async function buildCardMasterExport(
 		scheduling_profiles: schedulingProfiles,
 		scheduling_states: schedulingStates,
 		review_events: reviewEvents,
+		card_mastery_states: masteryStates,
 	};
 
 	return payload;
@@ -273,6 +285,25 @@ export async function importCardMasterData(
 			};
 			await client.put("card_scheduling_state", record);
 			importedSchedulingStates += 1;
+		}
+
+		const masteryStatesToImport = Array.isArray(reviewState.card_mastery_states)
+			? reviewState.card_mastery_states.filter((state) => cardIdMap.has(state.card_id))
+			: [];
+
+		for (const state of masteryStatesToImport) {
+			const mappedCardId = cardIdMap.get(state.card_id);
+			if (!mappedCardId) {
+				continue;
+			}
+
+			const record: CardMasteryState = {
+				...state,
+				id: generateId(),
+				card_id: mappedCardId,
+				owner_user_id: ownerUserId,
+			};
+			await client.put("card_mastery_state", record);
 		}
 	}
 

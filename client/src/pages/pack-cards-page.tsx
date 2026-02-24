@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useParams } from "react-router-dom";
 
+import {
+	getMasteryPresentationEnabled,
+	getMasteryThemePreference,
+} from "@/features/mastery";
 import { BulkCreateHanziDialog } from "@/features/cards/components/bulk-create-hanzi-dialog";
 import { CardFormDialog } from "@/features/cards/components/card-form-dialog";
 import { DeleteCardDialog } from "@/features/cards/components/delete-card-dialog";
@@ -24,6 +28,8 @@ import {
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
 import { listSchedulingStatesByCardIds } from "@/lib/api/scheduling-state";
 import type { Sm2State } from "@/lib/scheduling/types";
+import type { CardMasteryState } from "@/lib/api/entities/card-mastery-state";
+import { listMasteryStatesByCardIds } from "@/lib/api/card-mastery-state";
 
 type CardSubmitPayload = {
 	prompt: string;
@@ -54,12 +60,19 @@ export function PackCardsPage() {
 	const apiClient = useMemo(() => createApiClient(), []);
 	const { currentProfile } = useProfile();
 	const ownerUserId = currentProfile?.id ?? null;
+	const masteryEnabled = ownerUserId
+		? getMasteryPresentationEnabled(ownerUserId)
+		: false;
+	const masteryThemeId = ownerUserId
+		? getMasteryThemePreference(ownerUserId)
+		: null;
 
 	const [cardPack, setCardPack] = useState<CardPack | null>(null);
 	const [cards, setCards] = useState<CardEntity[]>([]);
 	const [schedulingStates, setSchedulingStates] = useState<
 		CardSchedulingState[]
 	>([]);
+	const [masteryStates, setMasteryStates] = useState<CardMasteryState[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [notice, setNotice] = useState<string | null>(null);
@@ -119,6 +132,7 @@ export function PackCardsPage() {
 					setCardPack(null);
 					setCards([]);
 					setSchedulingStates([]);
+					setMasteryStates([]);
 					return;
 				}
 				setCardPack(pack);
@@ -126,14 +140,23 @@ export function PackCardsPage() {
 
 				// Load scheduling states for due cards calculation
 				if (list.length > 0) {
-					const states = await listSchedulingStatesByCardIds(
-						apiClient,
-						ownerUserId,
-						list.map((c) => c.id),
-					);
+					const [states, mastery] = await Promise.all([
+						listSchedulingStatesByCardIds(
+							apiClient,
+							ownerUserId,
+							list.map((c) => c.id),
+						),
+						listMasteryStatesByCardIds(
+							apiClient,
+							ownerUserId,
+							list.map((c) => c.id),
+						),
+					]);
 					setSchedulingStates(states);
+					setMasteryStates(mastery);
 				} else {
 					setSchedulingStates([]);
+					setMasteryStates([]);
 				}
 			})
 			.catch((err) =>
@@ -148,6 +171,24 @@ export function PackCardsPage() {
 	if (!ownerUserId) {
 		return null;
 	}
+
+	const dueTimesByCardId = useMemo(
+		() =>
+			schedulingStates.reduce<Record<string, string>>((result, state) => {
+				result[state.card_id] = state.due_at;
+				return result;
+			}, {}),
+		[schedulingStates],
+	);
+
+	const masteryByCardId = useMemo(
+		() =>
+			masteryStates.reduce<Record<string, CardMasteryState>>((result, state) => {
+				result[state.card_id] = state;
+				return result;
+			}, {}),
+		[masteryStates],
+	);
 
 	const handleCreate = async (values: CardSubmitPayload) => {
 		if (!cardPackId) return;
@@ -177,6 +218,7 @@ export function PackCardsPage() {
 			});
 			setCards((prev) => [...prev, created]);
 			setCreateOpen(false);
+			setMasteryStates((prev) => prev.filter((state) => state.card_id !== created.id));
 			setError(null);
 			setNotice(null);
 		} catch (err) {
@@ -293,6 +335,9 @@ export function PackCardsPage() {
 			setCards((prev) =>
 				prev.filter((card) => card.id !== deleteCardTarget.id),
 			);
+			setMasteryStates((prev) =>
+				prev.filter((state) => state.card_id !== deleteCardTarget.id),
+			);
 			setDeleteCardTarget(null);
 			setError(null);
 			setNotice(null);
@@ -337,6 +382,10 @@ export function PackCardsPage() {
 						reviewCards={cardStatusCounts.review}
 						dueCards={cardStatusCounts.due}
 						cards={cards}
+						dueTimesByCardId={dueTimesByCardId}
+						masteryByCardId={masteryByCardId}
+						masteryThemeId={masteryThemeId}
+						showMastery={masteryEnabled}
 						onCreateClick={() => setCreateOpen(true)}
 						onEdit={setEditingCard}
 						onDelete={setDeleteCardTarget}

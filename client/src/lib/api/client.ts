@@ -1,4 +1,5 @@
 import type { Card } from "./entities/card";
+import type { CardMasteryState } from "./entities/card-mastery-state";
 import type { CardPack } from "./entities/card-pack";
 import type { CardSchedulingState } from "./entities/card-scheduling-state";
 import type { ReviewEvent } from "./entities/review-event";
@@ -7,6 +8,7 @@ import type { SchedulingProfile } from "./entities/scheduling-profile";
 type StoreValueMap = {
 	card_pack: CardPack;
 	card: Card;
+	card_mastery_state: CardMasteryState;
 	card_scheduling_state: CardSchedulingState;
 	scheduling_profile: SchedulingProfile;
 	review_event: ReviewEvent;
@@ -32,7 +34,7 @@ export type ApiClient = {
 };
 
 const DB_NAME = "card-master";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 function openDatabase(): Promise<IDBDatabase> {
 	if (typeof indexedDB === "undefined") {
@@ -54,6 +56,14 @@ function openDatabase(): Promise<IDBDatabase> {
 				const store = db.createObjectStore("card", { keyPath: "id" });
 				store.createIndex("owner_user_id", "owner_user_id", { unique: false });
 				store.createIndex("card_pack_id", "card_pack_id", { unique: false });
+			}
+
+			if (!db.objectStoreNames.contains("card_mastery_state")) {
+				const store = db.createObjectStore("card_mastery_state", {
+					keyPath: "id",
+				});
+				store.createIndex("owner_user_id", "owner_user_id", { unique: false });
+				store.createIndex("card_id", "card_id", { unique: false });
 			}
 
 			if (!db.objectStoreNames.contains("scheduling_profile")) {

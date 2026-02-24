@@ -4,6 +4,8 @@ import {
 	IconPencil,
 	IconTrash,
 } from "@tabler/icons-react";
+import { getMasteryPresentationPlugin } from "@/features/mastery";
+import { createElement, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +14,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import type { CardMasteryState } from "@/lib/api/entities/card-mastery-state";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
 import type { CardPackType } from "@/lib/api/entities/card-pack";
 import {
@@ -27,6 +30,9 @@ type CardRowProps = {
 	onEdit: (card: CardEntity) => void;
 	onDelete: (card: CardEntity) => void;
 	dueAt?: string;
+	mastery?: CardMasteryState;
+	masteryThemeId?: string | null;
+	showMastery?: boolean;
 };
 
 function formatDueTime(dueAt: string, t: (key: string, options?: Record<string, unknown>) => string): string {
@@ -76,11 +82,25 @@ export function CardRow({
 	onEdit,
 	onDelete,
 	dueAt,
+	mastery,
+	masteryThemeId,
+	showMastery = true,
 }: CardRowProps) {
 	const { t, i18n } = useTranslation();
 	const questionText = getCardQuestionText(card) || card.prompt || t("cards.fallbackCard");
 	const answerText = getCardAnswerText(card) || card.answer;
 	const shouldShowQuestionTitle = packType !== "pinyin-hanzi";
+	const masteryPlugin = getMasteryPresentationPlugin(masteryThemeId);
+	const masteryState = mastery?.mastery_state ?? "unseen";
+	const masteryScore = mastery?.mastery_score ?? 0;
+	const masteryMeta = masteryPlugin.getStateMeta(masteryState, { t });
+
+	const renderMasteryIcon = () => {
+		if (masteryMeta.IconComponent) {
+			return createElement(masteryMeta.IconComponent as ComponentType<{ className?: string }>);
+		}
+		return masteryMeta.icon ?? null;
+	};
 
 	return (
 		<Card className="group relative transition hover:-translate-y-0.5 hover:shadow-md">
@@ -118,7 +138,7 @@ export function CardRow({
 					noAnswerText={t("cards.noAnswer")}
 				/>
 			</CardHeader>
-			<CardContent className="flex items-center gap-4 text-xs text-muted-foreground">
+			<CardContent className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
 				<div className="flex items-center gap-1">
 					<IconCalendar className="size-3.5" />
 					<span>
@@ -138,6 +158,14 @@ export function CardRow({
 						<span>{t("cards.due", { time: formatDueTime(dueAt, t) })}</span>
 					</div>
 				)}
+				{showMastery ? (
+					<div className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-1", masteryMeta.colorClassName)}>
+						<span aria-hidden>{renderMasteryIcon()}</span>
+						<span>{masteryMeta.label}</span>
+						<span>·</span>
+						<span>{masteryPlugin.getProgressText(masteryScore, { t })}</span>
+					</div>
+				) : null}
 			</CardContent>
 		</Card>
 	);
