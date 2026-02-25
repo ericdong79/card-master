@@ -8,7 +8,7 @@ import {
 	Settings2,
 	Users,
 } from "lucide-react";
-import { type ComponentType, useEffect, useState } from "react";
+import { type ComponentType, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logoImage from "@/assets/logo/logo.png";
@@ -17,6 +17,12 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { CreateProfileDialog } from "@/features/profile/components/create-profile-dialog";
 import { SwitchProfileDialog } from "@/features/profile/components/switch-profile-dialog";
 import { useProfile } from "@/features/profile/profile-context";
+import {
+	DAILY_REVIEW_PROGRESS_UPDATED_EVENT,
+	countTodayCompletedCards,
+	isDailyGoalMet,
+} from "@/features/review/daily-goal";
+import { createApiClient } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -37,6 +43,11 @@ type SidebarPanelProps = {
 	collapsed: boolean;
 	currentUserName: string;
 	currentUserAvatar: string | null;
+	dailyReviewProgress: {
+		completed: number;
+		goal: number;
+		isMet: boolean;
+	} | null;
 	onToggleCollapse?: () => void;
 	onNavigate?: () => void;
 	onOpenUserMenu: () => void;
@@ -46,6 +57,7 @@ function SidebarPanel({
 	collapsed,
 	currentUserName,
 	currentUserAvatar,
+	dailyReviewProgress,
 	onToggleCollapse,
 	onNavigate,
 	onOpenUserMenu,
@@ -147,6 +159,31 @@ function SidebarPanel({
 						);
 					})}
 				</nav>
+				{!collapsed && dailyReviewProgress ? (
+					<div
+						className={cn(
+							"mt-4 rounded-md border px-3 py-2 text-sm",
+							dailyReviewProgress.isMet
+								? "border-emerald-400/50 bg-emerald-500/10 text-emerald-700"
+								: "border-amber-400/50 bg-amber-500/10 text-amber-700",
+						)}
+					>
+						<p className="text-xs text-sidebar-foreground/80">
+							{t("sidebar.dailyGoal.title")}
+						</p>
+						<p className="font-semibold">
+							{t("sidebar.dailyGoal.progress", {
+								completed: dailyReviewProgress.completed,
+								goal: dailyReviewProgress.goal,
+							})}
+						</p>
+						<p className="text-xs text-sidebar-foreground/80">
+							{dailyReviewProgress.isMet
+								? t("sidebar.dailyGoal.met")
+								: t("sidebar.dailyGoal.notMet")}
+						</p>
+					</div>
+				) : null}
 			</div>
 
 			<div
@@ -195,12 +232,15 @@ function SidebarPanel({
 export function AppShell() {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
+	const { pathname } = useLocation();
+	const apiClient = useMemo(() => createApiClient(), []);
 	const { ready, profiles, currentProfile, createProfile } = useProfile();
 	const [collapsed, setCollapsed] = useState(false);
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const [switchProfileOpen, setSwitchProfileOpen] = useState(false);
 	const [createProfileOpen, setCreateProfileOpen] = useState(false);
+	const [completedToday, setCompletedToday] = useState(0);
 
 	const mustCreateProfile = ready && profiles.length === 0;
 
@@ -209,6 +249,56 @@ export function AppShell() {
 			setCreateProfileOpen(true);
 		}
 	}, [mustCreateProfile]);
+
+	useEffect(() => {
+		if (!currentProfile) {
+			setCompletedToday(0);
+			return;
+		}
+
+		let cancelled = false;
+		const loadProgress = async () => {
+			try {
+				const count = await countTodayCompletedCards(
+					apiClient,
+					currentProfile.id,
+				);
+				if (!cancelled) {
+					setCompletedToday(count);
+				}
+			} catch {
+				if (!cancelled) {
+					setCompletedToday(0);
+				}
+			}
+		};
+
+		void loadProgress();
+
+		const handleProgressUpdated = () => {
+			void loadProgress();
+		};
+		window.addEventListener(
+			DAILY_REVIEW_PROGRESS_UPDATED_EVENT,
+			handleProgressUpdated,
+		);
+
+		return () => {
+			cancelled = true;
+			window.removeEventListener(
+				DAILY_REVIEW_PROGRESS_UPDATED_EVENT,
+				handleProgressUpdated,
+			);
+		};
+	}, [apiClient, currentProfile, pathname]);
+
+	const dailyReviewProgress = currentProfile
+		? {
+				completed: completedToday,
+				goal: currentProfile.daily_goal,
+				isMet: isDailyGoalMet(completedToday, currentProfile.daily_goal),
+			}
+		: null;
 
 	return (
 		<div className="h-dvh overflow-hidden bg-muted/20">
@@ -226,6 +316,7 @@ export function AppShell() {
 							currentProfile?.nickname ?? t("sidebar.user.defaultName")
 						}
 						currentUserAvatar={currentProfile?.avatar_emoji ?? null}
+						dailyReviewProgress={dailyReviewProgress}
 						onOpenUserMenu={() => setUserMenuOpen(true)}
 					/>
 				</aside>
@@ -257,6 +348,7 @@ export function AppShell() {
 							currentProfile?.nickname ?? t("sidebar.user.defaultName")
 						}
 						currentUserAvatar={currentProfile?.avatar_emoji ?? null}
+						dailyReviewProgress={dailyReviewProgress}
 						onNavigate={() => setMobileOpen(false)}
 						onOpenUserMenu={() => {
 							setMobileOpen(false);

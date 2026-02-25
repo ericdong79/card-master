@@ -31,6 +31,12 @@
 			"name": "访客用户",
 			"role": "本地配置（占位）",
 			"defaultName": "未创建用户"
+		},
+		"dailyGoal": {
+			"title": "今日目标",
+			"progress": "已完成 {{completed}} / {{goal}}",
+			"met": "今日已达标",
+			"notMet": "今日进行中"
 		}
 	},
 	"profile": {
@@ -231,6 +237,13 @@
 				"enabled": "开启掌握度反馈",
 				"enabledHint": "在卡片列表显示掌握度标签，并在复习后显示变化通知。",
 				"theme": "掌握度主题"
+			},
+			"dailyReview": {
+				"title": "每日复习限制",
+				"description": "控制每次进入复习会话时加载的卡片数量。",
+				"dailyGoal": "每日目标（总完成）",
+				"reviewPerDay": "每次到期卡上限",
+				"newPerDay": "每次新卡上限"
 			},
 			"resetThemeColor": "使用默认主题色",
 			"defaultColorActive": "当前使用应用默认主题色。",

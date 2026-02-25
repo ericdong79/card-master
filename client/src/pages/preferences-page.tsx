@@ -9,6 +9,7 @@ import {
 	setMasteryPresentationEnabled,
 	setMasteryThemePreference,
 } from "@/features/mastery";
+import { DEFAULT_DAILY_REVIEW_SETTINGS } from "@/features/review/daily-goal";
 import { SafeEmojiPicker } from "@/components/safe-emoji-picker";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +41,15 @@ export function PreferencesPage() {
 	const [hanziFont, setHanziFont] = useState<HanziFontPreference>("default");
 	const [sidebarBackground, setSidebarBackground] =
 		useState<SidebarBackgroundPreference>("nav-illustration");
+	const [dailyGoal, setDailyGoal] = useState(
+		DEFAULT_DAILY_REVIEW_SETTINGS.dailyGoal,
+	);
+	const [reviewPerDay, setReviewPerDay] = useState(
+		DEFAULT_DAILY_REVIEW_SETTINGS.reviewPerDay,
+	);
+	const [newPerDay, setNewPerDay] = useState(
+		DEFAULT_DAILY_REVIEW_SETTINGS.newPerDay,
+	);
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 	const [masteryEnabled, setMasteryEnabled] = useState(true);
 	const [masteryThemeId, setMasteryThemeId] = useState("default-academic");
@@ -56,11 +66,21 @@ export function PreferencesPage() {
 		setPrimaryColor(currentProfile.primary_color ?? "#0ee17f");
 		setHanziFont(currentProfile.hanzi_font ?? "default");
 		setSidebarBackground(currentProfile.sidebar_background ?? "nav-illustration");
+		setDailyGoal(currentProfile.daily_goal);
+		setReviewPerDay(currentProfile.review_per_day);
+		setNewPerDay(currentProfile.new_per_day);
 		setMasteryEnabled(getMasteryPresentationEnabled(currentProfile.id));
 		setMasteryThemeId(
 			getMasteryThemePreference(currentProfile.id) ?? "default-academic",
 		);
 	}, [currentProfile]);
+
+	const clampSetting = (value: number, fallback: number): number => {
+		if (!Number.isFinite(value)) return fallback;
+		if (value < 1) return 1;
+		if (value > 999) return 999;
+		return Math.round(value);
+	};
 
 	if (!currentProfile) {
 		return null;
@@ -200,6 +220,101 @@ export function PreferencesPage() {
 								<option value="en">{t("language.english")}</option>
 								<option value="zh-CN">{t("language.chineseSimplified")}</option>
 							</select>
+						</div>
+
+						<div className="space-y-3 rounded-md border bg-background/60 p-3">
+							<div className="text-sm font-medium">
+								{t("preferences.profile.dailyReview.title")}
+							</div>
+							<p className="text-xs text-muted-foreground">
+								{t("preferences.profile.dailyReview.description")}
+							</p>
+							<div className="grid gap-3 md:grid-cols-3">
+								<div className="space-y-1">
+									<Label htmlFor="daily-goal">
+										{t("preferences.profile.dailyReview.dailyGoal")}
+									</Label>
+									<Input
+										id="daily-goal"
+										type="number"
+										min={1}
+										max={999}
+										value={dailyGoal}
+										onChange={(event) =>
+											setDailyGoal(
+												clampSetting(
+													Number(event.target.value),
+													DEFAULT_DAILY_REVIEW_SETTINGS.dailyGoal,
+												),
+											)
+										}
+										onBlur={() => {
+											const nextValue = clampSetting(
+												dailyGoal,
+												DEFAULT_DAILY_REVIEW_SETTINGS.dailyGoal,
+											);
+											setDailyGoal(nextValue);
+											updateCurrentProfile({ dailyGoal: nextValue });
+										}}
+									/>
+								</div>
+								<div className="space-y-1">
+									<Label htmlFor="review-per-day">
+										{t("preferences.profile.dailyReview.reviewPerDay")}
+									</Label>
+									<Input
+										id="review-per-day"
+										type="number"
+										min={1}
+										max={999}
+										value={reviewPerDay}
+										onChange={(event) =>
+											setReviewPerDay(
+												clampSetting(
+													Number(event.target.value),
+													DEFAULT_DAILY_REVIEW_SETTINGS.reviewPerDay,
+												),
+											)
+										}
+										onBlur={() => {
+											const nextValue = clampSetting(
+												reviewPerDay,
+												DEFAULT_DAILY_REVIEW_SETTINGS.reviewPerDay,
+											);
+											setReviewPerDay(nextValue);
+											updateCurrentProfile({ reviewPerDay: nextValue });
+										}}
+									/>
+								</div>
+								<div className="space-y-1">
+									<Label htmlFor="new-per-day">
+										{t("preferences.profile.dailyReview.newPerDay")}
+									</Label>
+									<Input
+										id="new-per-day"
+										type="number"
+										min={1}
+										max={999}
+										value={newPerDay}
+										onChange={(event) =>
+											setNewPerDay(
+												clampSetting(
+													Number(event.target.value),
+													DEFAULT_DAILY_REVIEW_SETTINGS.newPerDay,
+												),
+											)
+										}
+										onBlur={() => {
+											const nextValue = clampSetting(
+												newPerDay,
+												DEFAULT_DAILY_REVIEW_SETTINGS.newPerDay,
+											);
+											setNewPerDay(nextValue);
+											updateCurrentProfile({ newPerDay: nextValue });
+										}}
+									/>
+								</div>
+							</div>
 						</div>
 
 						<div className="space-y-2">

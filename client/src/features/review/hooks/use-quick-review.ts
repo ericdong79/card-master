@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { notifyDailyReviewProgressUpdated } from "@/features/review/daily-goal";
 import { createApiClient } from "@/lib/api/client";
 import { listCards } from "@/lib/api/card";
 import { getCardPackById } from "@/lib/api/card-pack";
@@ -146,6 +147,9 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 						raw_payload: reviewResult.reviewEvent.raw_payload,
 						reviewed_at: reviewResult.reviewEvent.reviewed_at,
 					});
+					if (reviewResult.reviewEvent.grade > 1) {
+						notifyDailyReviewProgressUpdated();
+					}
 				}
 
 				// 3. Update session state

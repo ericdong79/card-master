@@ -311,6 +311,95 @@ describe("ReviewSession (Simplified)", () => {
 		});
 	});
 
+	describe("session queue limits", () => {
+		it("should cap due cards by reviewCardsLimit", () => {
+			const now = new Date("2025-01-15T10:00:00Z");
+			const cards = [
+				createCard("card-1", "Due 1"),
+				createCard("card-2", "Due 2"),
+				createCard("card-3", "Due 3"),
+			];
+
+			const states: CardSchedulingState[] = cards.map((card, index) => ({
+				id: `state-${index + 1}`,
+				card_id: card.id,
+				owner_user_id: "local-user",
+				profile_id: "profile-1",
+				due_at: "2025-01-14T10:00:00Z",
+				state: {
+					schema_version: 1,
+					algorithm: "sm2",
+					updated_at: "2025-01-14T10:00:00Z",
+					phase: "review",
+					ease: 2.5,
+					intervalDays: 5,
+					repetitions: 3,
+					lapses: 0,
+					stepIndex: 0,
+					pendingIntervalDays: null,
+					lastReviewedAt: "2025-01-14T10:00:00Z",
+				},
+				last_reviewed_at: "2025-01-14T10:00:00Z",
+				last_event_id: null,
+				created_at: "2025-01-14T10:00:00Z",
+			}));
+
+			const session = ReviewSession.create(
+				cards,
+				states,
+				defaultParams,
+				"profile-1",
+				{ now, reviewCardsLimit: 2, newCardsLimit: 10, totalCardsLimit: 10 },
+			);
+
+			expect(session.getStats().totalCards).toBe(2);
+		});
+
+		it("should enforce totalCardsLimit across due and new cards", () => {
+			const now = new Date("2025-01-15T10:00:00Z");
+			const dueCard = createCard("card-1", "Due");
+			const newCard1 = createCard("card-2", "New 1");
+			const newCard2 = createCard("card-3", "New 2");
+			const cards = [dueCard, newCard1, newCard2];
+
+			const states: CardSchedulingState[] = [
+				{
+					id: "state-1",
+					card_id: dueCard.id,
+					owner_user_id: "local-user",
+					profile_id: "profile-1",
+					due_at: "2025-01-14T10:00:00Z",
+					state: {
+						schema_version: 1,
+						algorithm: "sm2",
+						updated_at: "2025-01-14T10:00:00Z",
+						phase: "review",
+						ease: 2.5,
+						intervalDays: 7,
+						repetitions: 4,
+						lapses: 0,
+						stepIndex: 0,
+						pendingIntervalDays: null,
+						lastReviewedAt: "2025-01-14T10:00:00Z",
+					},
+					last_reviewed_at: "2025-01-14T10:00:00Z",
+					last_event_id: null,
+					created_at: "2025-01-14T10:00:00Z",
+				},
+			];
+
+			const session = ReviewSession.create(
+				cards,
+				states,
+				defaultParams,
+				"profile-1",
+				{ now, reviewCardsLimit: 5, newCardsLimit: 5, totalCardsLimit: 2 },
+			);
+
+			expect(session.getStats().totalCards).toBe(2);
+		});
+	});
+
 	describe("session stats", () => {
 		it("should report correct statistics", () => {
 			const card1 = createCard("card-1", "Card 1");

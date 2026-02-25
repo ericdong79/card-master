@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ import { useReviewSession } from "@/features/review/hooks/use-review-session";
 export function PackReviewPage() {
 	const { t } = useTranslation();
 	const { cardPackId } = useParams<{ cardPackId: string }>();
+	const navigate = useNavigate();
 	const { currentProfile } = useProfile();
 	const session = useReviewSession(cardPackId);
 	const [toastFeedback, setToastFeedback] = useState<typeof session.lastMasteryFeedback>(null);
@@ -35,6 +36,25 @@ export function PackReviewPage() {
 		}, 2800);
 		return () => window.clearTimeout(timer);
 	}, [session.lastMasteryFeedback, masteryEnabled]);
+
+	useEffect(() => {
+		if (!cardPackId) return;
+		if (session.loading || session.error) return;
+		if (!session.isComplete) return;
+		if (session.totalReviewed > 0) return;
+		if (session.cards.length === 0) return;
+		if (session.totalCards > 0) return;
+		navigate(`/pack/${cardPackId}/quick-review`, { replace: true });
+	}, [
+		cardPackId,
+		navigate,
+		session.cards.length,
+		session.error,
+		session.isComplete,
+		session.loading,
+		session.totalCards,
+		session.totalReviewed,
+	]);
 
 	if (!cardPackId) {
 		return <Navigate to="/" replace />;

@@ -55,6 +55,10 @@ export interface SessionStats {
 export interface ReviewSessionOptions {
 	/** Maximum number of new cards to show in this session */
 	newCardsLimit?: number;
+	/** Maximum number of due cards to show in this session */
+	reviewCardsLimit?: number;
+	/** Maximum number of total cards to include in this session */
+	totalCardsLimit?: number;
 	/** Current time (for testing) */
 	now?: Date;
 	/** Active owner/profile id */

@@ -36,6 +36,12 @@ function getQueuePhase(state: Sm2State | null): QueuePhase {
 	return state.phase;
 }
 
+function normalizeLimit(value: number | undefined): number {
+	if (value === undefined) return Number.POSITIVE_INFINITY;
+	if (!Number.isFinite(value)) return Number.POSITIVE_INFINITY;
+	return Math.max(0, Math.floor(value));
+}
+
 /**
  * ReviewSession manages the state and logic of a review session.
  *
@@ -88,7 +94,7 @@ export class ReviewSession {
 		const stateMap = new Map(states.map((s) => [s.card_id, s]));
 		const now = options?.now ?? new Date();
 
-		const items: QueueItem[] = cards
+		const allEligibleItems: QueueItem[] = cards
 			.map((card) => {
 				const state = stateMap.get(card.id) ?? null;
 				const sm2State = state?.state as Sm2State | null;
@@ -109,8 +115,25 @@ export class ReviewSession {
 				};
 			})
 			.filter((item): item is QueueItem => item !== null);
+		const dueItems = allEligibleItems
+			.filter((item) => item.phase !== "new")
+			.sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
+		const newItems = allEligibleItems.filter((item) => item.phase === "new");
 
-		return new ReviewSession(items, params, profileId, options);
+		const reviewLimit = normalizeLimit(options?.reviewCardsLimit);
+		const newLimit = normalizeLimit(options?.newCardsLimit ?? 20);
+		const totalLimit = normalizeLimit(options?.totalCardsLimit);
+
+		const selectedDue = dueItems.slice(0, Math.min(reviewLimit, totalLimit));
+		const remainingSlots = Math.max(0, totalLimit - selectedDue.length);
+		const selectedNew = newItems.slice(0, Math.min(newLimit, remainingSlots));
+
+		return new ReviewSession(
+			[...selectedDue, ...selectedNew],
+			params,
+			profileId,
+			options,
+		);
 	}
 
 	/**

@@ -357,7 +357,6 @@ export function PackCardsPage() {
 				onBulkCreateClick={() => setBulkCreateOpen(true)}
 				showBulkCreate={cardPack?.type === "pinyin-hanzi"}
 				showReviewButton={cards.length > 0}
-				dueCardsCount={cardStatusCounts.due}
 			/>
 
 			<main className="mx-auto flex max-w-5xl flex-col gap-4 px-6 py-8">

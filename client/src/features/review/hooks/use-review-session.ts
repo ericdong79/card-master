@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { computeMasteryUpdate } from "@/features/mastery";
+import {
+	countTodayCompletedCards,
+	notifyDailyReviewProgressUpdated,
+	normalizeDailyReviewSettings,
+} from "@/features/review/daily-goal";
 import { listCards } from "@/lib/api/card";
 import {
 	getMasteryStateByCardId,
@@ -128,10 +133,11 @@ export function useReviewSession(
 		(async () => {
 			try {
 				// Load data
-				const [pack, fetchedCards, profile] = await Promise.all([
+				const [pack, fetchedCards, profile, completedToday] = await Promise.all([
 					getCardPackById(client, cardPackId, ownerUserId),
 					listCards(client, ownerUserId, { cardPackId }),
 					getOrCreateSchedulingProfile(client, ownerUserId),
+					countTodayCompletedCards(client, ownerUserId),
 				]);
 
 				if (!pack) {
@@ -155,13 +161,29 @@ export function useReviewSession(
 				const params = normalizeSm2Parameters(
 					profile.parameters as Sm2Parameters,
 				);
+				const settings = normalizeDailyReviewSettings({
+					dailyGoal: currentProfile?.daily_goal,
+					reviewPerDay: currentProfile?.review_per_day,
+					newPerDay: currentProfile?.new_per_day,
+				});
+				const sessionTotalLimit =
+					completedToday < settings.dailyGoal
+						? Math.max(0, settings.dailyGoal - completedToday)
+						: settings.reviewPerDay + settings.newPerDay;
+				const reviewCardsLimit = settings.reviewPerDay;
+				const newCardsLimit = settings.newPerDay;
 
 				const newSession = ReviewSession.create(
 					fetchedCards,
 					stateList,
 					params,
 					profile.id,
-					{ newCardsLimit: 20, ownerUserId },
+					{
+						newCardsLimit,
+						reviewCardsLimit,
+						totalCardsLimit: sessionTotalLimit,
+						ownerUserId,
+					},
 				);
 
 				setSession(newSession);
@@ -175,7 +197,15 @@ export function useReviewSession(
 				setLoading(false);
 			}
 		})();
-	}, [cardPackId, client, ownerUserId, t]);
+	}, [
+		cardPackId,
+		client,
+		currentProfile?.daily_goal,
+		currentProfile?.new_per_day,
+		currentProfile?.review_per_day,
+		ownerUserId,
+		t,
+	]);
 
 	// Handle grade submission
 	const handleGrade = useCallback(
@@ -246,6 +276,9 @@ export function useReviewSession(
 				};
 
 				session.moveToNext(updatedResult, grade);
+				if (grade !== "again") {
+					notifyDailyReviewProgressUpdated();
+				}
 
 				// 6. Update React state
 				setTotalReviewed((count) => count + 1);

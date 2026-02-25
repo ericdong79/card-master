@@ -6,6 +6,9 @@ import {
 	type ReactNode,
 } from "react";
 
+import {
+	normalizeDailyReviewSettings,
+} from "@/features/review/daily-goal";
 import { generateId, nowIso } from "@/lib/api/utils";
 
 const STORAGE_KEY = "card-master.profiles.v1";
@@ -20,6 +23,9 @@ export type UserProfile = {
 	primary_color: string | null;
 	hanzi_font: HanziFontPreference;
 	sidebar_background: SidebarBackgroundPreference;
+	daily_goal: number;
+	review_per_day: number;
+	new_per_day: number;
 	created_at: string;
 	updated_at: string | null;
 	last_used_at: string;
@@ -36,6 +42,9 @@ type CreateProfileInput = {
 	primaryColor?: string | null;
 	hanziFont?: HanziFontPreference;
 	sidebarBackground?: SidebarBackgroundPreference;
+	dailyGoal?: number;
+	reviewPerDay?: number;
+	newPerDay?: number;
 };
 
 type ProfileContextValue = {
@@ -50,6 +59,9 @@ type ProfileContextValue = {
 		primaryColor?: string | null;
 		hanziFont?: HanziFontPreference;
 		sidebarBackground?: SidebarBackgroundPreference;
+		dailyGoal?: number;
+		reviewPerDay?: number;
+		newPerDay?: number;
 	}) => void;
 };
 
@@ -91,7 +103,13 @@ function loadProfileState(): StoredProfileState {
 						(typeof profile.primary_color === "string" ||
 							profile.primary_color === null),
 				)
-					.map((profile) => ({
+					.map((profile) => {
+						const settings = normalizeDailyReviewSettings({
+							dailyGoal: (profile as Partial<UserProfile>).daily_goal,
+							reviewPerDay: (profile as Partial<UserProfile>).review_per_day,
+							newPerDay: (profile as Partial<UserProfile>).new_per_day,
+						});
+						return {
 						...profile,
 						hanzi_font: resolveHanziFontPreference(
 							(profile as Partial<UserProfile>).hanzi_font,
@@ -99,7 +117,11 @@ function loadProfileState(): StoredProfileState {
 						sidebar_background: resolveSidebarBackgroundPreference(
 							(profile as Partial<UserProfile>).sidebar_background,
 						),
-					}))
+						daily_goal: settings.dailyGoal,
+						review_per_day: settings.reviewPerDay,
+						new_per_day: settings.newPerDay,
+						};
+					})
 			: [];
 		const currentProfileId =
 			typeof parsed.current_profile_id === "string"
@@ -150,6 +172,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 			currentProfile,
 			createProfile: (input) => {
 				const now = nowIso();
+				const settings = normalizeDailyReviewSettings({
+					dailyGoal: input.dailyGoal,
+					reviewPerDay: input.reviewPerDay,
+					newPerDay: input.newPerDay,
+				});
 				const profile: UserProfile = {
 					id: generateId(),
 					nickname: input.nickname.trim(),
@@ -157,6 +184,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 					primary_color: input.primaryColor ?? null,
 					hanzi_font: input.hanziFont ?? "kaiti",
 					sidebar_background: input.sidebarBackground ?? "nav-illustration",
+					daily_goal: settings.dailyGoal,
+					review_per_day: settings.reviewPerDay,
+					new_per_day: settings.newPerDay,
 					created_at: now,
 					updated_at: null,
 					last_used_at: now,
@@ -197,6 +227,20 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 				const now = nowIso();
 				const nextProfiles = state.profiles.map((profile) => {
 					if (profile.id !== currentProfileId) return profile;
+					const settings = normalizeDailyReviewSettings({
+						dailyGoal:
+							updates.dailyGoal === undefined
+								? profile.daily_goal
+								: updates.dailyGoal,
+						reviewPerDay:
+							updates.reviewPerDay === undefined
+								? profile.review_per_day
+								: updates.reviewPerDay,
+						newPerDay:
+							updates.newPerDay === undefined
+								? profile.new_per_day
+								: updates.newPerDay,
+					});
 					return {
 						...profile,
 						nickname: updates.nickname?.trim() ?? profile.nickname,
@@ -213,6 +257,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 							updates.sidebarBackground === undefined
 								? profile.sidebar_background
 								: resolveSidebarBackgroundPreference(updates.sidebarBackground),
+						daily_goal: settings.dailyGoal,
+						review_per_day: settings.reviewPerDay,
+						new_per_day: settings.newPerDay,
 						updated_at: now,
 					};
 				});

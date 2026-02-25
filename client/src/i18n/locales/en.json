@@ -30,6 +30,12 @@
 			"name": "Guest User",
 			"role": "Local profile (placeholder)",
 			"defaultName": "No Profile"
+		},
+		"dailyGoal": {
+			"title": "Daily Goal",
+			"progress": "{{completed}} / {{goal}} completed",
+			"met": "Goal reached",
+			"notMet": "In progress"
 		}
 	},
 	"profile": {
@@ -230,6 +236,13 @@
 				"enabled": "Enable mastery feedback",
 				"enabledHint": "Show mastery badges in card list and review result notifications.",
 				"theme": "Mastery theme"
+			},
+			"dailyReview": {
+				"title": "Daily review limits",
+				"description": "Control how many cards are loaded per review session.",
+				"dailyGoal": "Daily goal (total)",
+				"reviewPerDay": "Due cards per session",
+				"newPerDay": "New cards per session"
 			},
 			"resetThemeColor": "Use default color",
 			"defaultColorActive": "Using app default theme color.",

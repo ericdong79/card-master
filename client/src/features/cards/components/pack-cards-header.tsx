@@ -11,7 +11,6 @@ type PackCardsHeaderProps = {
 	onBulkCreateClick?: () => void;
 	showBulkCreate?: boolean;
 	showReviewButton?: boolean;
-	dueCardsCount?: number;
 };
 
 export function PackCardsHeader({
@@ -21,17 +20,12 @@ export function PackCardsHeader({
 	onBulkCreateClick,
 	showBulkCreate = false,
 	showReviewButton = true,
-	dueCardsCount = 0,
 }: PackCardsHeaderProps) {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 
 	const handleReviewClick = () => {
-		if (dueCardsCount === 0) {
-			navigate(`/pack/${cardPackId}/quick-review`);
-		} else {
-			navigate(`/pack/${cardPackId}/review`);
-		}
+		navigate(`/pack/${cardPackId}/review`);
 	};
 
 	return (
