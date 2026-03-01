@@ -5,9 +5,9 @@ import type { Sm2Parameters } from "@/lib/scheduling/types/sm2-types";
 import { ReviewSession } from "./review-session";
 
 // Test fixtures
-const createCard = (id: string, prompt: string): Card => ({
+const createCard = (id: string, prompt: string, cardPackId = "pack-1"): Card => ({
 	id,
-	card_pack_id: "pack-1",
+	card_pack_id: cardPackId,
 	owner_user_id: "local-user",
 	prompt,
 	answer: `Answer for ${prompt}`,
@@ -397,6 +397,50 @@ describe("ReviewSession (Simplified)", () => {
 			);
 
 			expect(session.getStats().totalCards).toBe(2);
+		});
+
+		it("should support mixed packs in one session", () => {
+			const now = new Date("2025-01-15T10:00:00Z");
+			const cards = [
+				createCard("card-1", "Pack A Due", "pack-a"),
+				createCard("card-2", "Pack B Due", "pack-b"),
+			];
+			const states: CardSchedulingState[] = cards.map((card, index) => ({
+				id: `state-mixed-${index + 1}`,
+				card_id: card.id,
+				owner_user_id: "local-user",
+				profile_id: "profile-1",
+				due_at: "2025-01-14T10:00:00Z",
+				state: {
+					schema_version: 1,
+					algorithm: "sm2",
+					updated_at: "2025-01-14T10:00:00Z",
+					phase: "review",
+					ease: 2.5,
+					intervalDays: 5,
+					repetitions: 3,
+					lapses: 0,
+					stepIndex: 0,
+					pendingIntervalDays: null,
+					lastReviewedAt: "2025-01-14T10:00:00Z",
+				},
+				last_reviewed_at: "2025-01-14T10:00:00Z",
+				last_event_id: null,
+				created_at: "2025-01-14T10:00:00Z",
+			}));
+
+			const session = ReviewSession.create(
+				cards,
+				states,
+				defaultParams,
+				"profile-1",
+				{ now, reviewCardsLimit: 10, newCardsLimit: 10, totalCardsLimit: 10 },
+			);
+
+			const packIdsInQueue = new Set(
+				session.getQueueSnapshot().map((item) => item.card.card_pack_id),
+			);
+			expect(packIdsInQueue).toEqual(new Set(["pack-a", "pack-b"]));
 		});
 	});
 

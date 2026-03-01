@@ -16,6 +16,11 @@ const PackReviewPage = lazy(() =>
 		default: module.PackReviewPage,
 	})),
 );
+const GlobalReviewPage = lazy(() =>
+	import("@/pages/global-review-page").then((module) => ({
+		default: module.GlobalReviewPage,
+	})),
+);
 const QuickReviewPage = lazy(() =>
 	import("@/pages/quick-review-page").then((module) => ({
 		default: module.QuickReviewPage,
@@ -72,6 +77,14 @@ function App() {
 					element={
 						<Suspense fallback={<RouteFallback />}>
 							<PackReviewPage />
+						</Suspense>
+					}
+				/>
+				<Route
+					path="/review"
+					element={
+						<Suspense fallback={<RouteFallback />}>
+							<GlobalReviewPage />
 						</Suspense>
 					}
 				/>

@@ -8,7 +8,9 @@ import {
 	type CardPackWithCounts,
 	updateCardPack,
 } from "@/lib/api/card-pack";
+import { listCards } from "@/lib/api/card";
 import { type CardPackType } from "@/lib/api/entities/card-pack";
+import { listSchedulingStatesByCardIds } from "@/lib/api/scheduling-state";
 import {
 	buildCardMasterExport,
 	downloadCardMasterExport,
@@ -24,6 +26,7 @@ export function useHomePage() {
 	const ownerUserId = currentProfile?.id ?? null;
 
 	const [cardPacks, setCardPacks] = useState<CardPackWithCounts[]>([]);
+	const [dueCardsCount, setDueCardsCount] = useState(0);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -37,10 +40,30 @@ export function useHomePage() {
 	const refreshCardPacks = useCallback(async () => {
 		if (!ownerUserId) {
 			setCardPacks([]);
+			setDueCardsCount(0);
 			return;
 		}
-		const packs = await listCardPacksWithCounts(apiClient, ownerUserId);
+		const [packs, cards] = await Promise.all([
+			listCardPacksWithCounts(apiClient, ownerUserId),
+			listCards(apiClient, ownerUserId),
+		]);
+		const states =
+			cards.length > 0
+				? await listSchedulingStatesByCardIds(
+						apiClient,
+						ownerUserId,
+						cards.map((card) => card.id),
+					)
+				: [];
+		const now = new Date();
+		const stateByCardId = new Map(states.map((state) => [state.card_id, state]));
+		const dueCount = cards.reduce((count, card) => {
+			const state = stateByCardId.get(card.id);
+			if (!state) return count + 1;
+			return new Date(state.due_at) <= now ? count + 1 : count;
+		}, 0);
 		setCardPacks(packs);
+		setDueCardsCount(dueCount);
 	}, [apiClient, ownerUserId]);
 
 	useEffect(() => {
@@ -189,6 +212,7 @@ export function useHomePage() {
 
 	return {
 		cardPacks,
+		dueCardsCount,
 		loading,
 		error,
 		successMessage,

@@ -20,11 +20,13 @@ This file documents the current project state for future coding agents.
   - Open Preferences
 - Routes in `client/src/App.tsx`:
   - `/`
+  - `/review` (global review across all packs)
   - `/pack/:cardPackId/cards`
   - `/pack/:cardPackId/review`
   - `/pack/:cardPackId/quick-review`
   - `/quick-start`
   - `/preferences`
+- Home page header (`client/src/features/home/components/home-page-header.tsx`) now includes a global `Start Review` action.
 
 ## Card Creation UX (Latest)
 
@@ -77,6 +79,9 @@ This file documents the current project state for future coding agents.
   - Nickname
   - Avatar (emoji picker)
   - Primary color
+  - Daily goal (total completed cards per day)
+  - Due cards per session
+  - New cards per session
   - Default language
 - Theme color can be reset to app default.
 

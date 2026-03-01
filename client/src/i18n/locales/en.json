@@ -267,6 +267,7 @@
 	"home": {
 		"title": "Card Packs",
 		"subtitle": "Manage your decks and keep track of what to review.",
+		"reviewAll": "Start Review {{count}}",
 		"newPack": "New card pack",
 		"loadingPacks": "Loading card packs...",
 		"emptyTitle": "No card packs yet",
@@ -480,6 +481,9 @@
 	},
 	"review": {
 		"back": "← Back",
+		"globalPackName": "All Card Packs",
+		"globalScope": "This session includes {{count}} packs",
+		"currentPack": "Current pack: {{name}}",
 		"loadingQueue": "Loading review queue...",
 		"quickMode": "Quick Review",
 		"normalMode": "Normal Review",

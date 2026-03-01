@@ -268,6 +268,7 @@
 	"home": {
 		"title": "卡包",
 		"subtitle": "管理你的卡组并跟踪需要复习的内容。",
+		"reviewAll": "开始复习 {{count}}",
 		"newPack": "新建卡包",
 		"loadingPacks": "正在加载卡包...",
 		"emptyTitle": "还没有卡包",
@@ -481,6 +482,9 @@
 	},
 	"review": {
 		"back": "← 返回",
+		"globalPackName": "全部卡包",
+		"globalScope": "本轮涉及 {{count}} 个卡包",
+		"currentPack": "当前卡包：{{name}}",
 		"loadingQueue": "正在加载复习队列...",
 		"quickMode": "快速复习",
 		"normalMode": "常规复习",
