@@ -63,6 +63,7 @@ export type UseGlobalReviewSessionReturn = GlobalReviewSessionState & {
 		isFirstLearn: boolean;
 	} | null;
 	handleGrade: (grade: ReviewGrade) => Promise<void>;
+	handleSkip: () => void;
 };
 
 export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
@@ -263,6 +264,15 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 		[session, grading, ownerUserId, client, t],
 	);
 
+	const handleSkip = useCallback(() => {
+		if (!session || grading) return;
+
+		session.skipCurrent();
+		setCurrentCard(session.getCurrentCard());
+		setIsComplete(session.isComplete());
+		setError(null);
+	}, [session, grading]);
+
 	const totalCards = session?.getStats().totalCards ?? 0;
 	const completedCount = session?.getStats().completedCards ?? 0;
 	const currentCardState = session?.getCurrentCardState() ?? null;
@@ -288,5 +298,6 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 		params,
 		lastMasteryFeedback,
 		handleGrade,
+		handleSkip,
 	};
 }

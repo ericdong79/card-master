@@ -215,13 +215,14 @@ export class QuickReviewSession {
 	}
 
 	/**
-   * Skip the current card (mark as completed without reviewing)
+   * Skip the current card by moving it later in the queue without reviewing.
    */
 	skipCurrent(): void {
 		const card = this.getCurrentCard();
-		if (card) {
-			this.completedIds.add(card.id);
-			this.currentIndex++;
-		}
+		if (!card) return;
+
+		this.cards = this.cards.filter((item) => item.id !== card.id);
+		this.cards.push(card);
+		this.currentIndex = Math.min(this.currentIndex, this.cards.length - 1);
 	}
 }

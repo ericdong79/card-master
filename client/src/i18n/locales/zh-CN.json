@@ -493,6 +493,8 @@
 		"question": "问题",
 		"answer": "答案",
 		"showAnswer": "显示答案",
+		"skip": "跳过",
+		"skipHint": "稍后",
 		"quickHint": "快速复习不会影响学习排程",
 		"normalHint": "评分会影响下次复习间隔",
 		"pronunciation": "发音",

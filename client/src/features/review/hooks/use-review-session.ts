@@ -69,6 +69,8 @@ export type UseReviewSessionReturn = ReviewSessionState & {
 	} | null;
 	/** Submit a grade for the current card */
 	handleGrade: (grade: ReviewGrade) => Promise<void>;
+	/** Move the current card later without recording a review */
+	handleSkip: () => void;
 };
 
 /**
@@ -296,6 +298,15 @@ export function useReviewSession(
 		[session, client, grading, ownerUserId, t],
 	);
 
+	const handleSkip = useCallback(() => {
+		if (!session || grading) return;
+
+		session.skipCurrent();
+		setCurrentCard(session.getCurrentCard());
+		setIsComplete(session.isComplete());
+		setError(null);
+	}, [session, grading]);
+
 	// Get stats from session
 	const totalCards = session?.getStats().totalCards ?? 0;
 	const completedCount = session?.getStats().completedCards ?? 0;
@@ -317,5 +328,6 @@ export function useReviewSession(
 		params,
 		lastMasteryFeedback,
 		handleGrade,
+		handleSkip,
 	};
 }

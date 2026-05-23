@@ -492,6 +492,8 @@
 		"question": "Question",
 		"answer": "Answer",
 		"showAnswer": "Show Answer",
+		"skip": "Skip",
+		"skipHint": "Later",
 		"quickHint": "Quick review does not affect your study schedule",
 		"normalHint": "Grades affect the next review interval",
 		"pronunciation": "Pronunciation",

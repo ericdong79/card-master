@@ -33,6 +33,8 @@ type ReviewCardBaseProps = {
 	totalCards: number;
 	/** Whether the card is being processed */
 	isProcessing?: boolean;
+	/** Move the current card later without recording a review */
+	onSkip?: () => void;
 	/** Additional class names */
 	className?: string;
 };
@@ -144,6 +146,11 @@ export function ReviewCard(props: ReviewCardProps) {
 		}
 	};
 
+	const handleSkip = () => {
+		setShowAnswer(false);
+		props.onSkip?.();
+	};
+
 	const sm2State = mode === "sm2" ? props.state : null;
 	const sm2Params = mode === "sm2" ? props.params : null;
 	const sm2Buttons =
@@ -244,6 +251,7 @@ export function ReviewCard(props: ReviewCardProps) {
 									mode="simple"
 									buttons={getDefaultSimpleButtons()}
 									onSelect={handleAction}
+									onSkip={props.onSkip ? handleSkip : undefined}
 									disabled={isProcessing}
 								/>
 							) : (
@@ -251,6 +259,7 @@ export function ReviewCard(props: ReviewCardProps) {
 									mode="sm2"
 									buttons={sm2Buttons ?? []}
 									onSelect={handleAction}
+									onSkip={props.onSkip ? handleSkip : undefined}
 									disabled={isProcessing}
 								/>
 							)}

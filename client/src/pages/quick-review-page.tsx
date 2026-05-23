@@ -58,6 +58,7 @@ export function QuickReviewPage() {
 						learnedCount={session.learnedCount}
 						totalCards={session.totalCards}
 						onReview={session.handleReview}
+						onSkip={session.skipCurrent}
 						isProcessing={session.reviewing}
 					/>
 				)}

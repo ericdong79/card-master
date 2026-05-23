@@ -305,6 +305,18 @@ export class ReviewSession {
 	}
 
 	/**
+   * Defers the current card without recording a review or changing scheduling.
+   */
+	skipCurrent(): boolean {
+		const item = this.getCurrentItem();
+		if (!item) return false;
+
+		this.items = this.items.filter((queueItem) => queueItem !== item);
+		this.items.push(item);
+		return true;
+	}
+
+	/**
    * Checks if the session is complete.
    * Complete when no cards are available for immediate review.
    */

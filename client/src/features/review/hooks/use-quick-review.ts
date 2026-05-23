@@ -172,11 +172,13 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 
 	// Skip current card
 	const skipCurrent = useCallback(() => {
-		if (!session) return;
+		if (!session || reviewing) return;
 		session.skipCurrent();
 		setCurrentCard(session.getCurrentCard());
 		setIsComplete(session.isComplete());
-	}, [session]);
+		setForgotCards(session.getForgotCards());
+		setLearnedCount(session.getStats().learnedCount);
+	}, [session, reviewing]);
 
 	// Calculate position
 	const position = useMemo(() => {

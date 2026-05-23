@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import type { ReviewGrade } from "@/lib/scheduling/types";
 import { cn } from "@/lib/utils";
@@ -13,12 +14,14 @@ type ReviewButtonsProps =
 			mode: "simple";
 			buttons: SimpleButtonConfig[];
 			onSelect: (result: SimpleReviewResult) => void;
+			onSkip?: () => void;
 			disabled?: boolean;
 	  }
 	| {
 			mode: "sm2";
 			buttons: Sm2ButtonConfig[];
 			onSelect: (grade: ReviewGrade) => void;
+			onSkip?: () => void;
 			disabled?: boolean;
 	  };
 
@@ -44,7 +47,8 @@ type ReviewButtonsProps =
  * ```
  */
 export function ReviewButtons(props: ReviewButtonsProps) {
-	const { mode, buttons, disabled } = props;
+	const { t } = useTranslation();
+	const { mode, buttons, disabled, onSkip } = props;
 
 	const handleClick = (value: SimpleReviewResult | ReviewGrade) => {
 		if (mode === "simple") {
@@ -62,9 +66,41 @@ export function ReviewButtons(props: ReviewButtonsProps) {
 		<div
 			className={cn(
 				"grid gap-1",
-				mode === "simple" ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4",
+				mode === "simple"
+					? onSkip
+						? "grid-cols-3"
+						: "grid-cols-2"
+					: onSkip
+						? "grid-cols-2 sm:grid-cols-5"
+						: "grid-cols-2 sm:grid-cols-4",
 			)}
 		>
+			{onSkip ? (
+				<Button
+					type="button"
+					variant="outline"
+					disabled={disabled}
+					onClick={onSkip}
+					className={cn("transition-colors", classes.button)}
+				>
+					<span className="flex flex-col items-center gap-1">
+						<span className="text-2xl">↷</span>
+						<span className="pb-2">{t("review.skip")}</span>
+						<span
+							className={cn(
+								"text-xs",
+								"text-muted-foreground",
+								"border-1",
+								"border-neutral-300",
+								"py-1",
+								"px-2",
+							)}
+						>
+							{t("review.skipHint")}
+						</span>
+					</span>
+				</Button>
+			) : null}
 			{buttons.map((config) => {
 				const value =
 					mode === "simple"

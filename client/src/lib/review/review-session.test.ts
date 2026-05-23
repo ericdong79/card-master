@@ -114,6 +114,31 @@ describe("ReviewSession (Simplified)", () => {
 			expect(session.isComplete()).toBe(true);
 			expect(session.getStats().completedCards).toBe(3);
 		});
+
+		it("should defer skipped card without completing it", () => {
+			const card1 = createCard("card-1", "Card 1");
+			const card2 = createCard("card-2", "Card 2");
+			const now = new Date("2025-01-15T10:00:00Z");
+
+			const session = ReviewSession.create(
+				[card1, card2],
+				[],
+				defaultParams,
+				"profile-1",
+				{ now, newCardsLimit: 10 },
+			);
+
+			expect(session.getCurrentCard()?.id).toBe("card-1");
+			expect(session.skipCurrent()).toBe(true);
+			expect(session.getCurrentCard()?.id).toBe("card-2");
+			expect(session.getStats().completedCards).toBe(0);
+
+			const result = session.submitGrade("good");
+			session.moveToNext(result, "good");
+
+			expect(session.getCurrentCard()?.id).toBe("card-1");
+			expect(session.getStats().completedCards).toBe(1);
+		});
 	});
 
 	describe("Again cards handling", () => {

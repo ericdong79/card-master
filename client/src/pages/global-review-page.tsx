@@ -88,6 +88,7 @@ export function GlobalReviewPage() {
 							learnedCount={session.completedCount}
 							totalCards={session.totalCards}
 							onGrade={session.handleGrade}
+							onSkip={session.handleSkip}
 							isProcessing={session.grading}
 							state={session.currentCardState}
 							params={session.params}
