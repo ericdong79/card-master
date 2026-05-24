@@ -3,7 +3,6 @@ import {
 	doc,
 	getDoc,
 	getDocs,
-	orderBy,
 	query,
 	setDoc,
 	writeBatch,
@@ -159,17 +158,21 @@ export async function listCloudProfiles(
 		query(
 			collectionRef,
 			where("account_user_id", "==", accountUserId),
-			orderBy("last_used_at", "desc"),
 		),
 	);
 
-	return snapshot.docs.map((documentSnapshot) =>
-		normalizeCloudProfile(
-			documentSnapshot.data(),
-			documentSnapshot.id,
-			accountUserId,
-		),
-	);
+	return snapshot.docs
+		.map((documentSnapshot) =>
+			normalizeCloudProfile(
+				documentSnapshot.data(),
+				documentSnapshot.id,
+				accountUserId,
+			),
+		)
+		.sort(
+			(a, b) =>
+				Date.parse(b.last_used_at ?? "") - Date.parse(a.last_used_at ?? ""),
+		);
 }
 
 export async function saveCloudProfile(
