@@ -1,10 +1,18 @@
-import type { ApiClient } from "./client";
+import { where } from "firebase/firestore";
+import type { ApiClient, QueryOptions, StoreName, StoreValue } from "./client";
 import type { Card } from "./entities/card";
 import type { CardMasteryState } from "./entities/card-mastery-state";
 import type { CardPack } from "./entities/card-pack";
 import type { CardSchedulingState } from "./entities/card-scheduling-state";
 import type { ReviewEvent } from "./entities/review-event";
 import type { SchedulingProfile } from "./entities/scheduling-profile";
+import {
+	chunkFirestoreInValues,
+	isFirestoreApiClient,
+	learnerOwnershipConstraints,
+	listFirestoreRecords,
+	ownershipConstraints,
+} from "./firestore-client";
 import { generateId, nowIso } from "./utils";
 
 const EXPORT_FORMAT = "card-master-export";
@@ -67,9 +75,143 @@ function assertPayload(value: unknown): asserts value is CardMasterExportPayload
 	}
 }
 
+function withProfileOwnership<T extends object>(
+	record: T,
+	accountUserId: string,
+	profileId: string,
+): T & {
+	account_user_id: string;
+	profile_id: string;
+	owner_user_id: string;
+} {
+	return {
+		...record,
+		account_user_id: accountUserId,
+		profile_id: profileId,
+		owner_user_id: profileId,
+	};
+}
+
+function withLearnerOwnership<T extends object>(
+	record: T,
+	accountUserId: string,
+	profileId: string,
+): T & {
+	account_user_id: string;
+	learner_profile_id: string;
+	owner_user_id: string;
+} {
+	return {
+		...record,
+		account_user_id: accountUserId,
+		learner_profile_id: profileId,
+		owner_user_id: profileId,
+	};
+}
+
+function hasProfileOwnership(
+	record: {
+		account_user_id?: string;
+		profile_id?: string;
+		owner_user_id: string;
+	},
+	accountUserId: string,
+	profileId: string,
+): boolean {
+	return (
+		record.account_user_id === accountUserId &&
+		record.profile_id === profileId &&
+		record.owner_user_id === profileId
+	);
+}
+
+function hasLearnerOwnership(
+	record: {
+		account_user_id?: string;
+		learner_profile_id?: string;
+		owner_user_id: string;
+	},
+	accountUserId: string,
+	profileId: string,
+): boolean {
+	return (
+		record.account_user_id === accountUserId &&
+		record.learner_profile_id === profileId &&
+		record.owner_user_id === profileId
+	);
+}
+
+function listProfileOwnedRecords<S extends StoreName>(
+	client: ApiClient,
+	store: S,
+	accountUserId: string,
+	profileId: string,
+	options: QueryOptions<StoreValue<S>>,
+): Promise<StoreValue<S>[]> {
+	return isFirestoreApiClient(client)
+		? listFirestoreRecords(store, ownershipConstraints(accountUserId, profileId), options)
+		: client.list(store, options);
+}
+
+async function listProfileOwnedRecordsByCardIds<
+	S extends "card_mastery_state" | "review_event",
+>(
+	client: ApiClient,
+	store: S,
+	accountUserId: string,
+	profileId: string,
+	cardIds: string[],
+	options: QueryOptions<StoreValue<S>>,
+): Promise<StoreValue<S>[]> {
+	if (!isFirestoreApiClient(client)) {
+		return client.list(store, options);
+	}
+
+	const records = await Promise.all(
+		chunkFirestoreInValues(cardIds).map((chunk) =>
+			listFirestoreRecords(
+				store,
+				[
+					...ownershipConstraints(accountUserId, profileId),
+					where("card_id", "in", chunk),
+				],
+				options,
+			),
+		),
+	);
+	return records.flat();
+}
+
+async function listLearnerOwnedSchedulingStatesByCardIds(
+	client: ApiClient,
+	accountUserId: string,
+	profileId: string,
+	cardIds: string[],
+	options: QueryOptions<CardSchedulingState>,
+): Promise<CardSchedulingState[]> {
+	if (!isFirestoreApiClient(client)) {
+		return client.list("card_scheduling_state", options);
+	}
+
+	const records = await Promise.all(
+		chunkFirestoreInValues(cardIds).map((chunk) =>
+			listFirestoreRecords(
+				"card_scheduling_state",
+				[
+					...learnerOwnershipConstraints(accountUserId, profileId),
+					where("card_id", "in", chunk),
+				],
+				options,
+			),
+		),
+	);
+	return records.flat();
+}
+
 export async function buildCardMasterExport(
 	client: ApiClient,
-	ownerUserId: string,
+	accountUserId: string,
+	profileId: string,
 	options: BuildExportPayloadOptions,
 ): Promise<CardMasterExportPayload> {
 	if (options.cardPackIds.length === 0) {
@@ -78,13 +220,15 @@ export async function buildCardMasterExport(
 
 	const selectedPackIds = new Set(options.cardPackIds);
 	const [packs, cards] = await Promise.all([
-		client.list("card_pack", {
+		listProfileOwnedRecords(client, "card_pack", accountUserId, profileId, {
 			filter: (pack) =>
-				pack.owner_user_id === ownerUserId && selectedPackIds.has(pack.id),
+				hasProfileOwnership(pack, accountUserId, profileId) &&
+				selectedPackIds.has(pack.id),
 		}),
-		client.list("card", {
+		listProfileOwnedRecords(client, "card", accountUserId, profileId, {
 			filter: (card) =>
-				card.owner_user_id === ownerUserId && selectedPackIds.has(card.card_pack_id),
+				hasProfileOwnership(card, accountUserId, profileId) &&
+				selectedPackIds.has(card.card_pack_id),
 		}),
 	]);
 
@@ -101,31 +245,61 @@ export async function buildCardMasterExport(
 		return payload;
 	}
 
-	const cardIdSet = new Set(cards.map((card) => card.id));
+	const cardIds = cards.map((card) => card.id);
+	const cardIdSet = new Set(cardIds);
 	const [schedulingStates, reviewEvents, masteryStates] = await Promise.all([
-		client.list("card_scheduling_state", {
-			filter: (state) =>
-				state.owner_user_id === ownerUserId && cardIdSet.has(state.card_id),
-		}),
-		client.list("review_event", {
-			filter: (event) =>
-				event.owner_user_id === ownerUserId && cardIdSet.has(event.card_id),
-		}),
-		client.list("card_mastery_state", {
-			filter: (state) =>
-				state.owner_user_id === ownerUserId && cardIdSet.has(state.card_id),
-		}),
+		listLearnerOwnedSchedulingStatesByCardIds(
+			client,
+			accountUserId,
+			profileId,
+			cardIds,
+			{
+				filter: (state) =>
+					hasLearnerOwnership(state, accountUserId, profileId) &&
+					cardIdSet.has(state.card_id),
+			},
+		),
+		listProfileOwnedRecordsByCardIds(
+			client,
+			"review_event",
+			accountUserId,
+			profileId,
+			cardIds,
+			{
+				filter: (event) =>
+					hasProfileOwnership(event, accountUserId, profileId) &&
+					cardIdSet.has(event.card_id),
+			},
+		),
+		listProfileOwnedRecordsByCardIds(
+			client,
+			"card_mastery_state",
+			accountUserId,
+			profileId,
+			cardIds,
+			{
+				filter: (state) =>
+					hasProfileOwnership(state, accountUserId, profileId) &&
+					cardIdSet.has(state.card_id),
+			},
+		),
 	]);
 
 	const profileIdSet = new Set(schedulingStates.map((state) => state.profile_id));
 	const schedulingProfiles =
 		profileIdSet.size === 0
 			? []
-			: await client.list("scheduling_profile", {
-					filter: (profile) =>
-						profile.owner_user_id === ownerUserId &&
-						profileIdSet.has(profile.id),
-				});
+			: await listProfileOwnedRecords(
+					client,
+					"scheduling_profile",
+					accountUserId,
+					profileId,
+					{
+						filter: (profile) =>
+							hasProfileOwnership(profile, accountUserId, profileId) &&
+							profileIdSet.has(profile.id),
+					},
+				);
 
 	payload.review_state = {
 		scheduling_profiles: schedulingProfiles,
@@ -167,7 +341,8 @@ export function parseCardMasterExport(text: string): CardMasterExportPayload {
 
 export async function importCardMasterData(
 	client: ApiClient,
-	ownerUserId: string,
+	accountUserId: string,
+	profileId: string,
 	payload: CardMasterExportPayload,
 	options: ImportDataOptions,
 ): Promise<ImportDataSummary> {
@@ -178,9 +353,8 @@ export async function importCardMasterData(
 		const newPackId = generateId();
 		packIdMap.set(pack.id, newPackId);
 		const record: CardPack = {
-			...pack,
+			...withProfileOwnership(pack, accountUserId, profileId),
 			id: newPackId,
-			owner_user_id: ownerUserId,
 		};
 		await client.put("card_pack", record);
 	}
@@ -197,10 +371,9 @@ export async function importCardMasterData(
 		const newCardId = generateId();
 		cardIdMap.set(card.id, newCardId);
 		const record: Card = {
-			...card,
+			...withProfileOwnership(card, accountUserId, profileId),
 			id: newCardId,
 			card_pack_id: cardPackId,
-			owner_user_id: ownerUserId,
 		};
 		await client.put("card", record);
 	}
@@ -228,13 +401,14 @@ export async function importCardMasterData(
 
 			const profileRecord: SchedulingProfile = sourceProfile
 				? {
-						...sourceProfile,
+						...withProfileOwnership(sourceProfile, accountUserId, profileId),
 						id: newProfileId,
-						owner_user_id: ownerUserId,
 					}
 				: {
 						id: newProfileId,
-						owner_user_id: ownerUserId,
+						account_user_id: accountUserId,
+						profile_id: profileId,
+						owner_user_id: profileId,
 						algorithm_key: "sm2",
 						parameters: {},
 						version: 1,
@@ -257,10 +431,9 @@ export async function importCardMasterData(
 			const newEventId = generateId();
 			reviewEventIdMap.set(event.id, newEventId);
 			const record: ReviewEvent = {
-				...event,
+				...withProfileOwnership(event, accountUserId, profileId),
 				id: newEventId,
 				card_id: mappedCardId,
-				owner_user_id: ownerUserId,
 			};
 			await client.put("review_event", record);
 			importedReviewEvents += 1;
@@ -274,11 +447,10 @@ export async function importCardMasterData(
 			}
 
 			const record: CardSchedulingState = {
-				...state,
+				...withLearnerOwnership(state, accountUserId, profileId),
 				id: generateId(),
 				card_id: mappedCardId,
 				profile_id: mappedProfileId,
-				owner_user_id: ownerUserId,
 				last_event_id: state.last_event_id
 					? reviewEventIdMap.get(state.last_event_id) ?? null
 					: null,
@@ -298,10 +470,9 @@ export async function importCardMasterData(
 			}
 
 			const record: CardMasteryState = {
-				...state,
+				...withProfileOwnership(state, accountUserId, profileId),
 				id: generateId(),
 				card_id: mappedCardId,
-				owner_user_id: ownerUserId,
 			};
 			await client.put("card_mastery_state", record);
 		}

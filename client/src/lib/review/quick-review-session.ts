@@ -62,18 +62,27 @@ export class QuickReviewSession {
 	private completedIds: Set<string>;
 	private forgotCardIds: Set<string>;
 	private readonly ownerUserId: string;
+	private readonly accountUserId: string;
+	private readonly profileId: string;
 	private readonly recordEvents: boolean;
 
 	constructor(
 		cards: Card[],
 		_cardPackId: string,
-		options: { recordEvents?: boolean; ownerUserId?: string } = {},
+		options: {
+			recordEvents?: boolean;
+			ownerUserId?: string;
+			accountUserId?: string;
+			profileId?: string;
+		} = {},
 	) {
 		this.cards = [...cards];
 		this.currentIndex = 0;
 		this.completedIds = new Set();
 		this.forgotCardIds = new Set();
 		this.ownerUserId = options.ownerUserId ?? LOCAL_OWNER_ID;
+		this.accountUserId = options.accountUserId ?? this.ownerUserId;
+		this.profileId = options.profileId ?? this.ownerUserId;
 		this.recordEvents = options.recordEvents ?? false;
 	}
 
@@ -83,7 +92,12 @@ export class QuickReviewSession {
 	static create(
 		cards: Card[],
 		cardPackId: string,
-		options?: { recordEvents?: boolean; ownerUserId?: string },
+		options?: {
+			recordEvents?: boolean;
+			ownerUserId?: string;
+			accountUserId?: string;
+			profileId?: string;
+		},
 	): QuickReviewSession {
 		return new QuickReviewSession(cards, cardPackId, options);
 	}
@@ -126,6 +140,8 @@ export class QuickReviewSession {
 			reviewEvent = {
 				card_id: card.id,
 				owner_user_id: this.ownerUserId,
+				account_user_id: this.accountUserId,
+				profile_id: this.profileId,
 				grade: SIMPLE_RESULT_TO_GRADE[result],
 				time_ms: 0,
 				raw_payload: { mode: "quick_review", result },

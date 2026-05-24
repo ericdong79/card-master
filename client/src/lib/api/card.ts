@@ -1,13 +1,22 @@
-import type { ApiClient } from "./client";
+import type { ApiClient, QueryOptions } from "./client";
 import type { CardInsert, CardUpdate } from "./dtos/card";
 import type { Card, CardStatus } from "./entities/card";
+import {
+	isFirestoreApiClient,
+	listFirestoreRecords,
+	ownershipConstraints,
+} from "./firestore-client";
+import { createCloudOwnership, hasCloudOwnership } from "./ownership";
 import { generateId, nowIso } from "./utils";
 
 const DEFAULT_CARD: Pick<CardInsert, "status"> = {
 	status: "active",
 };
 
-type CreateCardInput = Omit<CardInsert, "owner_user_id" | "status"> &
+type CreateCardInput = Omit<
+	CardInsert,
+	"account_user_id" | "profile_id" | "owner_user_id" | "status"
+> &
 	Partial<Pick<CardInsert, "status">>;
 
 type CardListFilters = {
@@ -15,14 +24,42 @@ type CardListFilters = {
 	status?: CardStatus;
 };
 
-export async function listCards(
+function hasLegacyOwnership(
+	record: Pick<Card, "owner_user_id">,
+	ownerUserId: string,
+): boolean {
+	return record.owner_user_id === ownerUserId;
+}
+
+export function listCards(
+	client: ApiClient,
+	accountUserId: string,
+	profileId: string,
+	filters?: CardListFilters,
+): Promise<Card[]>;
+export function listCards(
 	client: ApiClient,
 	ownerUserId: string,
-	filters: CardListFilters = {},
+	filters?: CardListFilters,
+): Promise<Card[]>;
+export async function listCards(
+	client: ApiClient,
+	accountUserIdOrOwnerUserId: string,
+	profileIdOrFilters: string | CardListFilters = {},
+	maybeFilters: CardListFilters = {},
 ): Promise<Card[]> {
-	return client.list("card", {
+	const isCloudScoped = typeof profileIdOrFilters === "string";
+	const profileId = isCloudScoped ? profileIdOrFilters : null;
+	const filters = isCloudScoped ? maybeFilters : profileIdOrFilters;
+	const options: QueryOptions<Card> = {
 		filter: (card) => {
-			if (card.owner_user_id !== ownerUserId) return false;
+			if (
+				profileId
+					? !hasCloudOwnership(card, accountUserIdOrOwnerUserId, profileId)
+					: !hasLegacyOwnership(card, accountUserIdOrOwnerUserId)
+			) {
+				return false;
+			}
 			if (filters.cardPackId && card.card_pack_id !== filters.cardPackId)
 				return false;
 			if (filters.status && card.status !== filters.status) return false;
@@ -30,35 +67,84 @@ export async function listCards(
 		},
 		sortBy: (a, b) =>
 			Date.parse(a.created_at ?? "") - Date.parse(b.created_at ?? ""),
-	});
+	};
+
+	if (profileId && isFirestoreApiClient(client)) {
+		return listFirestoreRecords(
+			"card",
+			ownershipConstraints(accountUserIdOrOwnerUserId, profileId),
+			options,
+		);
+	}
+
+	return client.list("card", options);
 }
 
-export async function getCardById(
+export function getCardById(
+	client: ApiClient,
+	accountUserId: string,
+	profileId: string,
+	cardId: string,
+): Promise<Card | null>;
+export function getCardById(
 	client: ApiClient,
 	cardId: string,
 	ownerUserId: string,
+): Promise<Card | null>;
+export async function getCardById(
+	client: ApiClient,
+	firstId: string,
+	secondId: string,
+	thirdId?: string,
 ): Promise<Card | null> {
+	const isCloudScoped = thirdId !== undefined;
+	const cardId = isCloudScoped ? thirdId : firstId;
 	const card = await client.get("card", cardId);
-	if (!card || card.owner_user_id !== ownerUserId) return null;
+	if (!card) return null;
+	if (isCloudScoped) {
+		if (!hasCloudOwnership(card, firstId, secondId)) return null;
+	} else if (!hasLegacyOwnership(card, secondId)) {
+		return null;
+	}
 	return card;
 }
 
-export async function createCard(
+export function createCard(
+	client: ApiClient,
+	accountUserId: string,
+	profileId: string,
+	input: CreateCardInput,
+): Promise<Card>;
+export function createCard(
 	client: ApiClient,
 	ownerUserId: string,
 	input: CreateCardInput,
+): Promise<Card>;
+export async function createCard(
+	client: ApiClient,
+	accountUserIdOrOwnerUserId: string,
+	profileIdOrInput: string | CreateCardInput,
+	maybeInput?: CreateCardInput,
 ): Promise<Card> {
 	const now = nowIso();
+	const profileId =
+		typeof profileIdOrInput === "string" ? profileIdOrInput : accountUserIdOrOwnerUserId;
+	const input = typeof profileIdOrInput === "string" ? maybeInput : profileIdOrInput;
+	if (!input) {
+		throw new Error("Card input is required");
+	}
 	const payload: CardInsert = {
 		...DEFAULT_CARD,
 		...input,
-		owner_user_id: ownerUserId,
+		...createCloudOwnership(accountUserIdOrOwnerUserId, profileId),
 		updated_at: null,
 	};
 
 	const record: Card = {
 		id: generateId(),
 		card_pack_id: payload.card_pack_id,
+		account_user_id: payload.account_user_id,
+		profile_id: payload.profile_id,
 		owner_user_id: payload.owner_user_id,
 		prompt: payload.prompt,
 		answer: payload.answer,
@@ -73,20 +159,37 @@ export async function createCard(
 	return record;
 }
 
-export async function updateCard(
+export function updateCard(
+	client: ApiClient,
+	accountUserId: string,
+	profileId: string,
+	cardId: string,
+	updates: CardUpdate,
+): Promise<Card>;
+export function updateCard(
 	client: ApiClient,
 	cardId: string,
 	ownerUserId: string,
 	updates: CardUpdate,
+): Promise<Card>;
+export async function updateCard(
+	client: ApiClient,
+	firstId: string,
+	secondId: string,
+	thirdIdOrUpdates: string | CardUpdate,
+	maybeUpdates?: CardUpdate,
 ): Promise<Card> {
-	const existing = await getCardById(client, cardId, ownerUserId);
+	const isCloudScoped = typeof thirdIdOrUpdates === "string";
+	const existing = isCloudScoped
+		? await getCardById(client, firstId, secondId, thirdIdOrUpdates)
+		: await getCardById(client, firstId, secondId);
 	if (!existing) {
 		throw new Error("Card not found");
 	}
 
 	const updated: Card = {
 		...existing,
-		...updates,
+		...((isCloudScoped ? maybeUpdates : thirdIdOrUpdates) ?? {}),
 		updated_at: nowIso(),
 	};
 
@@ -94,12 +197,26 @@ export async function updateCard(
 	return updated;
 }
 
-export async function deleteCard(
+export function deleteCard(
+	client: ApiClient,
+	accountUserId: string,
+	profileId: string,
+	cardId: string,
+): Promise<void>;
+export function deleteCard(
 	client: ApiClient,
 	cardId: string,
 	ownerUserId: string,
+): Promise<void>;
+export async function deleteCard(
+	client: ApiClient,
+	firstId: string,
+	secondId: string,
+	thirdId?: string,
 ): Promise<void> {
-	const card = await getCardById(client, cardId, ownerUserId);
+	const card = thirdId
+		? await getCardById(client, firstId, secondId, thirdId)
+		: await getCardById(client, firstId, secondId);
 	if (!card) return;
-	await client.delete("card", cardId);
+	await client.delete("card", card.id);
 }

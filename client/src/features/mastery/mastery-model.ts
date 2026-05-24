@@ -1,4 +1,5 @@
 import type { CardMasteryState } from "@/lib/api/entities/card-mastery-state";
+import type { CardMasteryStateInsert } from "@/lib/api/dtos/card-mastery-state";
 import type { ReviewGrade, Sm2State } from "@/lib/scheduling/types";
 import type { MasteryState, MasteryTransition } from "./types";
 
@@ -28,6 +29,8 @@ const GRADE_DELTA: Record<ReviewGrade, number> = {
 export type MasteryUpdateInput = {
 	existing: CardMasteryState | null;
 	ownerUserId: string;
+	accountUserId: string;
+	profileId: string;
 	cardId: string;
 	grade: ReviewGrade;
 	now: Date;
@@ -39,7 +42,7 @@ export type MasteryUpdateInput = {
 };
 
 export type MasteryUpdateOutput = {
-	nextMastery: Omit<CardMasteryState, "id" | "created_at" | "updated_at">;
+	nextMastery: CardMasteryStateInsert;
 	transition: MasteryTransition;
 	isFirstLearn: boolean;
 };
@@ -129,6 +132,8 @@ export function computeMasteryUpdate(input: MasteryUpdateInput): MasteryUpdateOu
 	return {
 		nextMastery: {
 			owner_user_id: input.ownerUserId,
+			account_user_id: input.accountUserId,
+			profile_id: input.profileId,
 			card_id: input.cardId,
 			mastery_score: afterScore,
 			mastery_state: afterState,

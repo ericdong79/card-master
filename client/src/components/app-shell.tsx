@@ -237,7 +237,7 @@ function AuthenticatedAppShell() {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const { pathname } = useLocation();
-	const { error: authError, signOut } = useAuth();
+	const { accountUserId, error: authError, signOut } = useAuth();
 	const apiClient = useMemo(() => createApiClient(), []);
 	const { ready, profiles, currentProfile, createProfile } = useProfile();
 	const [collapsed, setCollapsed] = useState(false);
@@ -262,7 +262,7 @@ function AuthenticatedAppShell() {
 	}, [mustCreateProfile]);
 
 	useEffect(() => {
-		if (!currentProfile) {
+		if (!accountUserId || !currentProfile) {
 			setCompletedToday(0);
 			return;
 		}
@@ -272,6 +272,7 @@ function AuthenticatedAppShell() {
 			try {
 				const count = await countTodayCompletedCards(
 					apiClient,
+					accountUserId,
 					currentProfile.id,
 				);
 				if (!cancelled) {
@@ -301,7 +302,7 @@ function AuthenticatedAppShell() {
 				handleProgressUpdated,
 			);
 		};
-	}, [apiClient, currentProfile, pathname]);
+	}, [accountUserId, apiClient, currentProfile, pathname]);
 
 	const dailyReviewProgress = currentProfile
 		? {

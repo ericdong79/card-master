@@ -63,4 +63,8 @@ export interface ReviewSessionOptions {
 	now?: Date;
 	/** Active owner/profile id */
 	ownerUserId?: string;
+	/** Auth account id for cloud-scoped records */
+	accountUserId?: string;
+	/** Active learner profile id for cloud-scoped records */
+	learnerProfileId?: string;
 }

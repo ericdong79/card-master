@@ -30,6 +30,7 @@ import type {
 	Sm2Parameters,
 	Sm2State,
 } from "@/lib/scheduling/types";
+import { useAuth } from "@/features/auth/use-auth";
 import { useProfile } from "@/features/profile/profile-context";
 
 export type GlobalReviewSessionState = {
@@ -69,8 +70,9 @@ export type UseGlobalReviewSessionReturn = GlobalReviewSessionState & {
 export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 	const { t } = useTranslation();
 	const client = useMemo(() => createApiClient(), []);
+	const { accountUserId } = useAuth();
 	const { currentProfile } = useProfile();
-	const ownerUserId = currentProfile?.id ?? null;
+	const profileId = currentProfile?.id ?? null;
 
 	const [cardPacks, setCardPacks] = useState<CardPack[]>([]);
 	const [cards, setCards] = useState<Card[]>([]);
@@ -105,7 +107,7 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 	);
 
 	useEffect(() => {
-		if (!ownerUserId) {
+		if (!accountUserId || !profileId) {
 			setLoading(false);
 			return;
 		}
@@ -120,12 +122,12 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 
 		(async () => {
 			try {
-				const [fetchedPacks, fetchedCards, profile, completedToday] =
+				const [fetchedPacks, fetchedCards, schedulingProfile, completedToday] =
 					await Promise.all([
-						listCardPacks(client, ownerUserId),
-						listCards(client, ownerUserId),
-						getOrCreateSchedulingProfile(client, ownerUserId),
-						countTodayCompletedCards(client, ownerUserId),
+						listCardPacks(client, accountUserId, profileId),
+						listCards(client, accountUserId, profileId),
+						getOrCreateSchedulingProfile(client, accountUserId, profileId),
+						countTodayCompletedCards(client, accountUserId, profileId),
 					]);
 
 				setCardPacks(fetchedPacks);
@@ -135,13 +137,14 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 					fetchedCards.length > 0
 						? await listSchedulingStatesByCardIds(
 								client,
-								ownerUserId,
+								accountUserId,
+								profileId,
 								fetchedCards.map((card) => card.id),
 							)
 						: [];
 
 				const params = normalizeSm2Parameters(
-					profile.parameters as Sm2Parameters,
+					schedulingProfile.parameters as Sm2Parameters,
 				);
 				const settings = normalizeDailyReviewSettings({
 					dailyGoal: currentProfile?.daily_goal,
@@ -157,12 +160,14 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 					fetchedCards,
 					stateList,
 					params,
-					profile.id,
+					schedulingProfile.id,
 					{
 						newCardsLimit: settings.newPerDay,
 						reviewCardsLimit: settings.reviewPerDay,
 						totalCardsLimit: sessionTotalLimit,
-						ownerUserId,
+						ownerUserId: profileId,
+						accountUserId,
+						learnerProfileId: profileId,
 					},
 				);
 
@@ -178,48 +183,51 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 			}
 		})();
 	}, [
+		accountUserId,
 		client,
 		currentProfile?.daily_goal,
 		currentProfile?.new_per_day,
 		currentProfile?.review_per_day,
-		ownerUserId,
+		profileId,
 		t,
 	]);
 
 	const handleGrade = useCallback(
 		async (grade: ReviewGrade) => {
-			if (!session || grading || !ownerUserId) return;
+			if (!session || grading || !accountUserId || !profileId) return;
 
 			setGrading(true);
 			try {
 				const result = session.submitGrade(grade);
-				const event: ReviewEvent = await createReviewEvent(client, {
-					card_id: result.reviewEvent.card_id,
-					owner_user_id: result.reviewEvent.owner_user_id,
-					grade: result.reviewEvent.grade,
-					time_ms: result.reviewEvent.time_ms,
-					raw_payload: result.reviewEvent.raw_payload,
-					reviewed_at: result.reviewEvent.reviewed_at,
-				});
+				const event: ReviewEvent = await createReviewEvent(client, result.reviewEvent);
 
 				const existingState = session
 					.getQueueSnapshot()
 					.find((item) => item.card.id === result.reviewEvent.card_id)
 					?.schedulingState;
 
-				await upsertSchedulingState(client, existingState ?? null, {
-					...result.schedulingState,
-					last_event_id: event.id,
-				});
+				await upsertSchedulingState(
+					client,
+					accountUserId,
+					profileId,
+					existingState ?? null,
+					{
+						...result.schedulingState,
+						last_event_id: event.id,
+					},
+				);
 
 				const existingMastery = await getMasteryStateByCardId(
 					client,
-					ownerUserId,
+					accountUserId,
+					profileId,
 					result.reviewEvent.card_id,
 				);
 				const masteryUpdate = computeMasteryUpdate({
 					existing: existingMastery,
-					ownerUserId,
+					ownerUserId: profileId,
+					accountUserId,
+					profileId,
 					cardId: result.reviewEvent.card_id,
 					grade,
 					now: new Date(result.reviewEvent.reviewed_at),
@@ -229,7 +237,13 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 					nextSm2State: result.schedulingState.state as Sm2State,
 				});
 
-				await upsertMasteryState(client, existingMastery, masteryUpdate.nextMastery);
+				await upsertMasteryState(
+					client,
+					accountUserId,
+					profileId,
+					existingMastery,
+					masteryUpdate.nextMastery,
+				);
 				setLastMasteryFeedback({
 					cardId: result.reviewEvent.card_id,
 					transition: masteryUpdate.transition,
@@ -261,7 +275,7 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 				setGrading(false);
 			}
 		},
-		[session, grading, ownerUserId, client, t],
+		[accountUserId, session, grading, profileId, client, t],
 	);
 
 	const handleSkip = useCallback(() => {

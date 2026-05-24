@@ -62,6 +62,8 @@ export class ReviewSession {
 	private readonly params: Sm2Parameters;
 	private readonly now: Date;
 	private readonly ownerUserId: string;
+	private readonly accountUserId: string;
+	private readonly learnerProfileId: string;
 	private readonly profileId: string;
 
 	constructor(
@@ -78,6 +80,8 @@ export class ReviewSession {
 		this.params = normalizeSm2Parameters(params);
 		this.now = options.now ?? new Date();
 		this.ownerUserId = options.ownerUserId ?? LOCAL_OWNER_ID;
+		this.accountUserId = options.accountUserId ?? this.ownerUserId;
+		this.learnerProfileId = options.learnerProfileId ?? this.ownerUserId;
 		this.profileId = profileId;
 	}
 
@@ -234,6 +238,8 @@ export class ReviewSession {
 		const reviewEvent: ReviewEventInsert = {
 			card_id: card.id,
 			owner_user_id: this.ownerUserId,
+			account_user_id: this.accountUserId,
+			profile_id: this.learnerProfileId,
 			grade: REVIEW_GRADE_TO_VALUE[grade],
 			time_ms: 0,
 			raw_payload: null,
@@ -243,6 +249,8 @@ export class ReviewSession {
 		// Create scheduling state
 		const schedulingState: CardSchedulingStateInsert = {
 			owner_user_id: this.ownerUserId,
+			account_user_id: this.accountUserId,
+			learner_profile_id: this.learnerProfileId,
 			card_id: card.id,
 			profile_id: this.profileId,
 			due_at: dueAt.toISOString(),
@@ -278,6 +286,8 @@ export class ReviewSession {
 			id: generateId(),
 			card_id: item.card.id,
 			owner_user_id: this.ownerUserId,
+			account_user_id: this.accountUserId,
+			learner_profile_id: this.learnerProfileId,
 			profile_id: this.profileId,
 			due_at: result.schedulingState.due_at,
 			state: result.schedulingState.state,

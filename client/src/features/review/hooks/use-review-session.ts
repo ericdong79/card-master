@@ -31,6 +31,7 @@ import type {
 	Sm2Parameters,
 	Sm2State,
 } from "@/lib/scheduling/types";
+import { useAuth } from "@/features/auth/use-auth";
 import { useProfile } from "@/features/profile/profile-context";
 
 export type ReviewSessionState = {
@@ -89,8 +90,9 @@ export function useReviewSession(
 ): UseReviewSessionReturn {
 	const { t } = useTranslation();
 	const client = useMemo(() => createApiClient(), []);
+	const { accountUserId } = useAuth();
 	const { currentProfile } = useProfile();
-	const ownerUserId = currentProfile?.id ?? null;
+	const profileId = currentProfile?.id ?? null;
 
 	// UI state
 	const [cardPack, setCardPack] = useState<CardPack | null>(null);
@@ -119,7 +121,7 @@ export function useReviewSession(
 
 	// Initialize session
 	useEffect(() => {
-		if (!cardPackId || !ownerUserId) {
+		if (!cardPackId || !accountUserId || !profileId) {
 			setLoading(false);
 			return;
 		}
@@ -135,11 +137,11 @@ export function useReviewSession(
 		(async () => {
 			try {
 				// Load data
-				const [pack, fetchedCards, profile, completedToday] = await Promise.all([
-					getCardPackById(client, cardPackId, ownerUserId),
-					listCards(client, ownerUserId, { cardPackId }),
-					getOrCreateSchedulingProfile(client, ownerUserId),
-					countTodayCompletedCards(client, ownerUserId),
+				const [pack, fetchedCards, schedulingProfile, completedToday] = await Promise.all([
+					getCardPackById(client, accountUserId, profileId, cardPackId),
+					listCards(client, accountUserId, profileId, { cardPackId }),
+					getOrCreateSchedulingProfile(client, accountUserId, profileId),
+					countTodayCompletedCards(client, accountUserId, profileId),
 				]);
 
 				if (!pack) {
@@ -154,14 +156,15 @@ export function useReviewSession(
 				const stateList = fetchedCards.length
 					? await listSchedulingStatesByCardIds(
 							client,
-							ownerUserId,
+							accountUserId,
+							profileId,
 							fetchedCards.map((c) => c.id),
 						)
 					: [];
 
 				// Create review session
 				const params = normalizeSm2Parameters(
-					profile.parameters as Sm2Parameters,
+					schedulingProfile.parameters as Sm2Parameters,
 				);
 				const settings = normalizeDailyReviewSettings({
 					dailyGoal: currentProfile?.daily_goal,
@@ -179,12 +182,14 @@ export function useReviewSession(
 					fetchedCards,
 					stateList,
 					params,
-					profile.id,
+					schedulingProfile.id,
 					{
 						newCardsLimit,
 						reviewCardsLimit,
 						totalCardsLimit: sessionTotalLimit,
-						ownerUserId,
+						ownerUserId: profileId,
+						accountUserId,
+						learnerProfileId: profileId,
 					},
 				);
 
@@ -200,19 +205,20 @@ export function useReviewSession(
 			}
 		})();
 	}, [
+		accountUserId,
 		cardPackId,
 		client,
 		currentProfile?.daily_goal,
 		currentProfile?.new_per_day,
 		currentProfile?.review_per_day,
-		ownerUserId,
+		profileId,
 		t,
 	]);
 
 	// Handle grade submission
 	const handleGrade = useCallback(
 		async (grade: ReviewGrade) => {
-			if (!session || grading || !ownerUserId) return;
+			if (!session || grading || !accountUserId || !profileId) return;
 
 			setGrading(true);
 
@@ -221,14 +227,7 @@ export function useReviewSession(
 				const result = session.submitGrade(grade);
 
 				// 2. Persist review event
-				const event: ReviewEvent = await createReviewEvent(client, {
-					card_id: result.reviewEvent.card_id,
-					owner_user_id: result.reviewEvent.owner_user_id,
-					grade: result.reviewEvent.grade,
-					time_ms: result.reviewEvent.time_ms,
-					raw_payload: result.reviewEvent.raw_payload,
-					reviewed_at: result.reviewEvent.reviewed_at,
-				});
+				const event: ReviewEvent = await createReviewEvent(client, result.reviewEvent);
 
 				// 3. Persist scheduling state
 				const existingState = session
@@ -237,20 +236,29 @@ export function useReviewSession(
 						(item) => item.card.id === result.reviewEvent.card_id,
 					)?.schedulingState;
 
-				await upsertSchedulingState(client, existingState ?? null, {
-					...result.schedulingState,
-					last_event_id: event.id,
-				});
+				await upsertSchedulingState(
+					client,
+					accountUserId,
+					profileId,
+					existingState ?? null,
+					{
+						...result.schedulingState,
+						last_event_id: event.id,
+					},
+				);
 
 				// 4. Persist mastery state (independent from SM-2 scheduling)
 				const existingMastery = await getMasteryStateByCardId(
 					client,
-					ownerUserId,
+					accountUserId,
+					profileId,
 					result.reviewEvent.card_id,
 				);
 				const masteryUpdate = computeMasteryUpdate({
 					existing: existingMastery,
-					ownerUserId,
+					ownerUserId: profileId,
+					accountUserId,
+					profileId,
 					cardId: result.reviewEvent.card_id,
 					grade,
 					now: new Date(result.reviewEvent.reviewed_at),
@@ -260,7 +268,13 @@ export function useReviewSession(
 					nextSm2State: result.schedulingState.state as Sm2State,
 				});
 
-				await upsertMasteryState(client, existingMastery, masteryUpdate.nextMastery);
+				await upsertMasteryState(
+					client,
+					accountUserId,
+					profileId,
+					existingMastery,
+					masteryUpdate.nextMastery,
+				);
 				setLastMasteryFeedback({
 					cardId: result.reviewEvent.card_id,
 					transition: masteryUpdate.transition,
@@ -295,7 +309,7 @@ export function useReviewSession(
 				setGrading(false);
 			}
 		},
-		[session, client, grading, ownerUserId, t],
+		[accountUserId, session, client, grading, profileId, t],
 	);
 
 	const handleSkip = useCallback(() => {

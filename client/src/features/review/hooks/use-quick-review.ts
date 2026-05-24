@@ -11,6 +11,7 @@ import {
 	QuickReviewSession,
 	type SimpleReviewResult,
 } from "@/lib/review/quick-review-session";
+import { useAuth } from "@/features/auth/use-auth";
 import { useProfile } from "@/features/profile/profile-context";
 
 export type QuickReviewState = {
@@ -53,8 +54,9 @@ export type UseQuickReviewReturn = QuickReviewState & {
 export function useQuickReview(cardPackId: string | undefined): UseQuickReviewReturn {
 	const { t } = useTranslation();
 	const client = useMemo(() => createApiClient(), []);
+	const { accountUserId } = useAuth();
 	const { currentProfile } = useProfile();
-	const ownerUserId = currentProfile?.id ?? null;
+	const profileId = currentProfile?.id ?? null;
 
 	// UI state
 	const [cardPack, setCardPack] = useState<CardPack | null>(null);
@@ -72,7 +74,7 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 
 	// Initialize session
 	useEffect(() => {
-		if (!cardPackId || !ownerUserId) {
+		if (!cardPackId || !accountUserId || !profileId) {
 			setLoading(false);
 			return;
 		}
@@ -88,8 +90,8 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 			try {
 				// Load card pack and cards
 				const [pack, fetchedCards] = await Promise.all([
-					getCardPackById(client, cardPackId, ownerUserId),
-					listCards(client, ownerUserId, { cardPackId }),
+					getCardPackById(client, accountUserId, profileId, cardPackId),
+					listCards(client, accountUserId, profileId, { cardPackId }),
 				]);
 
 				if (!pack) {
@@ -109,7 +111,12 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 				const newSession = QuickReviewSession.create(
 					fetchedCards,
 					cardPackId,
-					{ recordEvents: true, ownerUserId }, // Record events for statistics
+					{
+						recordEvents: true,
+						ownerUserId: profileId,
+						accountUserId,
+						profileId,
+					}, // Record events for statistics
 				);
 
 				setSession(newSession);
@@ -124,12 +131,12 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 				setLoading(false);
 			}
 		})();
-	}, [cardPackId, client, ownerUserId, t]);
+	}, [accountUserId, cardPackId, client, profileId, t]);
 
 	// Handle review submission
 	const handleReview = useCallback(
 		async (result: SimpleReviewResult) => {
-			if (!session || reviewing) return;
+			if (!session || reviewing || !accountUserId || !profileId) return;
 
 			setReviewing(true);
 
@@ -139,14 +146,7 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 
 				// 2. Optionally record event for statistics
 				if (reviewResult.reviewEvent) {
-					await createReviewEvent(client, {
-						card_id: reviewResult.reviewEvent.card_id,
-						owner_user_id: reviewResult.reviewEvent.owner_user_id,
-						grade: reviewResult.reviewEvent.grade,
-						time_ms: reviewResult.reviewEvent.time_ms,
-						raw_payload: reviewResult.reviewEvent.raw_payload,
-						reviewed_at: reviewResult.reviewEvent.reviewed_at,
-					});
+					await createReviewEvent(client, reviewResult.reviewEvent);
 					if (reviewResult.reviewEvent.grade > 1) {
 						notifyDailyReviewProgressUpdated();
 					}
@@ -167,7 +167,7 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 				setReviewing(false);
 			}
 		},
-		[session, client, reviewing, t],
+		[accountUserId, session, client, reviewing, profileId, t],
 	);
 
 	// Skip current card

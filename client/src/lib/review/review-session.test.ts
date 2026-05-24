@@ -9,6 +9,8 @@ const createCard = (id: string, prompt: string, cardPackId = "pack-1"): Card => 
 	id,
 	card_pack_id: cardPackId,
 	owner_user_id: "local-user",
+	account_user_id: "account-1",
+	profile_id: "local-user",
 	prompt,
 	answer: `Answer for ${prompt}`,
 	status: "active",
@@ -212,6 +214,8 @@ describe("ReviewSession (Simplified)", () => {
 				id: "state-1",
 				card_id: "card-1",
 				owner_user_id: "local-user",
+				account_user_id: "account-1",
+				learner_profile_id: "local-user",
 				profile_id: "profile-1",
 				due_at: "2025-01-14T10:00:00Z", // Due yesterday
 				state: {
@@ -257,6 +261,8 @@ describe("ReviewSession (Simplified)", () => {
 				id: "state-1",
 				card_id: "card-1",
 				owner_user_id: "local-user",
+				account_user_id: "account-1",
+				learner_profile_id: "local-user",
 				profile_id: "profile-1",
 				due_at: "2025-01-14T10:00:00Z",
 				state: {
@@ -349,6 +355,8 @@ describe("ReviewSession (Simplified)", () => {
 				id: `state-${index + 1}`,
 				card_id: card.id,
 				owner_user_id: "local-user",
+				account_user_id: "account-1",
+				learner_profile_id: "local-user",
 				profile_id: "profile-1",
 				due_at: "2025-01-14T10:00:00Z",
 				state: {
@@ -392,6 +400,8 @@ describe("ReviewSession (Simplified)", () => {
 					id: "state-1",
 					card_id: dueCard.id,
 					owner_user_id: "local-user",
+					account_user_id: "account-1",
+					learner_profile_id: "local-user",
 					profile_id: "profile-1",
 					due_at: "2025-01-14T10:00:00Z",
 					state: {
@@ -434,6 +444,8 @@ describe("ReviewSession (Simplified)", () => {
 				id: `state-mixed-${index + 1}`,
 				card_id: card.id,
 				owner_user_id: "local-user",
+				account_user_id: "account-1",
+				learner_profile_id: "local-user",
 				profile_id: "profile-1",
 				due_at: "2025-01-14T10:00:00Z",
 				state: {
@@ -521,6 +533,8 @@ describe("ReviewSession (Simplified)", () => {
 				id: `state-${idx + 1}`,
 				card_id: card.id,
 				owner_user_id: "local-user",
+				account_user_id: "account-1",
+				learner_profile_id: "local-user",
 				profile_id: "profile-1",
 				due_at: dueTomorrow,
 				state: {

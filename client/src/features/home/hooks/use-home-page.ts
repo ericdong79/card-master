@@ -17,13 +17,15 @@ import {
 	importCardMasterData,
 	parseCardMasterExport,
 } from "@/lib/api/import-export";
+import { useAuth } from "@/features/auth/use-auth";
 import { useProfile } from "@/features/profile/profile-context";
 
 export function useHomePage() {
 	const { t } = useTranslation();
 	const apiClient = useMemo(() => createApiClient(), []);
+	const { accountUserId } = useAuth();
 	const { currentProfile } = useProfile();
-	const ownerUserId = currentProfile?.id ?? null;
+	const profileId = currentProfile?.id ?? null;
 
 	const [cardPacks, setCardPacks] = useState<CardPackWithCounts[]>([]);
 	const [dueCardsCount, setDueCardsCount] = useState(0);
@@ -38,20 +40,21 @@ export function useHomePage() {
 	const [deletingPack, setDeletingPack] = useState<CardPackWithCounts | null>(null);
 
 	const refreshCardPacks = useCallback(async () => {
-		if (!ownerUserId) {
+		if (!accountUserId || !profileId) {
 			setCardPacks([]);
 			setDueCardsCount(0);
 			return;
 		}
 		const [packs, cards] = await Promise.all([
-			listCardPacksWithCounts(apiClient, ownerUserId),
-			listCards(apiClient, ownerUserId),
+			listCardPacksWithCounts(apiClient, accountUserId, profileId),
+			listCards(apiClient, accountUserId, profileId),
 		]);
 		const states =
 			cards.length > 0
 				? await listSchedulingStatesByCardIds(
 						apiClient,
-						ownerUserId,
+						accountUserId,
+						profileId,
 						cards.map((card) => card.id),
 					)
 				: [];
@@ -64,10 +67,11 @@ export function useHomePage() {
 		}, 0);
 		setCardPacks(packs);
 		setDueCardsCount(dueCount);
-	}, [apiClient, ownerUserId]);
+	}, [accountUserId, apiClient, profileId]);
 
 	useEffect(() => {
-		refreshCardPacks()
+		Promise.resolve()
+			.then(refreshCardPacks)
 			.catch((err) =>
 				setError(err instanceof Error ? err.message : t("errors.loadCardPacks")),
 			)
@@ -103,11 +107,11 @@ export function useHomePage() {
 	}, []);
 
 	const createPack = useCallback(async (name: string, type: CardPackType) => {
-		if (!ownerUserId) return null;
+		if (!accountUserId || !profileId) return null;
 		try {
 			setError(null);
 			setSuccessMessage(null);
-			const created = await createCardPack(apiClient, ownerUserId, {
+			const created = await createCardPack(apiClient, accountUserId, profileId, {
 				name: name.trim(),
 				type,
 			});
@@ -118,16 +122,22 @@ export function useHomePage() {
 			setError(err instanceof Error ? err.message : t("errors.createCardPack"));
 			return null;
 		}
-	}, [apiClient, closeCreateDialog, ownerUserId, t]);
+	}, [accountUserId, apiClient, closeCreateDialog, profileId, t]);
 
 	const editPack = useCallback(async (targetPack: CardPackWithCounts, name: string) => {
-		if (!ownerUserId) return;
+		if (!accountUserId || !profileId) return;
 		try {
 			setError(null);
 			setSuccessMessage(null);
-			const updated = await updateCardPack(apiClient, targetPack.id, ownerUserId, {
-				name: name.trim(),
-			});
+			const updated = await updateCardPack(
+				apiClient,
+				accountUserId,
+				profileId,
+				targetPack.id,
+				{
+					name: name.trim(),
+				},
+			);
 			setCardPacks((prev) =>
 				prev.map((pack) =>
 					pack.id === targetPack.id
@@ -142,51 +152,62 @@ export function useHomePage() {
 		} catch (err) {
 			setError(err instanceof Error ? err.message : t("errors.updateCardPack"));
 		}
-	}, [apiClient, closeEditDialog, ownerUserId, t]);
+	}, [accountUserId, apiClient, closeEditDialog, profileId, t]);
 
 	const deletePack = useCallback(async (pack: CardPackWithCounts) => {
-		if (!ownerUserId) return;
+		if (!accountUserId || !profileId) return;
 		try {
 			setError(null);
 			setSuccessMessage(null);
-			await deleteCardPack(apiClient, pack.id, ownerUserId);
+			await deleteCardPack(apiClient, accountUserId, profileId, pack.id);
 			setCardPacks((prev) => prev.filter((item) => item.id !== pack.id));
 			closeDeleteDialog();
 		} catch (err) {
 			setError(err instanceof Error ? err.message : t("errors.deleteCardPack"));
 		}
-	}, [apiClient, closeDeleteDialog, ownerUserId, t]);
+	}, [accountUserId, apiClient, closeDeleteDialog, profileId, t]);
 
 	const exportPacks = useCallback(
 		async (cardPackIds: string[], includeReviewState: boolean) => {
-			if (!ownerUserId) return;
+			if (!accountUserId || !profileId) return;
 			try {
 				setError(null);
 				setSuccessMessage(null);
-				const payload = await buildCardMasterExport(apiClient, ownerUserId, {
-					cardPackIds,
-					includeReviewState,
-				});
+				const payload = await buildCardMasterExport(
+					apiClient,
+					accountUserId,
+					profileId,
+					{
+						cardPackIds,
+						includeReviewState,
+					},
+				);
 				downloadCardMasterExport(payload);
 				closeExportDialog();
 			} catch (err) {
 				setError(err instanceof Error ? err.message : t("errors.exportCardPacks"));
 			}
 		},
-		[apiClient, closeExportDialog, ownerUserId, t],
+		[accountUserId, apiClient, closeExportDialog, profileId, t],
 	);
 
 	const importPacks = useCallback(
 		async (file: File, importReviewState: boolean) => {
-			if (!ownerUserId) return;
+			if (!accountUserId || !profileId) return;
 			try {
 				setError(null);
 				setSuccessMessage(null);
 				const text = await file.text();
 				const payload = parseCardMasterExport(text);
-				const result = await importCardMasterData(apiClient, ownerUserId, payload, {
-					importReviewState,
-				});
+				const result = await importCardMasterData(
+					apiClient,
+					accountUserId,
+					profileId,
+					payload,
+					{
+						importReviewState,
+					},
+				);
 				await refreshCardPacks();
 				closeImportDialog();
 
@@ -207,7 +228,7 @@ export function useHomePage() {
 				setError(err instanceof Error ? err.message : t("errors.importCardPacks"));
 			}
 		},
-		[apiClient, closeImportDialog, ownerUserId, refreshCardPacks, t],
+		[accountUserId, apiClient, closeImportDialog, profileId, refreshCardPacks, t],
 	);
 
 	return {

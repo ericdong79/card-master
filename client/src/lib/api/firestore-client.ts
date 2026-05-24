@@ -94,7 +94,7 @@ function defaultOrderConstraints(store: StoreName): QueryConstraint[] {
 }
 
 export function createFirestoreApiClient(): ApiClient {
-	return {
+	const client: ApiClient = {
 		list: async (store, options) => {
 			const db = getFirestore();
 			const collectionRef = collection(db, collectionNameForStore(store));
@@ -128,6 +128,39 @@ export function createFirestoreApiClient(): ApiClient {
 			await deleteDoc(documentRef);
 		},
 	};
+	firestoreClients.add(client);
+	return client;
+}
+
+const firestoreClients = new WeakSet<ApiClient>();
+
+export function isFirestoreApiClient(client: ApiClient): boolean {
+	return firestoreClients.has(client);
+}
+
+export const FIRESTORE_IN_FILTER_LIMIT = 10;
+
+export function chunkFirestoreInValues(values: string[]): string[][] {
+	const uniqueValues = Array.from(new Set(values)).filter((value) => value.length > 0);
+	const chunks: string[][] = [];
+	for (let index = 0; index < uniqueValues.length; index += FIRESTORE_IN_FILTER_LIMIT) {
+		chunks.push(uniqueValues.slice(index, index + FIRESTORE_IN_FILTER_LIMIT));
+	}
+	return chunks;
+}
+
+export async function listFirestoreRecords<S extends StoreName>(
+	store: S,
+	constraints: QueryConstraint[],
+	options?: QueryOptions<StoreValue<S>>,
+): Promise<StoreValue<S>[]> {
+	const db = getFirestore();
+	const collectionRef = collection(db, collectionNameForStore(store));
+	const snapshot = await getDocs(query(collectionRef, ...constraints));
+	const records = snapshot.docs.map((documentSnapshot) =>
+		normalizeSnapshotValue<S>(documentSnapshot.data(), documentSnapshot.id),
+	);
+	return applyQueryOptions(records, options);
 }
 
 export function ownershipConstraints(

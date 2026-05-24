@@ -1,4 +1,10 @@
-import type { ApiClient } from "@/lib/api/client";
+import type { ApiClient, QueryOptions } from "@/lib/api/client";
+import type { ReviewEvent } from "@/lib/api/entities/review-event";
+import {
+	isFirestoreApiClient,
+	listFirestoreRecords,
+	ownershipConstraints,
+} from "@/lib/api/firestore-client";
 
 export type DailyReviewSettings = {
 	dailyGoal: number;
@@ -59,18 +65,27 @@ function getTodayRange(now: Date): { start: Date; end: Date } {
 
 export async function countTodayCompletedCards(
 	client: ApiClient,
-	ownerUserId: string,
+	accountUserId: string,
+	profileId: string,
 	now: Date = new Date(),
 ): Promise<number> {
 	const { start, end } = getTodayRange(now);
-	const events = await client.list("review_event", {
+	const options: QueryOptions<ReviewEvent> = {
 		filter: (event) => {
-			if (event.owner_user_id !== ownerUserId) return false;
+			if (event.account_user_id !== accountUserId) return false;
+			if (event.profile_id !== profileId) return false;
 			if (event.grade <= 1) return false;
 			const reviewedAt = new Date(event.reviewed_at);
 			return reviewedAt >= start && reviewedAt < end;
 		},
-	});
+	};
+	const events = isFirestoreApiClient(client)
+		? await listFirestoreRecords(
+				"review_event",
+				ownershipConstraints(accountUserId, profileId),
+				options,
+			)
+		: await client.list("review_event", options);
 
 	return new Set(events.map((event) => event.card_id)).size;
 }

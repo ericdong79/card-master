@@ -6,6 +6,7 @@ import {
 	getMasteryPresentationEnabled,
 	getMasteryThemePreference,
 } from "@/features/mastery";
+import { useAuth } from "@/features/auth/use-auth";
 import { BulkCreateHanziDialog } from "@/features/cards/components/bulk-create-hanzi-dialog";
 import { CardFormDialog } from "@/features/cards/components/card-form-dialog";
 import { DeleteCardDialog } from "@/features/cards/components/delete-card-dialog";
@@ -58,13 +59,14 @@ export function PackCardsPage() {
 	const { t } = useTranslation();
 	const { cardPackId } = useParams<{ cardPackId: string }>();
 	const apiClient = useMemo(() => createApiClient(), []);
+	const { accountUserId } = useAuth();
 	const { currentProfile } = useProfile();
-	const ownerUserId = currentProfile?.id ?? null;
-	const masteryEnabled = ownerUserId
-		? getMasteryPresentationEnabled(ownerUserId)
+	const profileId = currentProfile?.id ?? null;
+	const masteryEnabled = profileId
+		? getMasteryPresentationEnabled(profileId)
 		: false;
-	const masteryThemeId = ownerUserId
-		? getMasteryThemePreference(ownerUserId)
+	const masteryThemeId = profileId
+		? getMasteryThemePreference(profileId)
 		: null;
 
 	const [cardPack, setCardPack] = useState<CardPack | null>(null);
@@ -118,13 +120,13 @@ export function PackCardsPage() {
 	}, [cards, schedulingStates]);
 
 	useEffect(() => {
-		if (!cardPackId || !ownerUserId) return;
+		if (!cardPackId || !accountUserId || !profileId) return;
 		setLoading(true);
 		setError(null);
 
 		Promise.all([
-			getCardPackById(apiClient, cardPackId, ownerUserId),
-			listCards(apiClient, ownerUserId, { cardPackId }),
+			getCardPackById(apiClient, accountUserId, profileId, cardPackId),
+			listCards(apiClient, accountUserId, profileId, { cardPackId }),
 		])
 			.then(async ([pack, list]) => {
 				if (!pack) {
@@ -143,12 +145,14 @@ export function PackCardsPage() {
 					const [states, mastery] = await Promise.all([
 						listSchedulingStatesByCardIds(
 							apiClient,
-							ownerUserId,
+							accountUserId,
+							profileId,
 							list.map((c) => c.id),
 						),
 						listMasteryStatesByCardIds(
 							apiClient,
-							ownerUserId,
+							accountUserId,
+							profileId,
 							list.map((c) => c.id),
 						),
 					]);
@@ -163,14 +167,7 @@ export function PackCardsPage() {
 				setError(err instanceof Error ? err.message : t("errors.loadCards")),
 			)
 			.finally(() => setLoading(false));
-	}, [apiClient, cardPackId, ownerUserId, t]);
-
-	if (!cardPackId) {
-		return <Navigate to="/" replace />;
-	}
-	if (!ownerUserId) {
-		return null;
-	}
+	}, [accountUserId, apiClient, cardPackId, profileId, t]);
 
 	const dueTimesByCardId = useMemo(
 		() =>
@@ -190,8 +187,15 @@ export function PackCardsPage() {
 		[masteryStates],
 	);
 
+	if (!cardPackId) {
+		return <Navigate to="/" replace />;
+	}
+	if (!accountUserId || !profileId) {
+		return null;
+	}
+
 	const handleCreate = async (values: CardSubmitPayload) => {
-		if (!cardPackId) return;
+		if (!cardPackId || !accountUserId || !profileId) return;
 
 		const duplicateReason = findDuplicateReason(cards, {
 			questionText: values.question_content?.text ?? values.prompt,
@@ -209,7 +213,7 @@ export function PackCardsPage() {
 
 		setPendingAction("create");
 		try {
-			const created = await createCard(apiClient, ownerUserId, {
+			const created = await createCard(apiClient, accountUserId, profileId, {
 				card_pack_id: cardPackId,
 				prompt: values.prompt,
 				answer: values.answer,
@@ -231,7 +235,7 @@ export function PackCardsPage() {
 	};
 
 	const handleCreateBulk = async (values: CardSubmitPayload[]) => {
-		if (!cardPackId || values.length === 0) return;
+		if (!cardPackId || !accountUserId || !profileId || values.length === 0) return;
 
 		const candidatePairs = values.map((value) => ({
 			questionText: value.question_content?.text ?? value.prompt,
@@ -257,7 +261,7 @@ export function PackCardsPage() {
 		try {
 			const createdCards = await Promise.all(
 				accepted.map((value) =>
-					createCard(apiClient, ownerUserId, {
+					createCard(apiClient, accountUserId, profileId, {
 						card_pack_id: cardPackId,
 						prompt: value.questionText.trim(),
 						answer: value.answerText.trim(),
@@ -284,7 +288,7 @@ export function PackCardsPage() {
 	};
 
 	const handleEdit = async (values: CardSubmitPayload) => {
-		if (!cardPackId || !editingCard) return;
+		if (!cardPackId || !accountUserId || !profileId || !editingCard) return;
 
 		const duplicateReason = findDuplicateReason(
 			cards,
@@ -306,12 +310,18 @@ export function PackCardsPage() {
 
 		setPendingAction("edit");
 		try {
-			const updated = await updateCard(apiClient, editingCard.id, ownerUserId, {
-				prompt: values.prompt,
-				answer: values.answer,
-				question_content: values.question_content,
-				answer_content: values.answer_content,
-			});
+			const updated = await updateCard(
+				apiClient,
+				accountUserId,
+				profileId,
+				editingCard.id,
+				{
+					prompt: values.prompt,
+					answer: values.answer,
+					question_content: values.question_content,
+					answer_content: values.answer_content,
+				},
+			);
 			setCards((prev) =>
 				prev.map((card) => (card.id === editingCard.id ? updated : card)),
 			);
@@ -328,10 +338,10 @@ export function PackCardsPage() {
 	};
 
 	const handleDelete = async () => {
-		if (!deleteCardTarget) return;
+		if (!accountUserId || !profileId || !deleteCardTarget) return;
 		setPendingAction("delete");
 		try {
-			await deleteCard(apiClient, deleteCardTarget.id, ownerUserId);
+			await deleteCard(apiClient, accountUserId, profileId, deleteCardTarget.id);
 			setCards((prev) =>
 				prev.filter((card) => card.id !== deleteCardTarget.id),
 			);
