@@ -2,6 +2,7 @@ import {
 	GoogleAuthProvider,
 	getAuth,
 	signInWithPopup,
+	signInWithRedirect,
 	signOut,
 	type Auth,
 	type User,
@@ -13,11 +14,34 @@ export function getFirebaseAuth(): Auth {
 	return getAuth(getFirebaseApp());
 }
 
+function shouldFallbackToRedirect(error: unknown): boolean {
+	if (!error || typeof error !== "object" || !("code" in error)) {
+		return false;
+	}
+
+	return [
+		"auth/cancelled-popup-request",
+		"auth/operation-not-supported-in-this-environment",
+		"auth/popup-blocked",
+	].includes(String(error.code));
+}
+
 export async function signInWithGoogle(): Promise<User> {
 	const provider = new GoogleAuthProvider();
 	provider.setCustomParameters({ prompt: "select_account" });
-	const credential = await signInWithPopup(getFirebaseAuth(), provider);
-	return credential.user;
+	const auth = getFirebaseAuth();
+
+	try {
+		const credential = await signInWithPopup(auth, provider);
+		return credential.user;
+	} catch (error) {
+		if (shouldFallbackToRedirect(error)) {
+			await signInWithRedirect(auth, provider);
+			return await new Promise<User>(() => undefined);
+		}
+
+		throw error;
+	}
 }
 
 export async function signOutOfFirebase(): Promise<void> {

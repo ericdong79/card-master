@@ -26,7 +26,8 @@ export function LoginPage() {
 
 		try {
 			await signIn();
-		} catch {
+		} catch (signInError) {
+			console.error("Google sign-in failed", signInError);
 			setError(t("auth.login.failed"));
 			setLoading(false);
 		}
