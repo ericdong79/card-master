@@ -8,6 +8,8 @@ export type CardPack = {
 	name: string;
 	type?: CardPackType;
 	owner_user_id: string;
+	account_user_id?: string;
+	profile_id?: string;
 	status: CardPackStatus;
 	created_at: string;
 	updated_at: string | null;

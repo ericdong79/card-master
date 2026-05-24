@@ -3,6 +3,8 @@ export type MasteryState = "unseen" | "learning" | "graduated" | "reviewing" | "
 export type CardMasteryState = {
 	id: string;
 	owner_user_id: string;
+	account_user_id?: string;
+	profile_id?: string;
 	card_id: string;
 	mastery_score: number;
 	mastery_state: MasteryState;

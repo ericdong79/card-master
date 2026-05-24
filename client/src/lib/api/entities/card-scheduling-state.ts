@@ -1,6 +1,8 @@
 export type CardSchedulingState = {
 	id: string;
 	owner_user_id: string;
+	account_user_id?: string;
+	learner_profile_id?: string;
 	card_id: string;
 	profile_id: string;
 	due_at: string;

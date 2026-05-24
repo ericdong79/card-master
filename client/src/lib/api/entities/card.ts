@@ -20,6 +20,8 @@ export type Card = {
 	id: string;
 	card_pack_id: CardPack["id"];
 	owner_user_id: string;
+	account_user_id?: string;
+	profile_id?: string;
 	prompt: string;
 	answer: string;
 	question_content?: CardSideContent | null;
