@@ -64,7 +64,8 @@
 		"menu": {
 			"title": "User Settings",
 			"switchUser": "Switch User",
-			"preferences": "Preference Settings"
+			"preferences": "Preference Settings",
+			"importLocalData": "Import Local Data"
 		},
 		"fields": {
 			"nickname": "Nickname",
@@ -263,7 +264,9 @@
 			"enableMultiPackTypes": "Enable multiple card pack types",
 			"enableMultiPackTypesHint": "If disabled, creating a pack will always use the default pack type.",
 			"defaultPackType": "Default card pack type",
-			"defaultPackTypeHint": "Used for pack creation by default, and always used when multi-type is off."
+			"defaultPackTypeHint": "Used for pack creation by default, and always used when multi-type is off.",
+			"importLocalData": "Import local data",
+			"importLocalDataHint": "Manually copy legacy browser data into your cloud account."
 		},
 		"blocks": {
 			"system": {
@@ -272,6 +275,33 @@
 			},
 			"version": {
 				"title": "Version"
+			}
+		}
+	},
+	"import": {
+		"local": {
+			"title": "Import local data",
+			"description": "Copy legacy profiles, packs, cards, and review state from this browser into your signed-in cloud account. This does not delete local data.",
+			"open": "Open import",
+			"action": "Import to cloud",
+			"detectedData": "Detected local data",
+			"inspecting": "Checking this browser...",
+			"empty": "No legacy local data was found in this browser.",
+			"success": "Imported {{profiles}} profile(s), {{cardPacks}} pack(s), {{cards}} card(s), and {{schedulingStates}} scheduling state(s).",
+			"success_already": "This local data was already imported. No new cloud records were written.",
+			"counts": {
+				"profiles": "Profiles",
+				"cardPacks": "Card packs",
+				"cards": "Cards",
+				"schedulingProfiles": "Scheduling profiles",
+				"schedulingStates": "Scheduling states",
+				"reviewEvents": "Review events",
+				"cardMasteryStates": "Mastery states"
+			},
+			"errors": {
+				"inspectFailed": "Could not inspect local browser data.",
+				"importFailed": "Import failed. Try again, or check the browser console for details.",
+				"refreshFailed": "Import finished, but the cloud data refresh failed. Close and reopen this view to see the imported data."
 			}
 		}
 	},

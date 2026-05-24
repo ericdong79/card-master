@@ -7,6 +7,7 @@ import {
 	Menu,
 	Rocket,
 	Settings2,
+	UploadCloud,
 	Users,
 } from "lucide-react";
 import { type ComponentType, useEffect, useMemo, useState } from "react";
@@ -18,6 +19,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { LoginPage } from "@/features/auth/login-page";
 import { useAuth } from "@/features/auth/use-auth";
+import { LocalDataImportDialog } from "@/features/import/local-data-import-dialog";
 import { CreateProfileDialog } from "@/features/profile/components/create-profile-dialog";
 import { SwitchProfileDialog } from "@/features/profile/components/switch-profile-dialog";
 import { useProfile } from "@/features/profile/profile-context";
@@ -239,11 +241,13 @@ function AuthenticatedAppShell() {
 	const { pathname } = useLocation();
 	const { accountUserId, error: authError, signOut } = useAuth();
 	const apiClient = useMemo(() => createApiClient(), []);
-	const { ready, profiles, currentProfile, createProfile } = useProfile();
+	const { ready, profiles, currentProfile, createProfile, reloadProfiles } =
+		useProfile();
 	const [collapsed, setCollapsed] = useState(false);
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const [switchProfileOpen, setSwitchProfileOpen] = useState(false);
+	const [localImportOpen, setLocalImportOpen] = useState(false);
 	const [createProfileOpen, setCreateProfileOpen] = useState(false);
 	const [signingOut, setSigningOut] = useState(false);
 	const [signOutError, setSignOutError] = useState<string | null>(null);
@@ -422,6 +426,17 @@ function AuthenticatedAppShell() {
 						<Button
 							className="w-full justify-start"
 							variant="outline"
+							onClick={() => {
+								setUserMenuOpen(false);
+								setLocalImportOpen(true);
+							}}
+						>
+							<UploadCloud className="size-4" />
+							{t("profile.menu.importLocalData")}
+						</Button>
+						<Button
+							className="w-full justify-start"
+							variant="outline"
 							onClick={handleSignOut}
 							disabled={signingOut}
 						>
@@ -448,6 +463,13 @@ function AuthenticatedAppShell() {
 				open={switchProfileOpen}
 				onOpenChange={setSwitchProfileOpen}
 				onCreateNew={() => setCreateProfileOpen(true)}
+			/>
+
+			<LocalDataImportDialog
+				open={localImportOpen}
+				onOpenChange={setLocalImportOpen}
+				accountUserId={accountUserId}
+				onImported={reloadProfiles}
 			/>
 
 			<CreateProfileDialog

@@ -12,17 +12,13 @@ import {
 } from "react";
 
 import { useAuth } from "@/features/auth/use-auth";
-import {
-	loadLocalProfileState,
-	type StoredProfileState,
-} from "@/features/profile/local-profile-store";
+import { type StoredProfileState } from "@/features/profile/local-profile-store";
 import {
 	getOrCreateAccountRecord,
 	listCloudProfiles,
 	saveCloudProfile,
 	saveCloudProfileAndSetCurrentProfile,
 	touchCloudProfileAndSetCurrentProfile,
-	updateAccountCurrentProfile,
 	type CloudUserProfile,
 } from "@/features/profile/profile-repository";
 import { normalizeDailyReviewSettings } from "@/features/review/daily-goal";
@@ -75,6 +71,7 @@ type ProfileContextValue = {
 	createProfile: (input: CreateProfileInput) => Promise<UserProfile>;
 	switchProfile: (profileId: string) => Promise<void>;
 	updateCurrentProfile: (updates: UpdateCurrentProfileInput) => Promise<void>;
+	reloadProfiles: () => Promise<void>;
 };
 
 const ProfileContext = createContext<ProfileContextValue | null>(null);
@@ -147,6 +144,27 @@ function resolveCurrentProfileId(state: StoredProfileState): string | null {
 	return state.profiles[0].id;
 }
 
+function resolveCloudCurrentProfileId(
+	profiles: UserProfile[],
+	preferredProfileId: string | null,
+	accountProfileId: string | null,
+): string | null {
+	if (profiles.length === 0) return null;
+	if (
+		preferredProfileId &&
+		profiles.some((profile) => profile.id === preferredProfileId)
+	) {
+		return preferredProfileId;
+	}
+	if (
+		accountProfileId &&
+		profiles.some((profile) => profile.id === accountProfileId)
+	) {
+		return accountProfileId;
+	}
+	return profiles[0].id;
+}
+
 function applyProfileUpdates(
 	existing: UserProfile,
 	updates: UpdateCurrentProfileInput,
@@ -192,31 +210,6 @@ function applyProfileUpdates(
 
 function createStaleAccountError(): Error {
 	return new Error("Profile operation was superseded by an auth change");
-}
-
-async function importLegacyProfilesIfNeeded(
-	accountUserId: string,
-	cloudProfiles: CloudUserProfile[],
-): Promise<StoredProfileState | null> {
-	if (cloudProfiles.length > 0) return null;
-
-	const legacyState = loadLocalProfileState();
-	if (legacyState.profiles.length === 0) return null;
-
-	await Promise.all(
-		legacyState.profiles.map((profile) =>
-			saveCloudProfile(toCloudProfile(profile, accountUserId)),
-		),
-	);
-
-	const now = nowIso();
-	const currentProfileId = resolveCurrentProfileId(legacyState);
-	await updateAccountCurrentProfile(accountUserId, currentProfileId, now);
-
-	return {
-		profiles: legacyState.profiles.map(normalizeProfile),
-		current_profile_id: currentProfileId,
-	};
 }
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
@@ -270,6 +263,36 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 		[],
 	);
 
+	const reloadProfiles = useCallback(async (): Promise<void> => {
+		if (!user || !accountUserId) {
+			setProfileState({ profiles: [], current_profile_id: null });
+			return;
+		}
+
+		const operationAccountUserId = accountUserId;
+		const now = nowIso();
+		const account = await getOrCreateAccountRecord({
+			id: operationAccountUserId,
+			email: user.email,
+			displayName: user.displayName,
+			photoUrl: user.photoURL,
+			now,
+		});
+		const cloudProfiles = await listCloudProfiles(operationAccountUserId);
+
+		assertActiveAccount(operationAccountUserId);
+
+		const profiles = cloudProfiles.map(stripCloudFields);
+		setProfileState({
+			profiles,
+			current_profile_id: resolveCloudCurrentProfileId(
+				profiles,
+				stateRef.current.current_profile_id,
+				account.current_profile_id,
+			),
+		});
+	}, [accountUserId, assertActiveAccount, setProfileState, user]);
+
 	useEffect(() => {
 		let cancelled = false;
 
@@ -285,30 +308,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 			}
 
 			try {
-				const now = nowIso();
-				const account = await getOrCreateAccountRecord({
-					id: accountUserId,
-					email: user.email,
-					displayName: user.displayName,
-					photoUrl: user.photoURL,
-					now,
-				});
-				const cloudProfiles = await listCloudProfiles(accountUserId);
-				const importedState = await importLegacyProfilesIfNeeded(
-					accountUserId,
-					cloudProfiles,
-				);
-
+				await reloadProfiles();
 				if (cancelled) return;
-
-				if (importedState) {
-					setProfileState(importedState);
-				} else {
-					setProfileState({
-						profiles: cloudProfiles.map(stripCloudFields),
-						current_profile_id: account.current_profile_id,
-					});
-				}
 				setReady(true);
 			} catch (error) {
 				console.error("Failed to load cloud profiles", error);
@@ -324,7 +325,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 		return () => {
 			cancelled = true;
 		};
-	}, [accountUserId, setProfileState, user]);
+	}, [accountUserId, reloadProfiles, setProfileState, user]);
 
 	const currentProfileId = useMemo(
 		() => resolveCurrentProfileId(state),
@@ -464,6 +465,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 			createProfile,
 			switchProfile,
 			updateCurrentProfile,
+			reloadProfiles,
 		}),
 		[
 			ready,
@@ -472,6 +474,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 			createProfile,
 			switchProfile,
 			updateCurrentProfile,
+			reloadProfiles,
 		],
 	);
 

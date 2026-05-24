@@ -65,7 +65,8 @@
 		"menu": {
 			"title": "用户设置",
 			"switchUser": "切换用户",
-			"preferences": "首选项配置"
+			"preferences": "首选项配置",
+			"importLocalData": "导入本地数据"
 		},
 		"fields": {
 			"nickname": "昵称",
@@ -264,7 +265,9 @@
 			"enableMultiPackTypes": "开启多卡包类型",
 			"enableMultiPackTypesHint": "关闭时，创建卡包将始终使用默认卡包类型。",
 			"defaultPackType": "默认卡包类型",
-			"defaultPackTypeHint": "默认用于创建卡包；关闭多卡包类型后会强制使用该类型。"
+			"defaultPackTypeHint": "默认用于创建卡包；关闭多卡包类型后会强制使用该类型。",
+			"importLocalData": "导入本地数据",
+			"importLocalDataHint": "手动把旧版浏览器本地数据复制到当前云端账号。"
 		},
 		"blocks": {
 			"system": {
@@ -273,6 +276,33 @@
 			},
 			"version": {
 				"title": "版本信息"
+			}
+		}
+	},
+	"import": {
+		"local": {
+			"title": "导入本地数据",
+			"description": "将此浏览器中的旧版本地档案、卡包、卡片和复习状态复制到当前登录的云端账号。本操作不会删除本地数据。",
+			"open": "打开导入",
+			"action": "导入到云端",
+			"detectedData": "检测到的本地数据",
+			"inspecting": "正在检查此浏览器...",
+			"empty": "此浏览器中未找到旧版本地数据。",
+			"success": "已导入 {{profiles}} 个档案、{{cardPacks}} 个卡包、{{cards}} 张卡和 {{schedulingStates}} 条排程状态。",
+			"success_already": "这份本地数据已经导入过。本次没有写入新的云端记录。",
+			"counts": {
+				"profiles": "档案",
+				"cardPacks": "卡包",
+				"cards": "卡片",
+				"schedulingProfiles": "排程配置",
+				"schedulingStates": "排程状态",
+				"reviewEvents": "复习记录",
+				"cardMasteryStates": "掌握度状态"
+			},
+			"errors": {
+				"inspectFailed": "无法检查浏览器本地数据。",
+				"importFailed": "导入失败。请重试，或查看浏览器控制台了解详情。",
+				"refreshFailed": "导入已完成，但云端数据刷新失败。关闭并重新打开此视图即可查看导入的数据。"
 			}
 		}
 	},

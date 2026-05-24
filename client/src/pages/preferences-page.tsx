@@ -1,7 +1,15 @@
-import { Info, Palette, SlidersHorizontal, SmilePlus } from "lucide-react";
+import {
+	Info,
+	Palette,
+	SlidersHorizontal,
+	SmilePlus,
+	UploadCloud,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useAuth } from "@/features/auth/use-auth";
+import { LocalDataImportDialog } from "@/features/import/local-data-import-dialog";
 import {
 	getMasteryPresentationEnabled,
 	getMasteryThemePreference,
@@ -32,7 +40,8 @@ import { useSystemPreferences } from "@/lib/preferences/system-preferences";
 
 export function PreferencesPage() {
 	const { t, i18n } = useTranslation();
-	const { currentProfile, updateCurrentProfile } = useProfile();
+	const { accountUserId } = useAuth();
+	const { currentProfile, updateCurrentProfile, reloadProfiles } = useProfile();
 	const { preferences: systemPreferences, updatePreferences } =
 		useSystemPreferences();
 	const [nickname, setNickname] = useState("");
@@ -51,6 +60,7 @@ export function PreferencesPage() {
 		DEFAULT_DAILY_REVIEW_SETTINGS.newPerDay,
 	);
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+	const [localImportOpen, setLocalImportOpen] = useState(false);
 	const [masteryEnabled, setMasteryEnabled] = useState(true);
 	const [masteryThemeId, setMasteryThemeId] = useState("default-academic");
 	const masteryThemes = listMasteryPresentationPlugins();
@@ -61,6 +71,7 @@ export function PreferencesPage() {
 
 	useEffect(() => {
 		if (!currentProfile) return;
+		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setNickname(currentProfile.nickname);
 		setAvatarEmoji(currentProfile.avatar_emoji);
 		setPrimaryColor(currentProfile.primary_color ?? "#0ee17f");
@@ -472,6 +483,23 @@ export function PreferencesPage() {
 								{t("preferences.system.defaultPackTypeHint")}
 							</p>
 						</div>
+
+						<div className="flex items-center justify-between gap-4 rounded-md border bg-background/60 p-3">
+							<div className="space-y-1">
+								<Label>{t("preferences.system.importLocalData")}</Label>
+								<p className="text-xs text-muted-foreground">
+									{t("preferences.system.importLocalDataHint")}
+								</p>
+							</div>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => setLocalImportOpen(true)}
+							>
+								<UploadCloud className="size-4" />
+								{t("import.local.open")}
+							</Button>
+						</div>
 					</div>
 
 					<div className="flex items-center justify-between rounded-lg border bg-muted/20 px-4 py-3 text-sm">
@@ -485,6 +513,12 @@ export function PreferencesPage() {
 					</div>
 				</CardContent>
 			</Card>
+			<LocalDataImportDialog
+				open={localImportOpen}
+				onOpenChange={setLocalImportOpen}
+				accountUserId={accountUserId}
+				onImported={reloadProfiles}
+			/>
 		</div>
 	);
 }
