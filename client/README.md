@@ -71,3 +71,20 @@ export default defineConfig([
   },
 ])
 ```
+
+## Firebase Configuration
+
+Create a local `.env` file with the Firebase web app config used by Vite:
+
+```sh
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+```
+
+Only use Firebase client-side web configuration values here. Do not include service account JSON, private keys, or any server credentials in Vite environment variables.
+
+In the Firebase console, add each deployed app hostname to Authentication > Settings > Authorized domains. Local development usually needs `localhost`; production and preview deployments need their exact domains as well.

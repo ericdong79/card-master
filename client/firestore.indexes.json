@@ -1,0 +1,89 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "profiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "account_user_id", "order": "ASCENDING" },
+        { "fieldPath": "last_used_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "card_packs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "account_user_id", "order": "ASCENDING" },
+        { "fieldPath": "profile_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "cards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "account_user_id", "order": "ASCENDING" },
+        { "fieldPath": "profile_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "cards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "account_user_id", "order": "ASCENDING" },
+        { "fieldPath": "profile_id", "order": "ASCENDING" },
+        { "fieldPath": "card_pack_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "review_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "account_user_id", "order": "ASCENDING" },
+        { "fieldPath": "profile_id", "order": "ASCENDING" },
+        { "fieldPath": "reviewed_at", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "review_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "account_user_id", "order": "ASCENDING" },
+        { "fieldPath": "profile_id", "order": "ASCENDING" },
+        { "fieldPath": "card_id", "order": "ASCENDING" },
+        { "fieldPath": "reviewed_at", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "card_scheduling_states",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "account_user_id", "order": "ASCENDING" },
+        { "fieldPath": "learner_profile_id", "order": "ASCENDING" },
+        { "fieldPath": "card_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "card_mastery_states",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "account_user_id", "order": "ASCENDING" },
+        { "fieldPath": "profile_id", "order": "ASCENDING" },
+        { "fieldPath": "card_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "scheduling_profiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "account_user_id", "order": "ASCENDING" },
+        { "fieldPath": "profile_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -1,0 +1,74 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwnUser(userId) {
+      return isSignedIn() && userId == request.auth.uid;
+    }
+
+    function ownsExistingAccount() {
+      return isSignedIn() && resource.data.account_user_id == request.auth.uid;
+    }
+
+    function ownsIncomingAccount() {
+      return isSignedIn() && request.resource.data.account_user_id == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow read, create, update, delete: if isOwnUser(userId);
+    }
+
+    match /profiles/{documentId} {
+      allow read: if ownsExistingAccount();
+      allow create: if ownsIncomingAccount();
+      allow update: if ownsExistingAccount() && ownsIncomingAccount();
+      allow delete: if ownsExistingAccount();
+    }
+
+    match /card_packs/{documentId} {
+      allow read: if ownsExistingAccount();
+      allow create: if ownsIncomingAccount();
+      allow update: if ownsExistingAccount() && ownsIncomingAccount();
+      allow delete: if ownsExistingAccount();
+    }
+
+    match /cards/{documentId} {
+      allow read: if ownsExistingAccount();
+      allow create: if ownsIncomingAccount();
+      allow update: if ownsExistingAccount() && ownsIncomingAccount();
+      allow delete: if ownsExistingAccount();
+    }
+
+    match /scheduling_profiles/{documentId} {
+      allow read: if ownsExistingAccount();
+      allow create: if ownsIncomingAccount();
+      allow update: if ownsExistingAccount() && ownsIncomingAccount();
+      allow delete: if ownsExistingAccount();
+    }
+
+    match /card_scheduling_states/{documentId} {
+      allow read: if ownsExistingAccount();
+      allow create: if ownsIncomingAccount();
+      allow update: if ownsExistingAccount() && ownsIncomingAccount();
+      allow delete: if ownsExistingAccount();
+    }
+
+    match /card_mastery_states/{documentId} {
+      allow read: if ownsExistingAccount();
+      allow create: if ownsIncomingAccount();
+      allow update: if ownsExistingAccount() && ownsIncomingAccount();
+      allow delete: if ownsExistingAccount();
+    }
+
+    match /review_events/{documentId} {
+      allow read: if ownsExistingAccount();
+      allow create: if ownsIncomingAccount();
+      allow update: if ownsExistingAccount() && ownsIncomingAccount();
+      allow delete: if ownsExistingAccount();
+    }
+  }
+}
