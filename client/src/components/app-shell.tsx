@@ -10,7 +10,13 @@ import {
 	UploadCloud,
 	Users,
 } from "lucide-react";
-import { type ComponentType, useEffect, useMemo, useState } from "react";
+import {
+	type ComponentType,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logoImage from "@/assets/logo/logo.png";
@@ -249,6 +255,7 @@ function AuthenticatedAppShell() {
 	const [switchProfileOpen, setSwitchProfileOpen] = useState(false);
 	const [localImportOpen, setLocalImportOpen] = useState(false);
 	const [createProfileOpen, setCreateProfileOpen] = useState(false);
+	const forcedCreateProfileOpenRef = useRef(false);
 	const [signingOut, setSigningOut] = useState(false);
 	const [signOutError, setSignOutError] = useState<string | null>(null);
 	const [creatingProfile, setCreatingProfile] = useState(false);
@@ -261,7 +268,14 @@ function AuthenticatedAppShell() {
 
 	useEffect(() => {
 		if (mustCreateProfile) {
+			forcedCreateProfileOpenRef.current = true;
 			setCreateProfileOpen(true);
+			return;
+		}
+
+		if (forcedCreateProfileOpenRef.current) {
+			forcedCreateProfileOpenRef.current = false;
+			setCreateProfileOpen(false);
 		}
 	}, [mustCreateProfile]);
 
@@ -462,7 +476,10 @@ function AuthenticatedAppShell() {
 			<SwitchProfileDialog
 				open={switchProfileOpen}
 				onOpenChange={setSwitchProfileOpen}
-				onCreateNew={() => setCreateProfileOpen(true)}
+				onCreateNew={() => {
+					forcedCreateProfileOpenRef.current = false;
+					setCreateProfileOpen(true);
+				}}
 			/>
 
 			<LocalDataImportDialog
@@ -475,6 +492,9 @@ function AuthenticatedAppShell() {
 			<CreateProfileDialog
 				open={createProfileOpen}
 				onOpenChange={(open) => {
+					if (!open) {
+						forcedCreateProfileOpenRef.current = false;
+					}
 					setCreateProfileOpen(open);
 					if (open) {
 						setCreateProfileError(null);
@@ -490,6 +510,7 @@ function AuthenticatedAppShell() {
 
 					try {
 						await createProfile(input);
+						forcedCreateProfileOpenRef.current = false;
 						setCreateProfileOpen(false);
 						if (isFirstProfile) {
 							navigate("/quick-start", { replace: true });
