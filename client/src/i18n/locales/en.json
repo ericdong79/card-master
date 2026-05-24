@@ -8,6 +8,17 @@
 		"name": "MindMemo",
 		"tagline": "One Mind, One Memory"
 	},
+	"auth": {
+		"login": {
+			"title": "Sign in to Card Master",
+			"description": "Use Google to sync your profiles, card packs, and review history.",
+			"google": "Continue with Google",
+			"failed": "Sign-in failed. Try again."
+		},
+		"signOut": "Sign out",
+		"signOutFailed": "Sign-out failed. Try again.",
+		"unavailable": "Authentication is unavailable. Check your Firebase configuration."
+	},
 	"sidebar": {
 		"title": "Main Navigation",
 		"sections": {

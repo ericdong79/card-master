@@ -9,6 +9,17 @@
 		"nameEn": "MindMemo",
 		"tagline": "一心一忆"
 	},
+	"auth": {
+		"login": {
+			"title": "登录 Card Master",
+			"description": "使用 Google 同步你的档案、卡包和复习记录。",
+			"google": "使用 Google 继续",
+			"failed": "登录失败，请重试。"
+		},
+		"signOut": "退出登录",
+		"signOutFailed": "退出登录失败，请重试。",
+		"unavailable": "认证服务不可用，请检查 Firebase 配置。"
+	},
 	"sidebar": {
 		"title": "主导航",
 		"sections": {

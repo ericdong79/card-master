@@ -3,6 +3,7 @@ import {
 	ChevronRight,
 	CircleUserRound,
 	House,
+	LogOut,
 	Menu,
 	Rocket,
 	Settings2,
@@ -14,6 +15,9 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logoImage from "@/assets/logo/logo.png";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
+import { LoginPage } from "@/features/auth/login-page";
+import { useAuth } from "@/features/auth/use-auth";
 import { CreateProfileDialog } from "@/features/profile/components/create-profile-dialog";
 import { SwitchProfileDialog } from "@/features/profile/components/switch-profile-dialog";
 import { useProfile } from "@/features/profile/profile-context";
@@ -229,10 +233,11 @@ function SidebarPanel({
 	);
 }
 
-export function AppShell() {
+function AuthenticatedAppShell() {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const { pathname } = useLocation();
+	const { error: authError, signOut } = useAuth();
 	const apiClient = useMemo(() => createApiClient(), []);
 	const { ready, profiles, currentProfile, createProfile } = useProfile();
 	const [collapsed, setCollapsed] = useState(false);
@@ -240,6 +245,8 @@ export function AppShell() {
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const [switchProfileOpen, setSwitchProfileOpen] = useState(false);
 	const [createProfileOpen, setCreateProfileOpen] = useState(false);
+	const [signingOut, setSigningOut] = useState(false);
+	const [signOutError, setSignOutError] = useState<string | null>(null);
 	const [completedToday, setCompletedToday] = useState(0);
 
 	const mustCreateProfile = ready && profiles.length === 0;
@@ -299,6 +306,21 @@ export function AppShell() {
 				isMet: isDailyGoalMet(completedToday, currentProfile.daily_goal),
 			}
 		: null;
+
+	const handleSignOut = async () => {
+		setSigningOut(true);
+		setSignOutError(null);
+
+		try {
+			await signOut();
+			setUserMenuOpen(false);
+		} catch (error) {
+			console.error("Firebase sign-out failed", error);
+			setSignOutError(t("auth.signOutFailed"));
+		} finally {
+			setSigningOut(false);
+		}
+	};
 
 	return (
 		<div className="h-dvh overflow-hidden bg-muted/20">
@@ -384,6 +406,27 @@ export function AppShell() {
 							<Settings2 className="size-4" />
 							{t("profile.menu.preferences")}
 						</Button>
+						<Button
+							className="w-full justify-start"
+							variant="outline"
+							onClick={handleSignOut}
+							disabled={signingOut}
+						>
+							{signingOut ? (
+								<Spinner size="sm" />
+							) : (
+								<LogOut className="size-4" />
+							)}
+							{t("auth.signOut")}
+						</Button>
+						{signOutError ? (
+							<p className="text-sm text-destructive">{signOutError}</p>
+						) : null}
+						{authError ? (
+							<p className="text-sm text-destructive">
+								{t("auth.unavailable")}
+							</p>
+						) : null}
 					</div>
 				</DialogContent>
 			</Dialog>
@@ -409,4 +452,22 @@ export function AppShell() {
 			/>
 		</div>
 	);
+}
+
+export function AppShell() {
+	const { ready, user } = useAuth();
+
+	if (!ready) {
+		return (
+			<div className="flex min-h-dvh items-center justify-center bg-muted/20">
+				<Spinner size="lg" />
+			</div>
+		);
+	}
+
+	if (!user) {
+		return <LoginPage />;
+	}
+
+	return <AuthenticatedAppShell />;
 }
