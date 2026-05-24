@@ -1,17 +1,32 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
 	createContext,
+	useCallback,
 	useContext,
+	useEffect,
+	useLayoutEffect,
 	useMemo,
+	useRef,
 	useState,
 	type ReactNode,
 } from "react";
 
+import { useAuth } from "@/features/auth/use-auth";
 import {
-	normalizeDailyReviewSettings,
-} from "@/features/review/daily-goal";
+	loadLocalProfileState,
+	type StoredProfileState,
+} from "@/features/profile/local-profile-store";
+import {
+	getOrCreateAccountRecord,
+	listCloudProfiles,
+	saveCloudProfile,
+	saveCloudProfileAndSetCurrentProfile,
+	touchCloudProfileAndSetCurrentProfile,
+	updateAccountCurrentProfile,
+	type CloudUserProfile,
+} from "@/features/profile/profile-repository";
+import { normalizeDailyReviewSettings } from "@/features/review/daily-goal";
 import { generateId, nowIso } from "@/lib/api/utils";
-
-const STORAGE_KEY = "card-master.profiles.v1";
 
 export type HanziFontPreference = "default" | "kaiti" | "pixel";
 export type SidebarBackgroundPreference = "none" | "nav-illustration";
@@ -31,14 +46,20 @@ export type UserProfile = {
 	last_used_at: string;
 };
 
-type StoredProfileState = {
-	profiles: UserProfile[];
-	current_profile_id: string | null;
-};
-
 type CreateProfileInput = {
 	nickname: string;
 	avatarEmoji: string;
+	primaryColor?: string | null;
+	hanziFont?: HanziFontPreference;
+	sidebarBackground?: SidebarBackgroundPreference;
+	dailyGoal?: number;
+	reviewPerDay?: number;
+	newPerDay?: number;
+};
+
+type UpdateCurrentProfileInput = {
+	nickname?: string;
+	avatarEmoji?: string;
 	primaryColor?: string | null;
 	hanziFont?: HanziFontPreference;
 	sidebarBackground?: SidebarBackgroundPreference;
@@ -51,18 +72,9 @@ type ProfileContextValue = {
 	ready: boolean;
 	profiles: UserProfile[];
 	currentProfile: UserProfile | null;
-	createProfile: (input: CreateProfileInput) => UserProfile;
-	switchProfile: (profileId: string) => void;
-	updateCurrentProfile: (updates: {
-		nickname?: string;
-		avatarEmoji?: string;
-		primaryColor?: string | null;
-		hanziFont?: HanziFontPreference;
-		sidebarBackground?: SidebarBackgroundPreference;
-		dailyGoal?: number;
-		reviewPerDay?: number;
-		newPerDay?: number;
-	}) => void;
+	createProfile: (input: CreateProfileInput) => Promise<UserProfile>;
+	switchProfile: (profileId: string) => Promise<void>;
+	updateCurrentProfile: (updates: UpdateCurrentProfileInput) => Promise<void>;
 };
 
 const ProfileContext = createContext<ProfileContextValue | null>(null);
@@ -77,83 +89,247 @@ function resolveSidebarBackgroundPreference(
 	return value === "none" ? value : "nav-illustration";
 }
 
-function loadProfileState(): StoredProfileState {
-	if (typeof window === "undefined") {
-		return { profiles: [], current_profile_id: null };
-	}
+function normalizeProfile(profile: UserProfile): UserProfile {
+	const settings = normalizeDailyReviewSettings({
+		dailyGoal: profile.daily_goal,
+		reviewPerDay: profile.review_per_day,
+		newPerDay: profile.new_per_day,
+	});
 
-	const raw = window.localStorage.getItem(STORAGE_KEY);
-	if (!raw) {
-		return { profiles: [], current_profile_id: null };
-	}
-
-	try {
-		const parsed = JSON.parse(raw) as Partial<StoredProfileState>;
-		const profiles = Array.isArray(parsed.profiles)
-			? parsed.profiles.filter(
-					(profile): profile is UserProfile =>
-						typeof profile?.id === "string" &&
-						profile.id.length > 0 &&
-						typeof profile.nickname === "string" &&
-						typeof profile.avatar_emoji === "string" &&
-						typeof profile.created_at === "string" &&
-						(typeof profile.updated_at === "string" ||
-							profile.updated_at === null) &&
-						typeof profile.last_used_at === "string" &&
-						(typeof profile.primary_color === "string" ||
-							profile.primary_color === null),
-				)
-					.map((profile) => {
-						const settings = normalizeDailyReviewSettings({
-							dailyGoal: (profile as Partial<UserProfile>).daily_goal,
-							reviewPerDay: (profile as Partial<UserProfile>).review_per_day,
-							newPerDay: (profile as Partial<UserProfile>).new_per_day,
-						});
-						return {
-						...profile,
-						hanzi_font: resolveHanziFontPreference(
-							(profile as Partial<UserProfile>).hanzi_font,
-						),
-						sidebar_background: resolveSidebarBackgroundPreference(
-							(profile as Partial<UserProfile>).sidebar_background,
-						),
-						daily_goal: settings.dailyGoal,
-						review_per_day: settings.reviewPerDay,
-						new_per_day: settings.newPerDay,
-						};
-					})
-			: [];
-		const currentProfileId =
-			typeof parsed.current_profile_id === "string"
-				? parsed.current_profile_id
-				: null;
-		return {
-			profiles,
-			current_profile_id: currentProfileId,
-		};
-	} catch {
-		return { profiles: [], current_profile_id: null };
-	}
+	return {
+		...profile,
+		primary_color: profile.primary_color ?? null,
+		hanzi_font: resolveHanziFontPreference(profile.hanzi_font),
+		sidebar_background: resolveSidebarBackgroundPreference(
+			profile.sidebar_background,
+		),
+		daily_goal: settings.dailyGoal,
+		review_per_day: settings.reviewPerDay,
+		new_per_day: settings.newPerDay,
+	};
 }
 
-function persistProfileState(state: StoredProfileState) {
-	if (typeof window === "undefined") return;
-	window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+function toCloudProfile(
+	profile: UserProfile,
+	accountUserId: string,
+): CloudUserProfile {
+	return {
+		...normalizeProfile(profile),
+		account_user_id: accountUserId,
+	};
+}
+
+function stripCloudFields(profile: CloudUserProfile): UserProfile {
+	return normalizeProfile({
+		id: profile.id,
+		nickname: profile.nickname,
+		avatar_emoji: profile.avatar_emoji,
+		primary_color: profile.primary_color,
+		hanzi_font: profile.hanzi_font,
+		sidebar_background: profile.sidebar_background,
+		daily_goal: profile.daily_goal,
+		review_per_day: profile.review_per_day,
+		new_per_day: profile.new_per_day,
+		created_at: profile.created_at,
+		updated_at: profile.updated_at,
+		last_used_at: profile.last_used_at,
+	});
+}
+
+function resolveCurrentProfileId(state: StoredProfileState): string | null {
+	if (state.profiles.length === 0) return null;
+	if (
+		state.current_profile_id &&
+		state.profiles.some((profile) => profile.id === state.current_profile_id)
+	) {
+		return state.current_profile_id;
+	}
+	return state.profiles[0].id;
+}
+
+function applyProfileUpdates(
+	existing: UserProfile,
+	updates: UpdateCurrentProfileInput,
+	now: string,
+): UserProfile {
+	const settings = normalizeDailyReviewSettings({
+		dailyGoal:
+			updates.dailyGoal === undefined
+				? existing.daily_goal
+				: updates.dailyGoal,
+		reviewPerDay:
+			updates.reviewPerDay === undefined
+				? existing.review_per_day
+				: updates.reviewPerDay,
+		newPerDay:
+			updates.newPerDay === undefined
+				? existing.new_per_day
+				: updates.newPerDay,
+	});
+
+	return {
+		...existing,
+		nickname: updates.nickname?.trim() ?? existing.nickname,
+		avatar_emoji: updates.avatarEmoji ?? existing.avatar_emoji,
+		primary_color:
+			updates.primaryColor === undefined
+				? existing.primary_color
+				: updates.primaryColor,
+		hanzi_font:
+			updates.hanziFont === undefined
+				? existing.hanzi_font
+				: resolveHanziFontPreference(updates.hanziFont),
+		sidebar_background:
+			updates.sidebarBackground === undefined
+				? existing.sidebar_background
+				: resolveSidebarBackgroundPreference(updates.sidebarBackground),
+		daily_goal: settings.dailyGoal,
+		review_per_day: settings.reviewPerDay,
+		new_per_day: settings.newPerDay,
+		updated_at: now,
+	};
+}
+
+function createStaleAccountError(): Error {
+	return new Error("Profile operation was superseded by an auth change");
+}
+
+async function importLegacyProfilesIfNeeded(
+	accountUserId: string,
+	cloudProfiles: CloudUserProfile[],
+): Promise<StoredProfileState | null> {
+	if (cloudProfiles.length > 0) return null;
+
+	const legacyState = loadLocalProfileState();
+	if (legacyState.profiles.length === 0) return null;
+
+	await Promise.all(
+		legacyState.profiles.map((profile) =>
+			saveCloudProfile(toCloudProfile(profile, accountUserId)),
+		),
+	);
+
+	const now = nowIso();
+	const currentProfileId = resolveCurrentProfileId(legacyState);
+	await updateAccountCurrentProfile(accountUserId, currentProfileId, now);
+
+	return {
+		profiles: legacyState.profiles.map(normalizeProfile),
+		current_profile_id: currentProfileId,
+	};
 }
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
-	const [state, setState] = useState<StoredProfileState>(() => loadProfileState());
+	const { user, accountUserId } = useAuth();
+	const [ready, setReady] = useState(false);
+	const [state, setState] = useState<StoredProfileState>({
+		profiles: [],
+		current_profile_id: null,
+	});
+	const stateRef = useRef(state);
+	const accountUserIdRef = useRef(accountUserId);
+	const updateQueueRef = useRef(Promise.resolve());
 
-	const currentProfileId = useMemo(() => {
-		if (state.profiles.length === 0) return null;
-		if (
-			state.current_profile_id &&
-			state.profiles.some((profile) => profile.id === state.current_profile_id)
-		) {
-			return state.current_profile_id;
+	useLayoutEffect(() => {
+		stateRef.current = state;
+	}, [state]);
+
+	useLayoutEffect(() => {
+		accountUserIdRef.current = accountUserId;
+	}, [accountUserId]);
+
+	const setProfileState = useCallback(
+		(
+			updater:
+				| StoredProfileState
+				| ((previous: StoredProfileState) => StoredProfileState),
+		) => {
+			const next =
+				typeof updater === "function" ? updater(stateRef.current) : updater;
+			stateRef.current = next;
+			setState(next);
+		},
+		[],
+	);
+
+	const assertActiveAccount = useCallback((operationAccountUserId: string) => {
+		if (accountUserIdRef.current !== operationAccountUserId) {
+			throw createStaleAccountError();
 		}
-		return state.profiles[0].id;
-	}, [state.current_profile_id, state.profiles]);
+	}, []);
+
+	const enqueueProfileUpdate = useCallback(
+		<T,>(operation: () => Promise<T>): Promise<T> => {
+			const queued = updateQueueRef.current.then(operation, operation);
+			updateQueueRef.current = queued.then(
+				() => undefined,
+				() => undefined,
+			);
+			return queued;
+		},
+		[],
+	);
+
+	useEffect(() => {
+		let cancelled = false;
+
+		async function loadProfiles() {
+			setReady(false);
+
+			if (!user || !accountUserId) {
+				if (!cancelled) {
+					setProfileState({ profiles: [], current_profile_id: null });
+					setReady(true);
+				}
+				return;
+			}
+
+			try {
+				const now = nowIso();
+				const account = await getOrCreateAccountRecord({
+					id: accountUserId,
+					email: user.email,
+					displayName: user.displayName,
+					photoUrl: user.photoURL,
+					now,
+				});
+				const cloudProfiles = await listCloudProfiles(accountUserId);
+				const importedState = await importLegacyProfilesIfNeeded(
+					accountUserId,
+					cloudProfiles,
+				);
+
+				if (cancelled) return;
+
+				if (importedState) {
+					setProfileState(importedState);
+				} else {
+					setProfileState({
+						profiles: cloudProfiles.map(stripCloudFields),
+						current_profile_id: account.current_profile_id,
+					});
+				}
+				setReady(true);
+			} catch (error) {
+				console.error("Failed to load cloud profiles", error);
+				if (!cancelled) {
+					setProfileState({ profiles: [], current_profile_id: null });
+					setReady(true);
+				}
+			}
+		}
+
+		void loadProfiles();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [accountUserId, setProfileState, user]);
+
+	const currentProfileId = useMemo(
+		() => resolveCurrentProfileId(state),
+		[state],
+	);
 
 	const currentProfile = useMemo(
 		() =>
@@ -165,113 +341,138 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 		[currentProfileId, state.profiles],
 	);
 
-	const value = useMemo<ProfileContextValue>(
-		() => ({
-			ready: true,
-			profiles: state.profiles,
-			currentProfile,
-			createProfile: (input) => {
-				const now = nowIso();
-				const settings = normalizeDailyReviewSettings({
-					dailyGoal: input.dailyGoal,
-					reviewPerDay: input.reviewPerDay,
-					newPerDay: input.newPerDay,
-				});
-				const profile: UserProfile = {
-					id: generateId(),
-					nickname: input.nickname.trim(),
-					avatar_emoji: input.avatarEmoji,
-					primary_color: input.primaryColor ?? null,
-					hanzi_font: input.hanziFont ?? "kaiti",
-					sidebar_background: input.sidebarBackground ?? "nav-illustration",
-					daily_goal: settings.dailyGoal,
-					review_per_day: settings.reviewPerDay,
-					new_per_day: settings.newPerDay,
-					created_at: now,
-					updated_at: null,
-					last_used_at: now,
-				};
+	const createProfile = useCallback(
+		async (input: CreateProfileInput): Promise<UserProfile> => {
+			if (!accountUserId) {
+				throw new Error("Cannot create a profile while signed out");
+			}
 
-				const nextState: StoredProfileState = {
-					profiles: [...state.profiles, profile],
-					current_profile_id: profile.id,
-				};
-				setState(nextState);
-				persistProfileState(nextState);
-				return profile;
-			},
-			switchProfile: (profileId) => {
-				const existing = state.profiles.find(
-					(profile) => profile.id === profileId,
+			const now = nowIso();
+			const settings = normalizeDailyReviewSettings({
+				dailyGoal: input.dailyGoal,
+				reviewPerDay: input.reviewPerDay,
+				newPerDay: input.newPerDay,
+			});
+			const profile: UserProfile = {
+				id: generateId(),
+				nickname: input.nickname.trim(),
+				avatar_emoji: input.avatarEmoji,
+				primary_color: input.primaryColor ?? null,
+				hanzi_font: input.hanziFont ?? "kaiti",
+				sidebar_background: input.sidebarBackground ?? "nav-illustration",
+				daily_goal: settings.dailyGoal,
+				review_per_day: settings.reviewPerDay,
+				new_per_day: settings.newPerDay,
+				created_at: now,
+				updated_at: null,
+				last_used_at: now,
+			};
+
+			assertActiveAccount(accountUserId);
+
+			await saveCloudProfileAndSetCurrentProfile(
+				toCloudProfile(profile, accountUserId),
+				now,
+			);
+
+			assertActiveAccount(accountUserId);
+
+			setProfileState((previous) => ({
+				profiles: [...previous.profiles, profile],
+				current_profile_id: profile.id,
+			}));
+
+			return profile;
+		},
+		[accountUserId, assertActiveAccount, setProfileState],
+	);
+
+	const switchProfile = useCallback(
+		async (profileId: string): Promise<void> => {
+			if (!accountUserId) return;
+
+			const existing = stateRef.current.profiles.find(
+				(profile) => profile.id === profileId,
+			);
+			if (!existing) return;
+
+			const now = nowIso();
+
+			assertActiveAccount(accountUserId);
+
+			await touchCloudProfileAndSetCurrentProfile(
+				accountUserId,
+				profileId,
+				now,
+			);
+
+			assertActiveAccount(accountUserId);
+
+			setProfileState((previous) => ({
+				profiles: previous.profiles.map((profile) =>
+					profile.id === profileId
+						? { ...profile, last_used_at: now }
+						: profile,
+				),
+				current_profile_id: profileId,
+			}));
+		},
+		[accountUserId, assertActiveAccount, setProfileState],
+	);
+
+	const updateCurrentProfile = useCallback(
+		async (updates: UpdateCurrentProfileInput): Promise<void> => {
+			if (!accountUserId || !currentProfileId) return;
+
+			await enqueueProfileUpdate(async () => {
+				const existing = stateRef.current.profiles.find(
+					(profile) => profile.id === currentProfileId,
 				);
 				if (!existing) return;
 
 				const now = nowIso();
-				const nextProfiles = state.profiles.map((profile) =>
-					profile.id === profileId
-						? {
-								...profile,
-								last_used_at: now,
-							}
-						: profile,
-				);
-				const nextState: StoredProfileState = {
-					profiles: nextProfiles,
-					current_profile_id: profileId,
-				};
-				setState(nextState);
-				persistProfileState(nextState);
-			},
-			updateCurrentProfile: (updates) => {
-				if (!currentProfileId) return;
-				const now = nowIso();
-				const nextProfiles = state.profiles.map((profile) => {
-					if (profile.id !== currentProfileId) return profile;
-					const settings = normalizeDailyReviewSettings({
-						dailyGoal:
-							updates.dailyGoal === undefined
-								? profile.daily_goal
-								: updates.dailyGoal,
-						reviewPerDay:
-							updates.reviewPerDay === undefined
-								? profile.review_per_day
-								: updates.reviewPerDay,
-						newPerDay:
-							updates.newPerDay === undefined
-								? profile.new_per_day
-								: updates.newPerDay,
-					});
-					return {
-						...profile,
-						nickname: updates.nickname?.trim() ?? profile.nickname,
-						avatar_emoji: updates.avatarEmoji ?? profile.avatar_emoji,
-						primary_color:
-							updates.primaryColor === undefined
-								? profile.primary_color
-								: updates.primaryColor,
-						hanzi_font:
-							updates.hanziFont === undefined
-								? profile.hanzi_font
-								: resolveHanziFontPreference(updates.hanziFont),
-						sidebar_background:
-							updates.sidebarBackground === undefined
-								? profile.sidebar_background
-								: resolveSidebarBackgroundPreference(updates.sidebarBackground),
-						daily_goal: settings.dailyGoal,
-						review_per_day: settings.reviewPerDay,
-						new_per_day: settings.newPerDay,
-						updated_at: now,
-					};
-				});
-				const nextState: StoredProfileState = {
-					profiles: nextProfiles,
-					current_profile_id: currentProfileId,
-				};
-				setState(nextState);
-				persistProfileState(nextState);
-			},
+				const updatedProfile = applyProfileUpdates(existing, updates, now);
+
+				assertActiveAccount(accountUserId);
+
+				await saveCloudProfile(toCloudProfile(updatedProfile, accountUserId));
+
+				assertActiveAccount(accountUserId);
+
+				setProfileState((previous) => ({
+					profiles: previous.profiles.map((profile) =>
+						profile.id === currentProfileId ? updatedProfile : profile,
+					),
+					current_profile_id: previous.current_profile_id,
+				}));
+			});
+		},
+		[
+			accountUserId,
+			assertActiveAccount,
+			currentProfileId,
+			enqueueProfileUpdate,
+			setProfileState,
+		],
+	);
+
+	const value = useMemo<ProfileContextValue>(
+		() => ({
+			ready,
+			profiles: state.profiles,
+			currentProfile,
+			createProfile,
+			switchProfile,
+			updateCurrentProfile,
 		}),
-		[currentProfile, currentProfileId, state.profiles],
+		[
+			ready,
+			state.profiles,
+			currentProfile,
+			createProfile,
+			switchProfile,
+			updateCurrentProfile,
+		],
 	);
 
 	return (

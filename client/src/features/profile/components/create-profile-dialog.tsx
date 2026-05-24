@@ -26,8 +26,10 @@ type CreateProfileDialogProps = {
 		nickname: string;
 		avatarEmoji: string;
 		primaryColor: string | null;
-	}) => void;
+	}) => void | Promise<void>;
 	allowClose: boolean;
+	isCreating?: boolean;
+	errorMessage?: string | null;
 };
 
 export function CreateProfileDialog({
@@ -35,6 +37,8 @@ export function CreateProfileDialog({
 	onOpenChange,
 	onCreate,
 	allowClose,
+	isCreating = false,
+	errorMessage = null,
 }: CreateProfileDialogProps) {
 	const { t } = useTranslation();
 	const [nickname, setNickname] = useState("");
@@ -45,6 +49,7 @@ export function CreateProfileDialog({
 
 	useEffect(() => {
 		if (!open) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect
 			setNickname("");
 			setAvatarEmoji(DEFAULT_AVATAR);
 			setPrimaryColor(DEFAULT_COLOR);
@@ -147,9 +152,9 @@ export function CreateProfileDialog({
 					</div>
 				</div>
 
-				{error ? (
+				{error || errorMessage ? (
 					<p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-						{error}
+						{error ?? errorMessage}
 					</p>
 				) : null}
 
@@ -166,12 +171,13 @@ export function CreateProfileDialog({
 								setError(t("profile.errors.nicknameRequired"));
 								return;
 							}
-							onCreate({
+							void onCreate({
 								nickname: nextNickname,
 								avatarEmoji,
 								primaryColor,
 							});
 						}}
+						disabled={isCreating}
 					>
 						{t("profile.actions.create")}
 					</Button>

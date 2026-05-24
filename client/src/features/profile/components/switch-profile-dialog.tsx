@@ -27,6 +27,15 @@ export function SwitchProfileDialog({
 	const { t } = useTranslation();
 	const { profiles, currentProfile, switchProfile } = useProfile();
 
+	const handleSwitchProfile = async (profileId: string) => {
+		try {
+			await switchProfile(profileId);
+			onOpenChange(false);
+		} catch (error) {
+			console.error("Failed to switch profile", error);
+		}
+	};
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-xl">
@@ -48,8 +57,7 @@ export function SwitchProfileDialog({
 									isActive && "border-primary bg-primary/10",
 								)}
 								onClick={() => {
-									switchProfile(profile.id);
-									onOpenChange(false);
+									void handleSwitchProfile(profile.id);
 								}}
 							>
 								<span className="text-3xl">{profile.avatar_emoji}</span>

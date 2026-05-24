@@ -247,6 +247,10 @@ function AuthenticatedAppShell() {
 	const [createProfileOpen, setCreateProfileOpen] = useState(false);
 	const [signingOut, setSigningOut] = useState(false);
 	const [signOutError, setSignOutError] = useState<string | null>(null);
+	const [creatingProfile, setCreatingProfile] = useState(false);
+	const [createProfileError, setCreateProfileError] = useState<string | null>(
+		null,
+	);
 	const [completedToday, setCompletedToday] = useState(0);
 
 	const mustCreateProfile = ready && profiles.length === 0;
@@ -357,7 +361,15 @@ function AuthenticatedAppShell() {
 						<div className="w-9" />
 					</header>
 
-					<main className="flex-1">{currentProfile ? <Outlet /> : null}</main>
+					<main className="flex-1">
+						{!ready ? (
+							<div className="flex min-h-[40vh] items-center justify-center">
+								<Spinner size="lg" />
+							</div>
+						) : currentProfile ? (
+							<Outlet />
+						) : null}
+					</main>
 				</div>
 			</div>
 
@@ -439,14 +451,31 @@ function AuthenticatedAppShell() {
 
 			<CreateProfileDialog
 				open={createProfileOpen}
-				onOpenChange={setCreateProfileOpen}
+				onOpenChange={(open) => {
+					setCreateProfileOpen(open);
+					if (open) {
+						setCreateProfileError(null);
+					}
+				}}
 				allowClose={!mustCreateProfile}
-				onCreate={(input) => {
+				isCreating={creatingProfile}
+				errorMessage={createProfileError}
+				onCreate={async (input) => {
 					const isFirstProfile = profiles.length === 0;
-					createProfile(input);
-					setCreateProfileOpen(false);
-					if (isFirstProfile) {
-						navigate("/quick-start", { replace: true });
+					setCreatingProfile(true);
+					setCreateProfileError(null);
+
+					try {
+						await createProfile(input);
+						setCreateProfileOpen(false);
+						if (isFirstProfile) {
+							navigate("/quick-start", { replace: true });
+						}
+					} catch (error) {
+						console.error("Failed to create profile", error);
+						setCreateProfileError(t("auth.unavailable"));
+					} finally {
+						setCreatingProfile(false);
 					}
 				}}
 			/>
