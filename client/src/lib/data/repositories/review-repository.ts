@@ -1,4 +1,4 @@
-import { where } from "firebase/firestore";
+import { orderBy, where } from "firebase/firestore";
 
 import { computeMasteryUpdate } from "@/features/mastery";
 import {
@@ -192,7 +192,12 @@ export function createReviewRepository(deps: RepositoryDeps = {}) {
 			: (
 					await queryStoreRecords(
 						"review_event",
-						profileOwnershipConstraints(accountUserId, profileId),
+						[
+							...profileOwnershipConstraints(accountUserId, profileId),
+							where("reviewed_at", ">=", start.toISOString()),
+							where("reviewed_at", "<", end.toISOString()),
+							orderBy("reviewed_at", "asc"),
+						],
 					)
 				).filter((event) =>
 					hasProfileOwnership(event, accountUserId, profileId),

@@ -144,9 +144,30 @@ export function createSchedulingRepository(deps: RepositoryDeps = {}) {
 			);
 	}
 
+	async function listSchedulingStatesForProfile({
+		accountUserId,
+		profileId,
+	}: ProfileScopeInput): Promise<CardSchedulingState[]> {
+		const records = deps.db
+			? deps.db.card_scheduling_state.filter((state) =>
+					hasLearnerOwnership(state, accountUserId, profileId),
+				)
+			: (
+					await queryStoreRecords(
+						"card_scheduling_state",
+						learnerOwnershipConstraints(accountUserId, profileId),
+					)
+				).filter((state) =>
+					hasLearnerOwnership(state, accountUserId, profileId),
+				);
+
+		return records;
+	}
+
 	return {
 		fetchSchedulingProfile,
 		getOrCreateSchedulingProfile,
 		listSchedulingStatesByCardIds,
+		listSchedulingStatesForProfile,
 	};
 }

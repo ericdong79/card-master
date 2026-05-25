@@ -102,10 +102,9 @@ export function createDashboardRepository(deps: RepositoryDeps = {}) {
 
 		const schedulingStates =
 			cardsInActivePacks.length > 0
-				? await schedulingRepository.listSchedulingStatesByCardIds({
+				? await schedulingRepository.listSchedulingStatesForProfile({
 						accountUserId,
 						profileId,
-						cardIds: cardsInActivePacks.map((card) => card.id),
 					})
 				: [];
 		const statesByCardId = new Map(
