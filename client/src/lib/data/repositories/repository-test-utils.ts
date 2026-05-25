@@ -8,13 +8,12 @@ export function createRepositoryTestDb(
 	initial?: Partial<RepositoryTestDb>,
 ): RepositoryTestDb {
 	return {
-		card_pack: [],
-		card: [],
-		card_mastery_state: [],
-		card_scheduling_state: [],
-		scheduling_profile: [],
-		review_event: [],
-		...initial,
+		card_pack: [...(initial?.card_pack ?? [])],
+		card: [...(initial?.card ?? [])],
+		card_mastery_state: [...(initial?.card_mastery_state ?? [])],
+		card_scheduling_state: [...(initial?.card_scheduling_state ?? [])],
+		scheduling_profile: [...(initial?.scheduling_profile ?? [])],
+		review_event: [...(initial?.review_event ?? [])],
 	};
 }
 

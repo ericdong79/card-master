@@ -38,9 +38,14 @@ export function hasProfileOwnership(
 		profile_id: string;
 		owner_user_id: string;
 	}>,
+	accountUserId: string,
 	profileId: string,
 ): boolean {
-	return record.profile_id === profileId && record.owner_user_id === profileId;
+	return (
+		record.account_user_id === accountUserId &&
+		record.profile_id === profileId &&
+		record.owner_user_id === profileId
+	);
 }
 
 export function hasLearnerOwnership(
@@ -49,9 +54,12 @@ export function hasLearnerOwnership(
 		learner_profile_id: string;
 		owner_user_id: string;
 	}>,
+	accountUserId: string,
 	profileId: string,
 ): boolean {
 	return (
-		record.learner_profile_id === profileId && record.owner_user_id === profileId
+		record.account_user_id === accountUserId &&
+		record.learner_profile_id === profileId &&
+		record.owner_user_id === profileId
 	);
 }
