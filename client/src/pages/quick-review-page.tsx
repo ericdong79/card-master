@@ -51,6 +51,7 @@ export function QuickReviewPage() {
 					/>
 				) : (
 					<ReviewCard
+						key={current.id}
 						mode="simple"
 						card={current}
 						packName={session.cardPack?.name}

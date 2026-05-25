@@ -81,6 +81,7 @@ export function GlobalReviewPage() {
 							</p>
 						</div>
 						<ReviewCard
+							key={current.id}
 							mode="sm2"
 							card={current}
 							packName={currentPack?.name ?? t("cards.packFallback")}

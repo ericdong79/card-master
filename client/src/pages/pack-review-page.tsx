@@ -93,6 +93,7 @@ export function PackReviewPage() {
 					/>
 				) : (
 					<ReviewCard
+						key={current.id}
 						mode="sm2"
 						card={current}
 						packName={session.cardPack?.name}

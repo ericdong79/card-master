@@ -138,7 +138,6 @@ export function ReviewCard(props: ReviewCardProps) {
 	const [showAnswer, setShowAnswer] = useState(false);
 
 	const handleAction = (value: SimpleReviewResult | ReviewGrade) => {
-		setShowAnswer(false);
 		if (mode === "simple") {
 			(props as SimpleReviewCardProps).onReview(value as SimpleReviewResult);
 		} else {
