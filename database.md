@@ -66,8 +66,8 @@ the `scheduling_profiles` collection.
 
 - Scoped by `account_user_id` and learner profile.
 - Stores `algorithm_key`, `version`, and algorithm-specific `parameters`.
-- The record `profile_id` identifies the scheduling algorithm profile and is
-  intentionally separate from the learner profile id.
+- The record `profile_id` is the learner profile id. The scheduling algorithm
+  profile identifier is the record `id`.
 
 ### card_scheduling_state
 
