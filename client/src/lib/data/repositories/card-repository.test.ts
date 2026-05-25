@@ -60,4 +60,74 @@ describe("createCardRepository", () => {
 			},
 		]);
 	});
+
+	it("loads only active cards owned by the account and learner profile", async () => {
+		const db = createRepositoryTestDb({
+			card: [
+				{
+					id: "card-1",
+					card_pack_id: "pack-1",
+					account_user_id: "account-1",
+					profile_id: "profile-1",
+					owner_user_id: "profile-1",
+					prompt: "Q1",
+					answer: "A1",
+					question_content: null,
+					answer_content: null,
+					status: "active",
+					created_at: "2026-01-01T00:00:00.000Z",
+					updated_at: null,
+				},
+				{
+					id: "card-2",
+					card_pack_id: "pack-2",
+					account_user_id: "account-1",
+					profile_id: "profile-2",
+					owner_user_id: "profile-2",
+					prompt: "Q2",
+					answer: "A2",
+					question_content: null,
+					answer_content: null,
+					status: "active",
+					created_at: "2026-01-02T00:00:00.000Z",
+					updated_at: null,
+				},
+				{
+					id: "card-3",
+					card_pack_id: "pack-1",
+					account_user_id: "account-1",
+					profile_id: "profile-1",
+					owner_user_id: "profile-1",
+					prompt: "Q3",
+					answer: "A3",
+					question_content: null,
+					answer_content: null,
+					status: "deleted",
+					created_at: "2026-01-03T00:00:00.000Z",
+					updated_at: null,
+				},
+				{
+					id: "card-4",
+					card_pack_id: "pack-1",
+					account_user_id: "account-2",
+					profile_id: "profile-1",
+					owner_user_id: "profile-1",
+					prompt: "Q4",
+					answer: "A4",
+					question_content: null,
+					answer_content: null,
+					status: "active",
+					created_at: "2026-01-04T00:00:00.000Z",
+					updated_at: null,
+				},
+			],
+		});
+
+		const cards = await createCardRepository({ db }).loadProfileCards({
+			accountUserId: "account-1",
+			profileId: "profile-1",
+		});
+
+		expect(cards.map((card) => card.id)).toEqual(["card-1"]);
+	});
 });

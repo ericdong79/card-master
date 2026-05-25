@@ -1,4 +1,3 @@
-import type { Card } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
 import { nowIso as defaultNow } from "@/lib/api/utils";
 import { queryStoreRecords } from "@/lib/data/firestore/firestore-store";
@@ -7,6 +6,7 @@ import {
 	profileOwnershipConstraints,
 } from "@/lib/data/firestore/ownership";
 
+import { createCardRepository } from "./card-repository";
 import {
 	createSchedulingRepository,
 	type RepositoryDeps,
@@ -41,6 +41,7 @@ function profileRecords<T extends { status?: string }>(
 
 export function createDashboardRepository(deps: RepositoryDeps = {}) {
 	const now = deps.now ?? defaultNow;
+	const cardRepository = createCardRepository(deps);
 	const schedulingRepository = createSchedulingRepository(deps);
 
 	async function loadProfilePacks(
@@ -61,31 +62,13 @@ export function createDashboardRepository(deps: RepositoryDeps = {}) {
 		return sortByCreatedAt(profileRecords(records));
 	}
 
-	async function loadProfileCards(
-		accountUserId: string,
-		profileId: string,
-	): Promise<Card[]> {
-		const records = deps.db
-			? deps.db.card.filter((card) =>
-					hasProfileOwnership(card, accountUserId, profileId),
-				)
-			: (
-					await queryStoreRecords(
-						"card",
-						profileOwnershipConstraints(accountUserId, profileId),
-					)
-				).filter((card) => hasProfileOwnership(card, accountUserId, profileId));
-
-		return profileRecords(records);
-	}
-
 	async function loadHomeDashboard({
 		accountUserId,
 		profileId,
 	}: LoadHomeDashboardInput): Promise<HomeDashboard> {
 		const [cardPacks, cards, schedulingStates] = await Promise.all([
 			loadProfilePacks(accountUserId, profileId),
-			loadProfileCards(accountUserId, profileId),
+			cardRepository.loadProfileCards({ accountUserId, profileId }),
 			schedulingRepository.listSchedulingStatesForProfile({
 				accountUserId,
 				profileId,

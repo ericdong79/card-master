@@ -118,22 +118,14 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 							profileId,
 						}),
 					]);
+				const activePackIds = new Set(
+					fetchedPacks
+						.filter((pack) => pack.status === "active")
+						.map((pack) => pack.id),
+				);
 				const fetchedCards = (
-					await Promise.all(
-						fetchedPacks.map((pack) =>
-							cardRepository.loadPackCards({
-								accountUserId,
-								profileId,
-								cardPackId: pack.id,
-							}),
-						),
-					)
-				)
-					.flat()
-					.sort(
-						(a, b) =>
-							Date.parse(a.created_at ?? "") - Date.parse(b.created_at ?? ""),
-					);
+					await cardRepository.loadProfileCards({ accountUserId, profileId })
+				).filter((card) => activePackIds.has(card.card_pack_id));
 
 				setCardPacks(fetchedPacks);
 				setCards(fetchedCards);

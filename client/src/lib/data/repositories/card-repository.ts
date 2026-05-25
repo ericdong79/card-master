@@ -51,6 +51,10 @@ type LoadPackCardsInput = ProfileScopeInput & {
 	status?: CardStatus;
 };
 
+type LoadProfileCardsInput = ProfileScopeInput & {
+	status?: CardStatus;
+};
+
 type CreateCardInput = ProfileScopeInput & {
 	cardPackId: string;
 	prompt: string;
@@ -110,6 +114,27 @@ export function createCardRepository(deps: RepositoryDeps = {}) {
 						...profileOwnershipConstraints(accountUserId, profileId),
 						where("card_pack_id", "==", cardPackId),
 					])
+				).filter((card) => hasProfileOwnership(card, accountUserId, profileId));
+
+		return sortByCreatedAt(
+			status ? records.filter((card) => card.status === status) : records,
+		);
+	}
+
+	async function loadProfileCards({
+		accountUserId,
+		profileId,
+		status = "active",
+	}: LoadProfileCardsInput): Promise<Card[]> {
+		const records = deps.db
+			? deps.db.card.filter((card) =>
+					hasProfileOwnership(card, accountUserId, profileId),
+				)
+			: (
+					await queryStoreRecords(
+						"card",
+						profileOwnershipConstraints(accountUserId, profileId),
+					)
 				).filter((card) => hasProfileOwnership(card, accountUserId, profileId));
 
 		return sortByCreatedAt(
@@ -275,6 +300,7 @@ export function createCardRepository(deps: RepositoryDeps = {}) {
 
 	return {
 		loadPackCards,
+		loadProfileCards,
 		createCard,
 		updateCard,
 		deleteCard,
