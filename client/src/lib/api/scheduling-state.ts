@@ -188,10 +188,12 @@ export async function upsertSchedulingState(
 		throw new Error("Scheduling state input is required");
 	}
 	if (existing) {
-		const updated = isCloudScoped
-			? await updateSchedulingState(client, firstArg, secondArg as string, existing.id, input)
-			: await updateSchedulingState(client, existing.id, existing.owner_user_id, input);
-		return updated ?? { ...existing, ...input };
+		const updated: CardSchedulingState = {
+			...existing,
+			...input,
+		};
+		await client.put("card_scheduling_state", updated);
+		return updated;
 	}
 
 	return insertSchedulingState(client, input);

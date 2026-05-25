@@ -21,6 +21,12 @@ export const DEFAULT_DAILY_REVIEW_SETTINGS: DailyReviewSettings = {
 export const DAILY_REVIEW_PROGRESS_UPDATED_EVENT =
 	"card-master:daily-review-progress-updated";
 
+export type DailyReviewProgressUpdatedDetail = {
+	accountUserId: string;
+	profileId: string;
+	completedDelta: number;
+};
+
 const MIN_SETTING_VALUE = 1;
 const MAX_SETTING_VALUE = 999;
 
@@ -100,7 +106,14 @@ export function isDailyGoalMet(completedToday: number, dailyGoal: number): boole
 	return completedToday >= dailyGoal;
 }
 
-export function notifyDailyReviewProgressUpdated() {
+export function notifyDailyReviewProgressUpdated(
+	detail?: DailyReviewProgressUpdatedDetail,
+) {
 	if (typeof window === "undefined") return;
-	window.dispatchEvent(new CustomEvent(DAILY_REVIEW_PROGRESS_UPDATED_EVENT));
+	window.dispatchEvent(
+		new CustomEvent<DailyReviewProgressUpdatedDetail | undefined>(
+			DAILY_REVIEW_PROGRESS_UPDATED_EVENT,
+			{ detail },
+		),
+	);
 }

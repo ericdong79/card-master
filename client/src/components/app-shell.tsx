@@ -32,6 +32,7 @@ import { useProfile } from "@/features/profile/profile-context";
 import {
 	DAILY_REVIEW_PROGRESS_UPDATED_EVENT,
 	countTodayCompletedCards,
+	type DailyReviewProgressUpdatedDetail,
 	isDailyGoalMet,
 } from "@/features/review/daily-goal";
 import { createApiClient } from "@/lib/api/client";
@@ -311,7 +312,16 @@ function AuthenticatedAppShell() {
 
 		void loadProgress();
 
-		const handleProgressUpdated = () => {
+		const handleProgressUpdated = (event: Event) => {
+			const detail = (event as CustomEvent<DailyReviewProgressUpdatedDetail | undefined>)
+				.detail;
+			if (
+				detail?.accountUserId === accountUserId &&
+				detail.profileId === currentProfile.id
+			) {
+				setCompletedToday((count) => count + detail.completedDelta);
+				return;
+			}
 			void loadProgress();
 		};
 		window.addEventListener(

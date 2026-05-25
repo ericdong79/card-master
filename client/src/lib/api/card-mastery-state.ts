@@ -238,24 +238,19 @@ export async function upsertMasteryState(
 		throw new Error("Mastery state input is required");
 	}
 	if (existing) {
-		const updates = {
+		const updates: CardMasteryStateUpdate = {
 			mastery_score: input.mastery_score,
 			mastery_state: input.mastery_state,
 			easy_streak: input.easy_streak,
 			recent_outcomes: input.recent_outcomes,
 		};
-		const updated = isCloudScoped
-			? await updateMasteryState(
-					client,
-					firstArg,
-					secondArg as string,
-					existing.id,
-					updates,
-				)
-			: await updateMasteryState(client, existing.id, existing.owner_user_id, updates);
-		return updated
-			? normalizeCardMasteryState(updated)
-			: normalizeCardMasteryState({ ...existing, ...input, updated_at: nowIso() });
+		const updated = normalizeCardMasteryState({
+			...existing,
+			...updates,
+			updated_at: nowIso(),
+		});
+		await client.put("card_mastery_state", updated);
+		return updated;
 	}
 
 	return insertMasteryState(client, input);
