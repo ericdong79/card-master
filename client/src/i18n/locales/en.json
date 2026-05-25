@@ -83,6 +83,7 @@
 	},
 	"common": {
 		"cancel": "Cancel",
+		"close": "Close",
 		"create": "Create",
 		"creating": "Creating...",
 		"save": "Save",

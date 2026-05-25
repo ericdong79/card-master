@@ -224,7 +224,7 @@ export function LocalDataImportDialog({
 						onClick={() => onOpenChange(false)}
 						disabled={importing}
 					>
-						{t("common.cancel")}
+						{importedSummary ? t("common.close") : t("common.cancel")}
 					</Button>
 					<Button type="button" onClick={handleImport} disabled={!canImport}>
 						{importing ? <Spinner size="sm" /> : <UploadCloud className="size-4" />}

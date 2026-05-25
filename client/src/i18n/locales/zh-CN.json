@@ -84,6 +84,7 @@
 	},
 	"common": {
 		"cancel": "取消",
+		"close": "关闭",
 		"create": "创建",
 		"creating": "创建中...",
 		"save": "保存",
