@@ -2,14 +2,23 @@
 @import "tw-animate-css";
 
 @font-face {
-  font-family: "CardMasterKaiTi";
-  src: url("./assets/fonts/kaiti.woff2") format("woff2");
+  font-family: "CardMasterPixel";
+  src: url("./assets/fonts/xst.woff2") format("woff2");
   font-display: swap;
 }
 
+.font-card-master-kaiti {
+  font-family: "CardMasterKaiTi", "STKaiti", "KaiTi", "Kaiti SC", "Noto Serif SC", serif;
+}
+
+.font-card-master-kaiti::before {
+  content: "";
+  font-family: "CardMasterKaiTi";
+}
+
 @font-face {
-  font-family: "CardMasterPixel";
-  src: url("./assets/fonts/xst.woff2") format("woff2");
+  font-family: "CardMasterKaiTi";
+  src: url("./assets/fonts/kaiti.woff2") format("woff2");
   font-display: swap;
 }
 

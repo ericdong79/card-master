@@ -6,11 +6,12 @@ type HanziPracticeGridProps = {
 	pinyinSyllables?: string[];
 	size?: "medium" | "large";
 	className?: string;
+	hanziClassName?: string;
 };
 
 const HANZI_FONT_FAMILY_BY_PREFERENCE: Record<HanziFontPreference, string> = {
 	default: '"STKaiti", "KaiTi", "Kaiti SC", "Noto Serif SC", serif',
-	kaiti: '"CardMasterKaiTi", "STKaiti", "KaiTi", "Kaiti SC", "Noto Serif SC", serif',
+	kaiti: "",
 	pixel: '"CardMasterPixel", "Noto Sans SC", "Microsoft YaHei", sans-serif',
 };
 
@@ -23,12 +24,14 @@ export function HanziPracticeGrid({
 	pinyinSyllables,
 	size = "medium",
 	className,
+	hanziClassName,
 }: HanziPracticeGridProps) {
 	const { currentProfile } = useProfile();
 	const characters = getCharacters(answerText);
 	const showPinyin = Boolean(pinyinSyllables?.length);
+	const hanziFontPreference = currentProfile?.hanzi_font ?? "default";
 	const hanziFontFamily =
-		HANZI_FONT_FAMILY_BY_PREFERENCE[currentProfile?.hanzi_font ?? "default"];
+		HANZI_FONT_FAMILY_BY_PREFERENCE[hanziFontPreference];
 
 	if (!characters.length) return null;
 
@@ -95,10 +98,13 @@ export function HanziPracticeGrid({
 							/>
 						</svg>
 						<span
-							className="relative leading-none tracking-wide text-foreground"
+							className={cn(
+								"relative leading-none tracking-wide text-foreground",
+								hanziFontPreference === "kaiti" && hanziClassName,
+							)}
 							style={{
 								fontSize: "3rem",
-								fontFamily: hanziFontFamily,
+								fontFamily: hanziFontFamily || undefined,
 							}}
 						>
 							{char}

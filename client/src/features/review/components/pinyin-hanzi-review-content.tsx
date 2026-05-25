@@ -45,5 +45,11 @@ export function PinyinHanziAnswerContent({
 		return <p className="text-base leading-relaxed">{answerText}</p>;
 	}
 
-	return <HanziPracticeGrid answerText={answerText} size="large" />;
+	return (
+		<HanziPracticeGrid
+			answerText={answerText}
+			size="large"
+			hanziClassName="font-card-master-kaiti"
+		/>
+	);
 }

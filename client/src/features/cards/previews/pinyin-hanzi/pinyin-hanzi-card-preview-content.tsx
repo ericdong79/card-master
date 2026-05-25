@@ -19,6 +19,7 @@ export function PinyinHanziCardPreviewContent({
 					pinyinSyllables={pinyinSyllables}
 					size="medium"
 					className="mt-2"
+					hanziClassName="font-card-master-kaiti"
 				/>
 			) : (
 				noAnswerText
