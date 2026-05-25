@@ -1,3 +1,8 @@
+/**
+ * @deprecated The generic Firestore ApiClient adapter is retained for legacy
+ * compatibility and migration support. New app data access should use
+ * repositories under `@/lib/data/repositories/*`.
+ */
 import {
 	collection,
 	deleteDoc,
