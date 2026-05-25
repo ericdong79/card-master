@@ -15,9 +15,6 @@ import { PackCardsError } from "@/features/cards/components/pack-cards-error";
 import { PackCardsHeader } from "@/features/cards/components/pack-cards-header";
 import { PackCardsLoading } from "@/features/cards/components/pack-cards-loading";
 import { useProfile } from "@/features/profile/profile-context";
-import { createCard, deleteCard, listCards, updateCard } from "@/lib/api/card";
-import { getCardPackById } from "@/lib/api/card-pack";
-import { createApiClient } from "@/lib/api/client";
 import type { Card as CardEntity } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
 import {
@@ -27,10 +24,11 @@ import {
 	type DuplicateReason,
 } from "@/lib/cards/deduplication";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
-import { listSchedulingStatesByCardIds } from "@/lib/api/scheduling-state";
 import type { Sm2State } from "@/lib/scheduling/types";
 import type { CardMasteryState } from "@/lib/api/entities/card-mastery-state";
-import { listMasteryStatesByCardIds } from "@/lib/api/card-mastery-state";
+import { createCardRepository } from "@/lib/data/repositories/card-repository";
+import { createCardPackRepository } from "@/lib/data/repositories/card-pack-repository";
+import { createSchedulingRepository } from "@/lib/data/repositories/scheduling-repository";
 
 type CardSubmitPayload = {
 	prompt: string;
@@ -58,7 +56,9 @@ function getDuplicateErrorMessage(
 export function PackCardsPage() {
 	const { t } = useTranslation();
 	const { cardPackId } = useParams<{ cardPackId: string }>();
-	const apiClient = useMemo(() => createApiClient(), []);
+	const cardRepository = useMemo(() => createCardRepository(), []);
+	const cardPackRepository = useMemo(() => createCardPackRepository(), []);
+	const schedulingRepository = useMemo(() => createSchedulingRepository(), []);
 	const { accountUserId } = useAuth();
 	const { currentProfile } = useProfile();
 	const profileId = currentProfile?.id ?? null;
@@ -136,11 +136,12 @@ export function PackCardsPage() {
 		}
 
 		Promise.all([
-			getCardPackById(apiClient, accountUserId, profileId, cardPackId),
-			listCards(apiClient, accountUserId, profileId, { cardPackId }),
+			cardPackRepository.listCardPacks({ accountUserId, profileId }),
+			cardRepository.loadPackCards({ accountUserId, profileId, cardPackId }),
 		])
-			.then(async ([pack, list]) => {
+			.then(async ([packs, list]) => {
 				if (cancelled) return;
+				const pack = packs.find((item) => item.id === cardPackId) ?? null;
 				if (!pack) {
 					setError(t("errors.packNotFound"));
 					setCardPack(null);
@@ -155,18 +156,16 @@ export function PackCardsPage() {
 				// Load scheduling states for due cards calculation
 				if (list.length > 0) {
 					const [states, mastery] = await Promise.all([
-						listSchedulingStatesByCardIds(
-							apiClient,
+						schedulingRepository.listSchedulingStatesByCardIds({
 							accountUserId,
 							profileId,
-							list.map((c) => c.id),
-						),
-						listMasteryStatesByCardIds(
-							apiClient,
+							cardIds: list.map((c) => c.id),
+						}),
+						cardRepository.listMasteryStatesByCardIds({
 							accountUserId,
 							profileId,
-							list.map((c) => c.id),
-						),
+							cardIds: list.map((c) => c.id),
+						}),
 					]);
 					if (cancelled) return;
 					setSchedulingStates(states);
@@ -190,7 +189,15 @@ export function PackCardsPage() {
 		return () => {
 			cancelled = true;
 		};
-	}, [accountUserId, apiClient, cardPackId, profileId, t]);
+	}, [
+		accountUserId,
+		cardPackId,
+		cardPackRepository,
+		cardRepository,
+		profileId,
+		schedulingRepository,
+		t,
+	]);
 
 	const dueTimesByCardId = useMemo(
 		() =>
@@ -236,8 +243,10 @@ export function PackCardsPage() {
 
 		setPendingAction("create");
 		try {
-			const created = await createCard(apiClient, accountUserId, profileId, {
-				card_pack_id: cardPackId,
+			const created = await cardRepository.createCard({
+				accountUserId,
+				profileId,
+				cardPackId,
 				prompt: values.prompt,
 				answer: values.answer,
 				question_content: values.question_content,
@@ -282,17 +291,17 @@ export function PackCardsPage() {
 
 		setPendingAction("create");
 		try {
-			const createdCards = await Promise.all(
-				accepted.map((value) =>
-					createCard(apiClient, accountUserId, profileId, {
-						card_pack_id: cardPackId,
-						prompt: value.questionText.trim(),
-						answer: value.answerText.trim(),
-						question_content: { text: value.questionText.trim() },
-						answer_content: { text: value.answerText.trim() },
-					}),
-				),
-			);
+			const createdCards = await cardRepository.bulkCreateCards({
+				accountUserId,
+				profileId,
+				cardPackId,
+				cards: accepted.map((value) => ({
+					prompt: value.questionText.trim(),
+					answer: value.answerText.trim(),
+					question_content: { text: value.questionText.trim() },
+					answer_content: { text: value.answerText.trim() },
+				})),
+			});
 			setCards((prev) => [...prev, ...createdCards]);
 			setBulkCreateOpen(false);
 			setError(null);
@@ -333,18 +342,17 @@ export function PackCardsPage() {
 
 		setPendingAction("edit");
 		try {
-			const updated = await updateCard(
-				apiClient,
+			const updated = await cardRepository.updateCard({
 				accountUserId,
 				profileId,
-				editingCard.id,
-				{
+				cardId: editingCard.id,
+				updates: {
 					prompt: values.prompt,
 					answer: values.answer,
 					question_content: values.question_content,
 					answer_content: values.answer_content,
 				},
-			);
+			});
 			setCards((prev) =>
 				prev.map((card) => (card.id === editingCard.id ? updated : card)),
 			);
@@ -364,7 +372,11 @@ export function PackCardsPage() {
 		if (!accountUserId || !profileId || !deleteCardTarget) return;
 		setPendingAction("delete");
 		try {
-			await deleteCard(apiClient, accountUserId, profileId, deleteCardTarget.id);
+			await cardRepository.deleteCard({
+				accountUserId,
+				profileId,
+				cardId: deleteCardTarget.id,
+			});
 			setCards((prev) =>
 				prev.filter((card) => card.id !== deleteCardTarget.id),
 			);

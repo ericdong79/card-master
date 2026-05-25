@@ -8,6 +8,7 @@ import {
 import { normalizeCardMasteryState } from "@/lib/api/card-mastery-state";
 import { clearFirestoreReadCache } from "@/lib/api/firestore-client";
 import type { StoreName } from "@/lib/api/client";
+import type { ReviewEventInsert } from "@/lib/api/dtos/review-event";
 import type { CardMasteryState } from "@/lib/api/entities/card-mastery-state";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
 import type { ReviewEvent } from "@/lib/api/entities/review-event";
@@ -72,6 +73,23 @@ export type PersistReviewResultOutput = {
 	masteryState: CardMasteryState;
 	masteryFeedback: MasteryFeedback;
 };
+
+type ProfileScopeInput = {
+	accountUserId: string;
+	profileId: string;
+};
+
+type CountTodayCompletedCardsInput = ProfileScopeInput & {
+	now?: Date;
+};
+
+function getTodayRange(now: Date): { start: Date; end: Date } {
+	const start = new Date(now);
+	start.setHours(0, 0, 0, 0);
+	const end = new Date(start);
+	end.setDate(end.getDate() + 1);
+	return { start, end };
+}
 
 async function readMasteryStateByCardId(
 	accountUserId: string,
@@ -159,6 +177,67 @@ export function createReviewRepository(deps: RepositoryDeps = {}) {
 		deps.notifyDailyProgress ?? notifyDailyReviewProgressUpdated;
 	const clearLegacyReadCache =
 		deps.clearLegacyReadCache ?? clearFirestoreReadCache;
+
+	async function countTodayCompletedCards({
+		accountUserId,
+		profileId,
+		now: currentDate = new Date(),
+	}: CountTodayCompletedCardsInput): Promise<number> {
+		const { start, end } = getTodayRange(currentDate);
+
+		const records = deps.db
+			? deps.db.review_event.filter((event) =>
+					hasProfileOwnership(event, accountUserId, profileId),
+				)
+			: (
+					await queryStoreRecords(
+						"review_event",
+						profileOwnershipConstraints(accountUserId, profileId),
+					)
+				).filter((event) =>
+					hasProfileOwnership(event, accountUserId, profileId),
+				);
+
+		const completed = records.filter((event) => {
+			if (event.grade <= 1) return false;
+			const reviewedAt = new Date(event.reviewed_at);
+			return reviewedAt >= start && reviewedAt < end;
+		});
+
+		return new Set(completed.map((event) => event.card_id)).size;
+	}
+
+	async function createReviewEvent(input: ReviewEventInsert): Promise<ReviewEvent> {
+		const event: ReviewEvent = {
+			...input,
+			id: generateId(),
+			created_at: now(),
+		};
+
+		if (!hasProfileOwnership(event, input.account_user_id, input.profile_id)) {
+			throw new Error("Review event ownership mismatch");
+		}
+
+		if (deps.db) {
+			upsertRecord(deps.db, "review_event", event);
+			return event;
+		}
+
+		await commitBatchedWrites(
+			[{ type: "set", ref: storeDocRef("review_event", event.id), value: event }],
+			{
+				invalidate: () => {
+					clearQueryCache({
+						accountUserId: input.account_user_id,
+						profileId: input.profile_id,
+					});
+					clearLegacyReadCache("review_event");
+				},
+			},
+		);
+
+		return event;
+	}
 
 	async function persistReviewResult({
 		accountUserId,
@@ -265,5 +344,5 @@ export function createReviewRepository(deps: RepositoryDeps = {}) {
 		return { reviewEvent: event, schedulingState, masteryState, masteryFeedback };
 	}
 
-	return { persistReviewResult };
+	return { countTodayCompletedCards, createReviewEvent, persistReviewResult };
 }

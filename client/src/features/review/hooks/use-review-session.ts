@@ -1,20 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-	countTodayCompletedCards,
-	normalizeDailyReviewSettings,
-} from "@/features/review/daily-goal";
+import { normalizeDailyReviewSettings } from "@/features/review/daily-goal";
 import { persistReviewResult } from "@/features/review/hooks/persist-review-result";
-import { listCards } from "@/lib/api/card";
-import { getCardPackById } from "@/lib/api/card-pack";
-import { createApiClient } from "@/lib/api/client";
 import type { Card } from "@/lib/api/entities/card";
 import type { MasteryState } from "@/lib/api/entities/card-mastery-state";
 import type { CardPack } from "@/lib/api/entities/card-pack";
-import { getOrCreateSchedulingProfile } from "@/lib/api/scheduling-profile";
-import {
-	listSchedulingStatesByCardIds,
-} from "@/lib/api/scheduling-state";
+import { createCardRepository } from "@/lib/data/repositories/card-repository";
+import { createCardPackRepository } from "@/lib/data/repositories/card-pack-repository";
+import { createReviewRepository } from "@/lib/data/repositories/review-repository";
+import { createSchedulingRepository } from "@/lib/data/repositories/scheduling-repository";
 import { ReviewSession } from "@/lib/review";
 import { normalizeSm2Parameters } from "@/lib/scheduling/sm2";
 import type {
@@ -80,7 +74,10 @@ export function useReviewSession(
 	cardPackId: string | undefined,
 ): UseReviewSessionReturn {
 	const { t } = useTranslation();
-	const client = useMemo(() => createApiClient(), []);
+	const cardRepository = useMemo(() => createCardRepository(), []);
+	const cardPackRepository = useMemo(() => createCardPackRepository(), []);
+	const reviewRepository = useMemo(() => createReviewRepository(), []);
+	const schedulingRepository = useMemo(() => createSchedulingRepository(), []);
 	const { accountUserId } = useAuth();
 	const { currentProfile } = useProfile();
 	const profileId = currentProfile?.id ?? null;
@@ -128,12 +125,19 @@ export function useReviewSession(
 		(async () => {
 			try {
 				// Load data
-				const [pack, fetchedCards, schedulingProfile, completedToday] = await Promise.all([
-					getCardPackById(client, accountUserId, profileId, cardPackId),
-					listCards(client, accountUserId, profileId, { cardPackId }),
-					getOrCreateSchedulingProfile(client, accountUserId, profileId),
-					countTodayCompletedCards(client, accountUserId, profileId),
+				const [packs, fetchedCards, schedulingProfile, completedToday] = await Promise.all([
+					cardPackRepository.listCardPacks({ accountUserId, profileId }),
+					cardRepository.loadPackCards({ accountUserId, profileId, cardPackId }),
+					schedulingRepository.getOrCreateSchedulingProfile({
+						accountUserId,
+						profileId,
+					}),
+					reviewRepository.countTodayCompletedCards({
+						accountUserId,
+						profileId,
+					}),
 				]);
+				const pack = packs.find((item) => item.id === cardPackId) ?? null;
 
 				if (!pack) {
 					setError(t("errors.packNotFound"));
@@ -145,12 +149,11 @@ export function useReviewSession(
 
 				// Load scheduling states for cards
 				const stateList = fetchedCards.length
-					? await listSchedulingStatesByCardIds(
-							client,
+					? await schedulingRepository.listSchedulingStatesByCardIds({
 							accountUserId,
 							profileId,
-							fetchedCards.map((c) => c.id),
-						)
+							cardIds: fetchedCards.map((c) => c.id),
+						})
 					: [];
 
 				// Create review session
@@ -197,12 +200,15 @@ export function useReviewSession(
 		})();
 	}, [
 		accountUserId,
+		cardPackRepository,
 		cardPackId,
-		client,
+		cardRepository,
 		currentProfile?.daily_goal,
 		currentProfile?.new_per_day,
 		currentProfile?.review_per_day,
 		profileId,
+		reviewRepository,
+		schedulingRepository,
 		t,
 	]);
 
@@ -231,7 +237,6 @@ export function useReviewSession(
 				setGrading(false);
 
 				void persistReviewResult({
-					client,
 					accountUserId,
 					profileId,
 					grade,
@@ -251,7 +256,7 @@ export function useReviewSession(
 				setGrading(false);
 			}
 		},
-		[accountUserId, session, client, grading, profileId, t],
+		[accountUserId, session, grading, profileId, t],
 	);
 
 	const handleSkip = useCallback(() => {

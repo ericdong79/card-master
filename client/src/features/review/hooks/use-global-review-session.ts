@@ -1,20 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-	countTodayCompletedCards,
-	normalizeDailyReviewSettings,
-} from "@/features/review/daily-goal";
+import { normalizeDailyReviewSettings } from "@/features/review/daily-goal";
 import { persistReviewResult } from "@/features/review/hooks/persist-review-result";
-import { listCards } from "@/lib/api/card";
-import { createApiClient } from "@/lib/api/client";
 import type { Card } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
 import type { MasteryState } from "@/lib/api/entities/card-mastery-state";
-import { listCardPacks } from "@/lib/api/card-pack";
-import { getOrCreateSchedulingProfile } from "@/lib/api/scheduling-profile";
-import {
-	listSchedulingStatesByCardIds,
-} from "@/lib/api/scheduling-state";
+import { createCardRepository } from "@/lib/data/repositories/card-repository";
+import { createCardPackRepository } from "@/lib/data/repositories/card-pack-repository";
+import { createReviewRepository } from "@/lib/data/repositories/review-repository";
+import { createSchedulingRepository } from "@/lib/data/repositories/scheduling-repository";
 import { ReviewSession } from "@/lib/review";
 import { normalizeSm2Parameters } from "@/lib/scheduling/sm2";
 import type {
@@ -61,7 +55,10 @@ export type UseGlobalReviewSessionReturn = GlobalReviewSessionState & {
 
 export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 	const { t } = useTranslation();
-	const client = useMemo(() => createApiClient(), []);
+	const cardRepository = useMemo(() => createCardRepository(), []);
+	const cardPackRepository = useMemo(() => createCardPackRepository(), []);
+	const reviewRepository = useMemo(() => createReviewRepository(), []);
+	const schedulingRepository = useMemo(() => createSchedulingRepository(), []);
 	const { accountUserId } = useAuth();
 	const { currentProfile } = useProfile();
 	const profileId = currentProfile?.id ?? null;
@@ -114,25 +111,45 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 
 		(async () => {
 			try {
-				const [fetchedPacks, fetchedCards, schedulingProfile, completedToday] =
+				const [fetchedPacks, schedulingProfile, completedToday] =
 					await Promise.all([
-						listCardPacks(client, accountUserId, profileId),
-						listCards(client, accountUserId, profileId),
-						getOrCreateSchedulingProfile(client, accountUserId, profileId),
-						countTodayCompletedCards(client, accountUserId, profileId),
+						cardPackRepository.listCardPacks({ accountUserId, profileId }),
+						schedulingRepository.getOrCreateSchedulingProfile({
+							accountUserId,
+							profileId,
+						}),
+						reviewRepository.countTodayCompletedCards({
+							accountUserId,
+							profileId,
+						}),
 					]);
+				const fetchedCards = (
+					await Promise.all(
+						fetchedPacks.map((pack) =>
+							cardRepository.loadPackCards({
+								accountUserId,
+								profileId,
+								cardPackId: pack.id,
+							}),
+						),
+					)
+				)
+					.flat()
+					.sort(
+						(a, b) =>
+							Date.parse(a.created_at ?? "") - Date.parse(b.created_at ?? ""),
+					);
 
 				setCardPacks(fetchedPacks);
 				setCards(fetchedCards);
 
 				const stateList =
 					fetchedCards.length > 0
-						? await listSchedulingStatesByCardIds(
-								client,
+						? await schedulingRepository.listSchedulingStatesByCardIds({
 								accountUserId,
 								profileId,
-								fetchedCards.map((card) => card.id),
-							)
+								cardIds: fetchedCards.map((card) => card.id),
+							})
 						: [];
 
 				const params = normalizeSm2Parameters(
@@ -176,11 +193,14 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 		})();
 	}, [
 		accountUserId,
-		client,
+		cardPackRepository,
+		cardRepository,
 		currentProfile?.daily_goal,
 		currentProfile?.new_per_day,
 		currentProfile?.review_per_day,
 		profileId,
+		reviewRepository,
+		schedulingRepository,
 		t,
 	]);
 
@@ -205,7 +225,6 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 				setGrading(false);
 
 				void persistReviewResult({
-					client,
 					accountUserId,
 					profileId,
 					grade,
@@ -225,7 +244,7 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 				setGrading(false);
 			}
 		},
-		[accountUserId, session, grading, profileId, client, t],
+		[accountUserId, session, grading, profileId, t],
 	);
 
 	const handleSkip = useCallback(() => {

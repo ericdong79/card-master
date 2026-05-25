@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyDailyReviewProgressUpdated } from "@/features/review/daily-goal";
-import { createApiClient } from "@/lib/api/client";
-import { listCards } from "@/lib/api/card";
-import { getCardPackById } from "@/lib/api/card-pack";
 import type { Card } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
-import { createReviewEvent } from "@/lib/api/review-event";
+import { createCardRepository } from "@/lib/data/repositories/card-repository";
+import { createCardPackRepository } from "@/lib/data/repositories/card-pack-repository";
+import { createReviewRepository } from "@/lib/data/repositories/review-repository";
 import {
 	QuickReviewSession,
 	type SimpleReviewResult,
@@ -53,7 +52,9 @@ export type UseQuickReviewReturn = QuickReviewState & {
  */
 export function useQuickReview(cardPackId: string | undefined): UseQuickReviewReturn {
 	const { t } = useTranslation();
-	const client = useMemo(() => createApiClient(), []);
+	const cardRepository = useMemo(() => createCardRepository(), []);
+	const cardPackRepository = useMemo(() => createCardPackRepository(), []);
+	const reviewRepository = useMemo(() => createReviewRepository(), []);
 	const { accountUserId } = useAuth();
 	const { currentProfile } = useProfile();
 	const profileId = currentProfile?.id ?? null;
@@ -89,10 +90,11 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 		(async () => {
 			try {
 				// Load card pack and cards
-				const [pack, fetchedCards] = await Promise.all([
-					getCardPackById(client, accountUserId, profileId, cardPackId),
-					listCards(client, accountUserId, profileId, { cardPackId }),
+				const [packs, fetchedCards] = await Promise.all([
+					cardPackRepository.listCardPacks({ accountUserId, profileId }),
+					cardRepository.loadPackCards({ accountUserId, profileId, cardPackId }),
 				]);
+				const pack = packs.find((item) => item.id === cardPackId) ?? null;
 
 				if (!pack) {
 					setError(t("errors.packNotFound"));
@@ -131,7 +133,7 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 				setLoading(false);
 			}
 		})();
-	}, [accountUserId, cardPackId, client, profileId, t]);
+	}, [accountUserId, cardPackId, cardPackRepository, cardRepository, profileId, t]);
 
 	// Handle review submission
 	const handleReview = useCallback(
@@ -146,7 +148,7 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 
 				// 2. Optionally record event for statistics
 				if (reviewResult.reviewEvent) {
-					await createReviewEvent(client, reviewResult.reviewEvent);
+					await reviewRepository.createReviewEvent(reviewResult.reviewEvent);
 					if (reviewResult.reviewEvent.grade > 1) {
 						notifyDailyReviewProgressUpdated();
 					}
@@ -167,7 +169,7 @@ export function useQuickReview(cardPackId: string | undefined): UseQuickReviewRe
 				setReviewing(false);
 			}
 		},
-		[accountUserId, session, client, reviewing, profileId, t],
+		[accountUserId, session, reviewing, profileId, reviewRepository, t],
 	);
 
 	// Skip current card

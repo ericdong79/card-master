@@ -1,4 +1,3 @@
-import type { ApiClient } from "@/lib/api/client";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
 import {
 	createReviewRepository,
@@ -10,7 +9,6 @@ import type { ReviewGrade } from "@/lib/scheduling/types";
 export type { MasteryFeedback };
 
 type PersistReviewResultInput = {
-	client: ApiClient;
 	accountUserId: string;
 	profileId: string;
 	grade: ReviewGrade;
@@ -20,7 +18,6 @@ type PersistReviewResultInput = {
 };
 
 export async function persistReviewResult({
-	client,
 	accountUserId,
 	profileId,
 	grade,
@@ -28,7 +25,6 @@ export async function persistReviewResult({
 	existingState,
 	onMasteryFeedback,
 }: PersistReviewResultInput): Promise<void> {
-	void client;
 	const persisted = await createReviewRepository().persistReviewResult({
 		accountUserId,
 		profileId,

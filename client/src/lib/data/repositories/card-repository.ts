@@ -1,13 +1,16 @@
 import { getDoc, where } from "firebase/firestore";
 
+import { normalizeCardMasteryState } from "@/lib/api/card-mastery-state";
 import type { CardUpdate } from "@/lib/api/dtos/card";
 import type { Card, CardStatus } from "@/lib/api/entities/card";
+import type { CardMasteryState } from "@/lib/api/entities/card-mastery-state";
 import {
 	generateId as defaultGenerateId,
 	nowIso as defaultNow,
 } from "@/lib/api/utils";
 import { commitBatchedWrites } from "@/lib/data/firestore/batch-writer";
 import { queryStoreRecords, storeDocRef } from "@/lib/data/firestore/firestore-store";
+import { chunkFirestoreInValues } from "@/lib/data/firestore/id-chunks";
 import {
 	hasProfileOwnership,
 	profileOwnershipConstraints,
@@ -64,6 +67,10 @@ type UpdateCardInput = ProfileScopeInput & {
 
 type DeleteCardInput = ProfileScopeInput & {
 	cardId: string;
+};
+
+type CardIdsInput = ProfileScopeInput & {
+	cardIds: string[];
 };
 
 function sortByCreatedAt<T extends { created_at: string }>(records: T[]): T[] {
@@ -190,6 +197,40 @@ export function createCardRepository(deps: RepositoryDeps = {}) {
 		);
 	}
 
+	async function listMasteryStatesByCardIds({
+		accountUserId,
+		profileId,
+		cardIds,
+	}: CardIdsInput): Promise<CardMasteryState[]> {
+		if (cardIds.length === 0) return [];
+		const cardIdSet = new Set(cardIds);
+
+		const records = deps.db
+			? deps.db.card_mastery_state.filter(
+					(state) =>
+						hasProfileOwnership(state, accountUserId, profileId) &&
+						cardIdSet.has(state.card_id),
+				)
+			: (
+					await Promise.all(
+						chunkFirestoreInValues(cardIds).map((chunk) =>
+							queryStoreRecords("card_mastery_state", [
+								...profileOwnershipConstraints(accountUserId, profileId),
+								where("card_id", "in", chunk),
+							]),
+						),
+					)
+				)
+					.flat()
+					.filter(
+						(state) =>
+							hasProfileOwnership(state, accountUserId, profileId) &&
+							cardIdSet.has(state.card_id),
+					);
+
+		return records.map((record) => normalizeCardMasteryState(record));
+	}
+
 	async function bulkCreateCards({
 		accountUserId,
 		profileId,
@@ -232,5 +273,12 @@ export function createCardRepository(deps: RepositoryDeps = {}) {
 		return records;
 	}
 
-	return { loadPackCards, createCard, updateCard, deleteCard, bulkCreateCards };
+	return {
+		loadPackCards,
+		createCard,
+		updateCard,
+		deleteCard,
+		listMasteryStatesByCardIds,
+		bulkCreateCards,
+	};
 }
