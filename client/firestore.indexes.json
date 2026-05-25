@@ -42,7 +42,8 @@
       "fields": [
         { "fieldPath": "account_user_id", "order": "ASCENDING" },
         { "fieldPath": "profile_id", "order": "ASCENDING" },
-        { "fieldPath": "reviewed_at", "order": "ASCENDING" }
+        { "fieldPath": "reviewed_at", "order": "ASCENDING" },
+        { "fieldPath": "__name__", "order": "ASCENDING" }
       ]
     },
     {
