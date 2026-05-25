@@ -1,6 +1,6 @@
--- LEGACY: This schema documents the original PostgreSQL/Supabase design.
--- The current implementation uses IndexedDB in the browser.
--- This file is kept for architectural reference only.
+-- LEGACY: This schema documents an early PostgreSQL/Supabase design.
+-- The current runtime implementation uses Firebase Auth and Cloud Firestore.
+-- This file is kept for historical architectural reference only.
 
 CREATE TABLE public.card (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
