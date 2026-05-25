@@ -172,12 +172,19 @@ export function useHomePage() {
 				profileId,
 				cardPackId: pack.id,
 			});
-			setCardPacks((prev) => prev.filter((item) => item.id !== pack.id));
+			await refreshCardPacks();
 			closeDeleteDialog();
 		} catch (err) {
 			setError(err instanceof Error ? err.message : t("errors.deleteCardPack"));
 		}
-	}, [accountUserId, cardPackRepository, closeDeleteDialog, profileId, t]);
+	}, [
+		accountUserId,
+		cardPackRepository,
+		closeDeleteDialog,
+		profileId,
+		refreshCardPacks,
+		t,
+	]);
 
 	const exportPacks = useCallback(
 		async (cardPackIds: string[], includeReviewState: boolean) => {
