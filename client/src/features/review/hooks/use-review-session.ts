@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { normalizeDailyReviewSettings } from "@/features/review/daily-goal";
 import { persistReviewResult } from "@/features/review/hooks/persist-review-result";
+import { buildSm2ReviewSession } from "@/features/review/hooks/review-session-loader";
 import type { Card } from "@/lib/api/entities/card";
 import type { MasteryState } from "@/lib/api/entities/card-mastery-state";
 import type { CardPack } from "@/lib/api/entities/card-pack";
@@ -9,8 +9,7 @@ import { createCardRepository } from "@/lib/data/repositories/card-repository";
 import { createCardPackRepository } from "@/lib/data/repositories/card-pack-repository";
 import { createReviewRepository } from "@/lib/data/repositories/review-repository";
 import { createSchedulingRepository } from "@/lib/data/repositories/scheduling-repository";
-import { ReviewSession } from "@/lib/review";
-import { normalizeSm2Parameters } from "@/lib/scheduling/sm2";
+import type { ReviewSession } from "@/lib/review";
 import type {
 	ReviewGrade,
 	Sm2Parameters,
@@ -156,36 +155,19 @@ export function useReviewSession(
 						})
 					: [];
 
-				// Create review session
-				const params = normalizeSm2Parameters(
-					schedulingProfile.parameters as Sm2Parameters,
-				);
-				const settings = normalizeDailyReviewSettings({
-					dailyGoal: currentProfile?.daily_goal,
-					reviewPerDay: currentProfile?.review_per_day,
-					newPerDay: currentProfile?.new_per_day,
-				});
-				const sessionTotalLimit =
-					completedToday < settings.dailyGoal
-						? Math.max(0, settings.dailyGoal - completedToday)
-						: settings.reviewPerDay + settings.newPerDay;
-				const reviewCardsLimit = settings.reviewPerDay;
-				const newCardsLimit = settings.newPerDay;
-
-				const newSession = ReviewSession.create(
-					fetchedCards,
-					stateList,
-					params,
-					schedulingProfile.id,
-					{
-						newCardsLimit,
-						reviewCardsLimit,
-						totalCardsLimit: sessionTotalLimit,
-						ownerUserId: profileId,
-						accountUserId,
-						learnerProfileId: profileId,
+				const { session: newSession } = buildSm2ReviewSession({
+					accountUserId,
+					profileId,
+					cards: fetchedCards,
+					schedulingStates: stateList,
+					schedulingProfile,
+					completedToday,
+					settings: {
+						dailyGoal: currentProfile?.daily_goal,
+						reviewPerDay: currentProfile?.review_per_day,
+						newPerDay: currentProfile?.new_per_day,
 					},
-				);
+				});
 
 				setSession(newSession);
 				setCurrentCard(newSession.getCurrentCard());
