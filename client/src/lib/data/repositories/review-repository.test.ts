@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
 import type { ReviewResult } from "@/lib/review";
@@ -68,6 +68,10 @@ function reviewResult(cardId = "card-1"): ReviewResult {
 }
 
 describe("createReviewRepository", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
 	it("counts today's completed cards with a date-bounded Firestore query", async () => {
 		vi.mocked(queryStoreRecords).mockResolvedValueOnce([
 			{
@@ -112,6 +116,44 @@ describe("createReviewRepository", () => {
 			]),
 		);
 		expect(vi.mocked(queryStoreRecords).mock.calls[0]?.[1]).toHaveLength(5);
+	});
+
+	it("falls back to a profile-wide review event query when the date index is missing", async () => {
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+		vi.mocked(queryStoreRecords)
+			.mockRejectedValueOnce(
+				Object.assign(new Error("The query requires an index."), {
+					code: "failed-precondition",
+				}),
+			)
+			.mockResolvedValueOnce([
+				{
+					id: "event-1",
+					card_id: "card-1",
+					owner_user_id: profileId,
+					account_user_id: accountUserId,
+					profile_id: profileId,
+					grade: 3,
+					time_ms: 1200,
+					raw_payload: { source: "test" },
+					reviewed_at: "2026-01-02T08:00:00.000Z",
+					created_at: "2026-01-02T08:00:00.000Z",
+				},
+			]);
+		const repository = createReviewRepository();
+
+		const count = await repository.countTodayCompletedCards({
+			accountUserId,
+			profileId,
+			now: new Date("2026-01-02T12:00:00.000Z"),
+		});
+
+		expect(count).toBe(1);
+		expect(queryStoreRecords).toHaveBeenCalledTimes(2);
+		expect(vi.mocked(queryStoreRecords).mock.calls[0]?.[1]).toHaveLength(5);
+		expect(vi.mocked(queryStoreRecords).mock.calls[1]?.[1]).toHaveLength(2);
+		expect(warn).toHaveBeenCalledOnce();
+		warn.mockRestore();
 	});
 
 	it("persists review event, scheduling state, mastery state, and daily progress", async () => {

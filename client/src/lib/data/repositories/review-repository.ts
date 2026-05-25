@@ -83,6 +83,15 @@ type CountTodayCompletedCardsInput = ProfileScopeInput & {
 	now?: Date;
 };
 
+function isMissingFirestoreIndexError(error: unknown): boolean {
+	if (!(error instanceof Error)) return false;
+	const maybeCode = "code" in error ? String(error.code) : "";
+	return (
+		maybeCode === "failed-precondition" ||
+		error.message.toLowerCase().includes("requires an index")
+	);
+}
+
 function getTodayRange(now: Date): { start: Date; end: Date } {
 	const start = new Date(now);
 	start.setHours(0, 0, 0, 0);
@@ -189,18 +198,11 @@ export function createReviewRepository(deps: RepositoryDeps = {}) {
 			? deps.db.review_event.filter((event) =>
 					hasProfileOwnership(event, accountUserId, profileId),
 				)
-			: (
-					await queryStoreRecords(
-						"review_event",
-						[
-							...profileOwnershipConstraints(accountUserId, profileId),
-							where("reviewed_at", ">=", start.toISOString()),
-							where("reviewed_at", "<", end.toISOString()),
-							orderBy("reviewed_at", "asc"),
-						],
-					)
-				).filter((event) =>
-					hasProfileOwnership(event, accountUserId, profileId),
+			: await readTodayReviewEventsWithFallback(
+					accountUserId,
+					profileId,
+					start,
+					end,
 				);
 
 		const completed = records.filter((event) => {
@@ -210,6 +212,40 @@ export function createReviewRepository(deps: RepositoryDeps = {}) {
 		});
 
 		return new Set(completed.map((event) => event.card_id)).size;
+	}
+
+	async function readTodayReviewEventsWithFallback(
+		accountUserId: string,
+		profileId: string,
+		start: Date,
+		end: Date,
+	): Promise<ReviewEvent[]> {
+		try {
+			return (
+				await queryStoreRecords(
+					"review_event",
+					[
+						...profileOwnershipConstraints(accountUserId, profileId),
+						where("reviewed_at", ">=", start.toISOString()),
+						where("reviewed_at", "<", end.toISOString()),
+						orderBy("reviewed_at", "asc"),
+					],
+				)
+			).filter((event) => hasProfileOwnership(event, accountUserId, profileId));
+		} catch (error) {
+			if (!isMissingFirestoreIndexError(error)) {
+				throw error;
+			}
+			console.warn(
+				"Falling back to profile-wide review event query because the Firestore reviewed_at index is not ready.",
+				error,
+			);
+			return (
+				await queryStoreRecords("review_event", [
+					...profileOwnershipConstraints(accountUserId, profileId),
+				])
+			).filter((event) => hasProfileOwnership(event, accountUserId, profileId));
+		}
 	}
 
 	async function createReviewEvent(input: ReviewEventInsert): Promise<ReviewEvent> {

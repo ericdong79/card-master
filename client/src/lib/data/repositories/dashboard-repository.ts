@@ -83,9 +83,13 @@ export function createDashboardRepository(deps: RepositoryDeps = {}) {
 		accountUserId,
 		profileId,
 	}: LoadHomeDashboardInput): Promise<HomeDashboard> {
-		const [cardPacks, cards] = await Promise.all([
+		const [cardPacks, cards, schedulingStates] = await Promise.all([
 			loadProfilePacks(accountUserId, profileId),
 			loadProfileCards(accountUserId, profileId),
+			schedulingRepository.listSchedulingStatesForProfile({
+				accountUserId,
+				profileId,
+			}),
 		]);
 		const activePackIds = new Set(cardPacks.map((pack) => pack.id));
 		const cardsInActivePacks = cards.filter((card) =>
@@ -100,13 +104,6 @@ export function createDashboardRepository(deps: RepositoryDeps = {}) {
 			);
 		}
 
-		const schedulingStates =
-			cardsInActivePacks.length > 0
-				? await schedulingRepository.listSchedulingStatesForProfile({
-						accountUserId,
-						profileId,
-					})
-				: [];
 		const statesByCardId = new Map(
 			schedulingStates.map((state) => [state.card_id, state]),
 		);
