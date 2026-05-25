@@ -1,16 +1,25 @@
-import { writeBatch } from "firebase/firestore";
+import {
+	writeBatch,
+	type DocumentData,
+	type DocumentReference,
+	type WriteBatch,
+} from "firebase/firestore";
 
 import { getFirestoreDb, sanitizeFirestoreDocument } from "./firestore-store";
 
 export const FIRESTORE_BATCH_WRITE_LIMIT = 450;
 
 export type BatchOperation =
-	| { type: "set"; ref: unknown; value: unknown }
-	| { type: "delete"; ref: unknown };
+	| {
+			type: "set";
+			ref: DocumentReference<DocumentData>;
+			value: DocumentData;
+	  }
+	| { type: "delete"; ref: DocumentReference<DocumentData> };
 
 type BatchLike = {
-	set(ref: unknown, value: unknown): void;
-	delete(ref: unknown): void;
+	set(ref: DocumentReference<DocumentData>, value: DocumentData): void;
+	delete(ref: DocumentReference<DocumentData>): void;
 	commit(): Promise<void>;
 };
 
@@ -33,33 +42,36 @@ export async function commitBatchedWrites(
 	}
 
 	const createBatch =
-		options.createBatch ??
-		(() => writeBatch(getFirestoreDb()) as unknown as BatchLike);
+		options.createBatch ?? (() => writeBatch(getFirestoreDb()) as WriteBatch);
 	let batchCount = 0;
+	let hasCommitted = false;
 
-	for (
-		let index = 0;
-		index < operations.length;
-		index += FIRESTORE_BATCH_WRITE_LIMIT
-	) {
-		const batch = createBatch();
-		const chunk = operations.slice(index, index + FIRESTORE_BATCH_WRITE_LIMIT);
+	try {
+		for (
+			let index = 0;
+			index < operations.length;
+			index += FIRESTORE_BATCH_WRITE_LIMIT
+		) {
+			const batch = createBatch();
+			const chunk = operations.slice(index, index + FIRESTORE_BATCH_WRITE_LIMIT);
 
-		for (const operation of chunk) {
-			if (operation.type === "set") {
-				batch.set(
-					operation.ref,
-					sanitizeFirestoreDocument(operation.value as never),
-				);
-			} else {
-				batch.delete(operation.ref);
+			for (const operation of chunk) {
+				if (operation.type === "set") {
+					batch.set(operation.ref, sanitizeFirestoreDocument(operation.value));
+				} else {
+					batch.delete(operation.ref);
+				}
 			}
-		}
 
-		await batch.commit();
-		batchCount += 1;
+			await batch.commit();
+			hasCommitted = true;
+			batchCount += 1;
+		}
+	} finally {
+		if (hasCommitted) {
+			options.invalidate?.();
+		}
 	}
 
-	options.invalidate?.();
 	return { batchCount, operationCount: operations.length };
 }
