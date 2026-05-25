@@ -9,10 +9,10 @@ import {
 	writeImportPlan,
 } from "./local-data-import";
 
-const saveCloudProfileMock = vi.hoisted(() => vi.fn());
+const saveManyCloudProfilesMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/features/profile/profile-repository", () => ({
-	saveCloudProfile: saveCloudProfileMock,
+	saveManyCloudProfiles: saveManyCloudProfilesMock,
 }));
 
 const timestamp = "2026-01-01T00:00:00.000Z";
@@ -162,7 +162,7 @@ function createCloudClient(): ApiClient {
 }
 
 beforeEach(() => {
-	saveCloudProfileMock.mockResolvedValue(undefined);
+	saveManyCloudProfilesMock.mockResolvedValue(undefined);
 	vi.stubGlobal("window", {
 		localStorage: createMemoryStorage(),
 	});
@@ -170,7 +170,7 @@ beforeEach(() => {
 
 afterEach(() => {
 	vi.unstubAllGlobals();
-	saveCloudProfileMock.mockReset();
+	saveManyCloudProfilesMock.mockReset();
 });
 
 describe("createImportPlan", () => {
@@ -340,10 +340,11 @@ describe("writeImportPlan", () => {
 
 		expect(firstSummary.status).toBe("imported");
 		expect(firstSummary.profiles).toBe(2);
-		expect(saveCloudProfileMock).toHaveBeenCalledTimes(2);
+		expect(saveManyCloudProfilesMock).toHaveBeenCalledWith(firstPlan.profiles);
+		expect(saveManyCloudProfilesMock).toHaveBeenCalledTimes(1);
 		expect(firstCloudClient.put).toHaveBeenCalledTimes(8);
 
-		saveCloudProfileMock.mockClear();
+		saveManyCloudProfilesMock.mockClear();
 		const secondPlan = createImportPlan(createSource(), "account-1", timestamp);
 		const secondCloudClient = createCloudClient();
 
@@ -352,7 +353,7 @@ describe("writeImportPlan", () => {
 		expect(secondSummary.status).toBe("already_imported");
 		expect(secondSummary.sourceFingerprint).toBe(firstSummary.sourceFingerprint);
 		expect(secondSummary.profiles).toBe(2);
-		expect(saveCloudProfileMock).not.toHaveBeenCalled();
+		expect(saveManyCloudProfilesMock).not.toHaveBeenCalled();
 		expect(secondCloudClient.put).not.toHaveBeenCalled();
 	});
 
@@ -367,10 +368,11 @@ describe("writeImportPlan", () => {
 			"first write failed",
 		);
 
-		expect(saveCloudProfileMock).toHaveBeenCalledTimes(2);
+		expect(saveManyCloudProfilesMock).toHaveBeenCalledWith(firstPlan.profiles);
+		expect(saveManyCloudProfilesMock).toHaveBeenCalledTimes(1);
 		expect(firstCloudClient.put).toHaveBeenCalledTimes(1);
 
-		saveCloudProfileMock.mockClear();
+		saveManyCloudProfilesMock.mockClear();
 		const secondPlan = createImportPlan(createSource(), "account-1", timestamp);
 		const secondCloudClient = createCloudClient();
 
@@ -380,8 +382,7 @@ describe("writeImportPlan", () => {
 		expect(secondPlan.profileIdMap).toEqual(firstPlan.profileIdMap);
 		expect(secondPlan.cardPackIdMap).toEqual(firstPlan.cardPackIdMap);
 		expect(secondPlan.cardIdMap).toEqual(firstPlan.cardIdMap);
-		expect(saveCloudProfileMock).toHaveBeenCalledWith(firstPlan.profiles[0]);
-		expect(saveCloudProfileMock).toHaveBeenCalledWith(firstPlan.profiles[1]);
+		expect(saveManyCloudProfilesMock).toHaveBeenCalledWith(firstPlan.profiles);
 		expect(secondCloudClient.put).toHaveBeenCalledWith(
 			"card_pack",
 			firstPlan.cardPacks[0],
@@ -405,7 +406,8 @@ describe("writeImportPlan", () => {
 		const summary = await writeImportPlan(plan, cloudClient);
 
 		expect(summary.status).toBe("imported");
-		expect(saveCloudProfileMock).toHaveBeenCalledTimes(2);
+		expect(saveManyCloudProfilesMock).toHaveBeenCalledWith(plan.profiles);
+		expect(saveManyCloudProfilesMock).toHaveBeenCalledTimes(1);
 		expect(cloudClient.put).toHaveBeenCalledTimes(8);
 	});
 });

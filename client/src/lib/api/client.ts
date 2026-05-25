@@ -26,6 +26,10 @@ export type QueryOptions<T> = {
 	cacheTtlMs?: number;
 };
 
+/**
+ * @deprecated Use feature repositories under `@/lib/data/repositories/*` instead.
+ * The generic client remains only for legacy compatibility and import paths.
+ */
 export type ApiClient = {
 	list<S extends StoreName>(
 		store: S,
@@ -36,6 +40,10 @@ export type ApiClient = {
 	delete<S extends StoreName>(store: S, id: string): Promise<void>;
 };
 
+/**
+ * @deprecated Use feature repositories under `@/lib/data/repositories/*` instead.
+ * The generic client remains only for legacy compatibility and import paths.
+ */
 export function createApiClient(): ApiClient {
 	return createFirestoreApiClient();
 }

@@ -1,3 +1,8 @@
+/**
+ * @deprecated The generic Firestore ApiClient adapter is retained for legacy
+ * compatibility and migration support. New app data access should use
+ * repositories under `@/lib/data/repositories/*`.
+ */
 import {
 	collection,
 	deleteDoc,
@@ -15,6 +20,11 @@ import {
 
 import type { ApiClient, QueryOptions, StoreName, StoreValue } from "./client";
 import { FIRESTORE_COLLECTIONS, getCardMasterFirestore } from "../firebase/firestore";
+
+export {
+	FIRESTORE_IN_FILTER_LIMIT,
+	chunkFirestoreInValues,
+} from "@/lib/data/firestore/id-chunks";
 
 const STORE_TO_COLLECTION: Record<StoreName, string> = {
 	card_pack: FIRESTORE_COLLECTIONS.cardPacks,
@@ -193,17 +203,6 @@ const firestoreClients = new WeakSet<ApiClient>();
 
 export function isFirestoreApiClient(client: ApiClient): boolean {
 	return firestoreClients.has(client);
-}
-
-export const FIRESTORE_IN_FILTER_LIMIT = 10;
-
-export function chunkFirestoreInValues(values: string[]): string[][] {
-	const uniqueValues = Array.from(new Set(values)).filter((value) => value.length > 0);
-	const chunks: string[][] = [];
-	for (let index = 0; index < uniqueValues.length; index += FIRESTORE_IN_FILTER_LIMIT) {
-		chunks.push(uniqueValues.slice(index, index + FIRESTORE_IN_FILTER_LIMIT));
-	}
-	return chunks;
 }
 
 export async function listFirestoreRecords<S extends StoreName>(

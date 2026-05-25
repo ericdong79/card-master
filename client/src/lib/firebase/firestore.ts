@@ -1,4 +1,10 @@
-import { getFirestore, type Firestore } from "firebase/firestore";
+import {
+	getFirestore,
+	initializeFirestore,
+	persistentLocalCache,
+	persistentMultipleTabManager,
+	type Firestore,
+} from "firebase/firestore";
 
 import { getFirebaseApp } from "./app";
 
@@ -13,6 +19,20 @@ export const FIRESTORE_COLLECTIONS = {
 	reviewEvents: "review_events",
 } as const;
 
+let firestoreInstance: Firestore | null = null;
+
 export function getCardMasterFirestore(): Firestore {
-	return getFirestore(getFirebaseApp());
+	if (firestoreInstance) return firestoreInstance;
+
+	const app = getFirebaseApp();
+	try {
+		firestoreInstance = initializeFirestore(app, {
+			localCache: persistentLocalCache({
+				tabManager: persistentMultipleTabManager(),
+			}),
+		});
+	} catch {
+		firestoreInstance = getFirestore(app);
+	}
+	return firestoreInstance;
 }

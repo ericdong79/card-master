@@ -1,5 +1,5 @@
 import type { CloudUserProfile } from "@/features/profile/profile-repository";
-import { saveCloudProfile } from "@/features/profile/profile-repository";
+import { saveManyCloudProfiles } from "@/features/profile/profile-repository";
 import {
 	loadLocalProfileState,
 	type StoredProfileState,
@@ -14,6 +14,7 @@ import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-sta
 import type { ReviewEvent } from "@/lib/api/entities/review-event";
 import type { SchedulingProfile } from "@/lib/api/entities/scheduling-profile";
 import { nowIso } from "@/lib/api/utils";
+import { createLocalImportRepository } from "@/lib/data/repositories/local-import-repository";
 
 export type LocalDataImportCounts = {
 	profiles: number;
@@ -622,28 +623,11 @@ export async function writeImportPlan(
 		};
 	}
 
-	for (const profile of plan.profiles) {
-		await saveCloudProfile(profile);
-	}
+	await saveManyCloudProfiles(plan.profiles);
 
-	for (const pack of plan.cardPacks) {
-		await cloudClient.put("card_pack", pack);
-	}
-	for (const card of plan.cards) {
-		await cloudClient.put("card", card);
-	}
-	for (const profile of plan.schedulingProfiles) {
-		await cloudClient.put("scheduling_profile", profile);
-	}
-	for (const event of plan.reviewEvents) {
-		await cloudClient.put("review_event", event);
-	}
-	for (const state of plan.schedulingStates) {
-		await cloudClient.put("card_scheduling_state", state);
-	}
-	for (const state of plan.cardMasteryStates) {
-		await cloudClient.put("card_mastery_state", state);
-	}
+	await createLocalImportRepository({ client: cloudClient }).writePlannedRecords(
+		plan,
+	);
 
 	const completedAt = nowIso();
 	writeImportCompletionMarker({
