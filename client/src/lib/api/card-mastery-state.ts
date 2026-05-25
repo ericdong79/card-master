@@ -9,6 +9,7 @@ import {
 	chunkFirestoreInValues,
 	isFirestoreApiClient,
 	listFirestoreRecords,
+	ownedStoreCacheKey,
 	ownershipConstraints,
 } from "./firestore-client";
 import { hasCloudOwnership } from "./ownership";
@@ -102,7 +103,14 @@ export async function listMasteryStatesByCardIds(
 									...ownershipConstraints(accountUserIdOrOwnerUserId, profileId),
 									where("card_id", "in", chunk),
 								],
-								options,
+								{
+									...options,
+									cacheKey: ownedStoreCacheKey(
+										accountUserIdOrOwnerUserId,
+										profileId,
+										`cards:${chunk.join(",")}`,
+									),
+								},
 							),
 						),
 					)

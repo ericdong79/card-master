@@ -3,6 +3,7 @@ import type { ReviewEvent } from "@/lib/api/entities/review-event";
 import {
 	isFirestoreApiClient,
 	listFirestoreRecords,
+	ownedStoreCacheKey,
 	ownershipConstraints,
 } from "@/lib/api/firestore-client";
 
@@ -78,6 +79,11 @@ export async function countTodayCompletedCards(
 			const reviewedAt = new Date(event.reviewed_at);
 			return reviewedAt >= start && reviewedAt < end;
 		},
+		cacheKey: ownedStoreCacheKey(
+			accountUserId,
+			profileId,
+			`today:${start.toISOString()}`,
+		),
 	};
 	const events = isFirestoreApiClient(client)
 		? await listFirestoreRecords(

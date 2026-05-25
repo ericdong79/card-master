@@ -22,6 +22,8 @@ export type StoreValue<S extends StoreName> = StoreValueMap[S];
 export type QueryOptions<T> = {
 	filter?: (record: T) => boolean;
 	sortBy?: (a: T, b: T) => number;
+	cacheKey?: string;
+	cacheTtlMs?: number;
 };
 
 export type ApiClient = {

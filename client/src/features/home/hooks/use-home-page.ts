@@ -4,7 +4,7 @@ import { createApiClient } from "@/lib/api/client";
 import {
 	createCardPack,
 	deleteCardPack,
-	listCardPacksWithCounts,
+	listCardPacks,
 	type CardPackWithCounts,
 	updateCardPack,
 } from "@/lib/api/card-pack";
@@ -46,10 +46,21 @@ export function useHomePage() {
 		if (!accountUserId || !profileId) {
 			return { packs: [], dueCount: 0 };
 		}
-		const [packs, cards] = await Promise.all([
-			listCardPacksWithCounts(apiClient, accountUserId, profileId),
+		const [cardPacks, cards] = await Promise.all([
+			listCardPacks(apiClient, accountUserId, profileId),
 			listCards(apiClient, accountUserId, profileId),
 		]);
+		const countsMap = new Map<string, number>();
+		for (const card of cards) {
+			countsMap.set(
+				card.card_pack_id,
+				(countsMap.get(card.card_pack_id) ?? 0) + 1,
+			);
+		}
+		const packs = cardPacks.map((pack) => ({
+			...pack,
+			cards_count: countsMap.get(pack.id) ?? 0,
+		}));
 		const states =
 			cards.length > 0
 				? await listSchedulingStatesByCardIds(

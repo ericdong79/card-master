@@ -5,6 +5,7 @@ import type { SchedulingProfile } from "./entities/scheduling-profile";
 import {
 	isFirestoreApiClient,
 	listFirestoreRecords,
+	ownedStoreCacheKey,
 	ownershipConstraints,
 } from "./firestore-client";
 import { createCloudOwnership, hasCloudOwnership } from "./ownership";
@@ -47,6 +48,9 @@ export async function fetchSchedulingProfile(
 				: hasLegacyOwnership(profile, accountUserIdOrOwnerUserId),
 		sortBy: (a, b) =>
 			Date.parse(a.created_at ?? "") - Date.parse(b.created_at ?? ""),
+		cacheKey: profileId
+			? ownedStoreCacheKey(accountUserIdOrOwnerUserId, profileId)
+			: undefined,
 	};
 	const profiles =
 		profileId && isFirestoreApiClient(client)

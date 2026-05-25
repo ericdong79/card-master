@@ -4,6 +4,7 @@ import type { Card, CardStatus } from "./entities/card";
 import {
 	isFirestoreApiClient,
 	listFirestoreRecords,
+	ownedStoreCacheKey,
 	ownershipConstraints,
 } from "./firestore-client";
 import { createCloudOwnership, hasCloudOwnership } from "./ownership";
@@ -67,6 +68,9 @@ export async function listCards(
 		},
 		sortBy: (a, b) =>
 			Date.parse(a.created_at ?? "") - Date.parse(b.created_at ?? ""),
+		cacheKey: profileId
+			? ownedStoreCacheKey(accountUserIdOrOwnerUserId, profileId)
+			: undefined,
 	};
 
 	if (profileId && isFirestoreApiClient(client)) {

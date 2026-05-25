@@ -85,6 +85,61 @@ function applyQueryOptions<S extends StoreName>(
 	return filtered;
 }
 
+const DEFAULT_CACHE_TTL_MS = 60_000;
+
+type CachedRecords = {
+	expiresAt: number;
+	records: StoreValue<StoreName>[];
+};
+
+const readCache = new Map<string, CachedRecords>();
+
+function readCacheKey(store: StoreName, cacheKey: string): string {
+	return `${store}:${cacheKey}`;
+}
+
+function getCachedRecords<S extends StoreName>(
+	store: S,
+	options?: QueryOptions<StoreValue<S>>,
+): StoreValue<S>[] | null {
+	if (!options?.cacheKey) return null;
+
+	const cached = readCache.get(readCacheKey(store, options.cacheKey));
+	if (!cached) return null;
+	if (cached.expiresAt <= Date.now()) {
+		readCache.delete(readCacheKey(store, options.cacheKey));
+		return null;
+	}
+	return cached.records as StoreValue<S>[];
+}
+
+function setCachedRecords<S extends StoreName>(
+	store: S,
+	options: QueryOptions<StoreValue<S>> | undefined,
+	records: StoreValue<S>[],
+): void {
+	if (!options?.cacheKey) return;
+
+	readCache.set(readCacheKey(store, options.cacheKey), {
+		expiresAt: Date.now() + (options.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS),
+		records,
+	});
+}
+
+export function clearFirestoreReadCache(store?: StoreName): void {
+	if (!store) {
+		readCache.clear();
+		return;
+	}
+
+	const prefix = `${store}:`;
+	for (const key of readCache.keys()) {
+		if (key.startsWith(prefix)) {
+			readCache.delete(key);
+		}
+	}
+}
+
 function defaultOrderConstraints(store: StoreName): QueryConstraint[] {
 	if (store === "review_event") {
 		return [orderBy("reviewed_at", "asc")];
@@ -120,12 +175,14 @@ export function createFirestoreApiClient(): ApiClient {
 			const db = getFirestore();
 			const documentRef = doc(db, collectionNameForStore(store), record.id);
 			await setDoc(documentRef, sanitizeFirestoreDocument(record));
+			clearFirestoreReadCache(store);
 			return record;
 		},
 		delete: async (store, id) => {
 			const db = getFirestore();
 			const documentRef = doc(db, collectionNameForStore(store), id);
 			await deleteDoc(documentRef);
+			clearFirestoreReadCache(store);
 		},
 	};
 	firestoreClients.add(client);
@@ -154,13 +211,27 @@ export async function listFirestoreRecords<S extends StoreName>(
 	constraints: QueryConstraint[],
 	options?: QueryOptions<StoreValue<S>>,
 ): Promise<StoreValue<S>[]> {
+	const cachedRecords = getCachedRecords(store, options);
+	if (cachedRecords) {
+		return applyQueryOptions(cachedRecords, options);
+	}
+
 	const db = getFirestore();
 	const collectionRef = collection(db, collectionNameForStore(store));
 	const snapshot = await getDocs(query(collectionRef, ...constraints));
 	const records = snapshot.docs.map((documentSnapshot) =>
 		normalizeSnapshotValue<S>(documentSnapshot.data(), documentSnapshot.id),
 	);
+	setCachedRecords(store, options, records);
 	return applyQueryOptions(records, options);
+}
+
+export function ownedStoreCacheKey(
+	accountUserId: string,
+	profileId: string,
+	qualifier = "all",
+): string {
+	return `${accountUserId}:${profileId}:${qualifier}`;
 }
 
 export function ownershipConstraints(

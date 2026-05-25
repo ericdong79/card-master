@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 
 import type { UserProfile } from "@/features/profile/profile-context";
+import { clearFirestoreReadCache } from "@/lib/api/firestore-client";
 import {
 	FIRESTORE_COLLECTIONS,
 	getCardMasterFirestore,
@@ -223,6 +224,7 @@ export async function deleteCloudProfileWithData(
 
 	await deleteDoc(doc(db, FIRESTORE_COLLECTIONS.profiles, profileId));
 	await updateAccountCurrentProfile(accountUserId, nextCurrentProfileId, now);
+	clearFirestoreReadCache();
 }
 
 export async function listCloudProfiles(

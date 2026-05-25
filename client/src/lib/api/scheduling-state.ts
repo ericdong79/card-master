@@ -10,6 +10,7 @@ import {
 	isFirestoreApiClient,
 	learnerOwnershipConstraints,
 	listFirestoreRecords,
+	ownedStoreCacheKey,
 } from "./firestore-client";
 import { generateId, nowIso } from "./utils";
 
@@ -83,7 +84,14 @@ export async function listSchedulingStatesByCardIds(
 						...learnerOwnershipConstraints(accountUserIdOrOwnerUserId, profileId),
 						where("card_id", "in", chunk),
 					],
-					options,
+					{
+						...options,
+						cacheKey: ownedStoreCacheKey(
+							accountUserIdOrOwnerUserId,
+							profileId,
+							`cards:${chunk.join(",")}`,
+						),
+					},
 				),
 			),
 		);

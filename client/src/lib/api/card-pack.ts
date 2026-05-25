@@ -5,6 +5,7 @@ import { DEFAULT_CARD_PACK_TYPE } from "./entities/card-pack";
 import {
 	isFirestoreApiClient,
 	listFirestoreRecords,
+	ownedStoreCacheKey,
 	ownershipConstraints,
 } from "./firestore-client";
 import { listCards } from "./card";
@@ -53,6 +54,9 @@ export async function listCardPacks(
 				: hasLegacyOwnership(pack, accountUserIdOrOwnerUserId),
 		sortBy: (a, b) =>
 			Date.parse(a.created_at ?? "") - Date.parse(b.created_at ?? ""),
+		cacheKey: profileId
+			? ownedStoreCacheKey(accountUserIdOrOwnerUserId, profileId)
+			: undefined,
 	};
 
 	if (profileId && isFirestoreApiClient(client)) {
