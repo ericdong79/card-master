@@ -11,6 +11,7 @@ describe("Firestore ownership helpers", () => {
 		expect(
 			hasProfileOwnership(
 				{
+					account_user_id: "account-1",
 					profile_id: "profile-1",
 					owner_user_id: "profile-1",
 				},
@@ -23,6 +24,7 @@ describe("Firestore ownership helpers", () => {
 		expect(
 			hasProfileOwnership(
 				{
+					account_user_id: "account-2",
 					profile_id: "profile-2",
 					owner_user_id: "profile-2",
 				},
@@ -42,6 +44,7 @@ describe("Firestore ownership helpers", () => {
 		expect(
 			hasLearnerOwnership(
 				{
+					account_user_id: "account-1",
 					learner_profile_id: "profile-1",
 					owner_user_id: "profile-1",
 				},

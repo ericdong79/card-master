@@ -34,6 +34,7 @@ export function learnerOwnershipConstraints(
 
 export function hasProfileOwnership(
 	record: Partial<{
+		account_user_id: string;
 		profile_id: string;
 		owner_user_id: string;
 	}>,
@@ -44,6 +45,7 @@ export function hasProfileOwnership(
 
 export function hasLearnerOwnership(
 	record: Partial<{
+		account_user_id: string;
 		learner_profile_id: string;
 		owner_user_id: string;
 	}>,

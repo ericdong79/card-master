@@ -22,7 +22,7 @@ export function upsertRecord<S extends StoreName>(
 	db: RepositoryTestDb,
 	store: S,
 	record: StoreValue<S>,
-): StoreValue<S> {
+): void {
 	const records = db[store] as StoreValue<S>[];
 	const index = records.findIndex((item) => item.id === record.id);
 	if (index >= 0) {
@@ -30,7 +30,6 @@ export function upsertRecord<S extends StoreName>(
 	} else {
 		records.push(record);
 	}
-	return record;
 }
 
 export function deleteRecord<S extends StoreName>(
