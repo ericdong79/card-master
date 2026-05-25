@@ -1,5 +1,6 @@
 import {
 	collection,
+	deleteDoc,
 	doc,
 	getDoc,
 	getDocs,
@@ -147,6 +148,81 @@ export async function updateAccountCurrentProfile(
 		},
 		{ merge: true },
 	);
+}
+
+async function deleteProfileOwnedCollection(
+	collectionName: string,
+	fieldName: string,
+	accountUserId: string,
+	profileId: string,
+): Promise<void> {
+	const db = getCardMasterFirestore();
+	const collectionRef = collection(db, collectionName);
+	const snapshot = await getDocs(
+		query(
+			collectionRef,
+			where("account_user_id", "==", accountUserId),
+		),
+	);
+
+	for (const documentSnapshot of snapshot.docs) {
+		const data = documentSnapshot.data();
+		if (data[fieldName] !== profileId && data.owner_user_id !== profileId) {
+			continue;
+		}
+		await deleteDoc(documentSnapshot.ref);
+	}
+}
+
+export async function deleteCloudProfileWithData(
+	accountUserId: string,
+	profileId: string,
+	nextCurrentProfileId: string | null,
+	now: string,
+): Promise<void> {
+	const db = getCardMasterFirestore();
+
+	await Promise.all([
+		deleteProfileOwnedCollection(
+			FIRESTORE_COLLECTIONS.cardPacks,
+			"profile_id",
+			accountUserId,
+			profileId,
+		),
+		deleteProfileOwnedCollection(
+			FIRESTORE_COLLECTIONS.cards,
+			"profile_id",
+			accountUserId,
+			profileId,
+		),
+		deleteProfileOwnedCollection(
+			FIRESTORE_COLLECTIONS.schedulingProfiles,
+			"profile_id",
+			accountUserId,
+			profileId,
+		),
+		deleteProfileOwnedCollection(
+			FIRESTORE_COLLECTIONS.cardMasteryStates,
+			"profile_id",
+			accountUserId,
+			profileId,
+		),
+		deleteProfileOwnedCollection(
+			FIRESTORE_COLLECTIONS.reviewEvents,
+			"profile_id",
+			accountUserId,
+			profileId,
+		),
+		deleteProfileOwnedCollection(
+			FIRESTORE_COLLECTIONS.cardSchedulingStates,
+			"learner_profile_id",
+			accountUserId,
+			profileId,
+		),
+	]);
+
+	await deleteDoc(doc(db, FIRESTORE_COLLECTIONS.profiles, profileId));
+	await updateAccountCurrentProfile(accountUserId, nextCurrentProfileId, now);
 }
 
 export async function listCloudProfiles(

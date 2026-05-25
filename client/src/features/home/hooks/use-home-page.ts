@@ -26,10 +26,13 @@ export function useHomePage() {
 	const { accountUserId } = useAuth();
 	const { currentProfile } = useProfile();
 	const profileId = currentProfile?.id ?? null;
+	const currentScopeKey =
+		accountUserId && profileId ? `${accountUserId}:${profileId}` : "no-profile";
 
 	const [cardPacks, setCardPacks] = useState<CardPackWithCounts[]>([]);
 	const [dueCardsCount, setDueCardsCount] = useState(0);
 	const [loading, setLoading] = useState(true);
+	const [loadedScopeKey, setLoadedScopeKey] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -39,11 +42,9 @@ export function useHomePage() {
 	const [editingPack, setEditingPack] = useState<CardPackWithCounts | null>(null);
 	const [deletingPack, setDeletingPack] = useState<CardPackWithCounts | null>(null);
 
-	const refreshCardPacks = useCallback(async () => {
+	const loadCardPackData = useCallback(async () => {
 		if (!accountUserId || !profileId) {
-			setCardPacks([]);
-			setDueCardsCount(0);
-			return;
+			return { packs: [], dueCount: 0 };
 		}
 		const [packs, cards] = await Promise.all([
 			listCardPacksWithCounts(apiClient, accountUserId, profileId),
@@ -65,18 +66,45 @@ export function useHomePage() {
 			if (!state) return count + 1;
 			return new Date(state.due_at) <= now ? count + 1 : count;
 		}, 0);
-		setCardPacks(packs);
-		setDueCardsCount(dueCount);
+		return { packs, dueCount };
 	}, [accountUserId, apiClient, profileId]);
 
+	const refreshCardPacks = useCallback(async () => {
+		const { packs, dueCount } = await loadCardPackData();
+		setCardPacks(packs);
+		setDueCardsCount(dueCount);
+	}, [loadCardPackData]);
+
 	useEffect(() => {
+		let cancelled = false;
+
 		Promise.resolve()
-			.then(refreshCardPacks)
-			.catch((err) =>
-				setError(err instanceof Error ? err.message : t("errors.loadCardPacks")),
-			)
-			.finally(() => setLoading(false));
-	}, [refreshCardPacks, t]);
+			.then(loadCardPackData)
+			.then(({ packs, dueCount }) => {
+				if (!cancelled) {
+					setError(null);
+					setCardPacks(packs);
+					setDueCardsCount(dueCount);
+				}
+			})
+			.catch((err) => {
+				if (!cancelled) {
+					setError(
+						err instanceof Error ? err.message : t("errors.loadCardPacks"),
+					);
+				}
+			})
+			.finally(() => {
+				if (!cancelled) {
+					setLoadedScopeKey(currentScopeKey);
+					setLoading(false);
+				}
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [currentScopeKey, loadCardPackData, t]);
 
 	const closeCreateDialog = useCallback(() => {
 		setIsCreateOpen(false);
@@ -234,7 +262,7 @@ export function useHomePage() {
 	return {
 		cardPacks,
 		dueCardsCount,
-		loading,
+		loading: loading || loadedScopeKey !== currentScopeKey,
 		error,
 		successMessage,
 		isCreateOpen,

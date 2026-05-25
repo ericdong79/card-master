@@ -120,15 +120,27 @@ export function PackCardsPage() {
 	}, [cards, schedulingStates]);
 
 	useEffect(() => {
-		if (!cardPackId || !accountUserId || !profileId) return;
+		let cancelled = false;
 		setLoading(true);
 		setError(null);
+		setCardPack(null);
+		setCards([]);
+		setSchedulingStates([]);
+		setMasteryStates([]);
+
+		if (!cardPackId || !accountUserId || !profileId) {
+			setLoading(false);
+			return () => {
+				cancelled = true;
+			};
+		}
 
 		Promise.all([
 			getCardPackById(apiClient, accountUserId, profileId, cardPackId),
 			listCards(apiClient, accountUserId, profileId, { cardPackId }),
 		])
 			.then(async ([pack, list]) => {
+				if (cancelled) return;
 				if (!pack) {
 					setError(t("errors.packNotFound"));
 					setCardPack(null);
@@ -156,6 +168,7 @@ export function PackCardsPage() {
 							list.map((c) => c.id),
 						),
 					]);
+					if (cancelled) return;
 					setSchedulingStates(states);
 					setMasteryStates(mastery);
 				} else {
@@ -163,10 +176,20 @@ export function PackCardsPage() {
 					setMasteryStates([]);
 				}
 			})
-			.catch((err) =>
-				setError(err instanceof Error ? err.message : t("errors.loadCards")),
-			)
-			.finally(() => setLoading(false));
+			.catch((err) => {
+				if (!cancelled) {
+					setError(err instanceof Error ? err.message : t("errors.loadCards"));
+				}
+			})
+			.finally(() => {
+				if (!cancelled) {
+					setLoading(false);
+				}
+			});
+
+		return () => {
+			cancelled = true;
+		};
 	}, [accountUserId, apiClient, cardPackId, profileId, t]);
 
 	const dueTimesByCardId = useMemo(

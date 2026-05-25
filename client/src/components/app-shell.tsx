@@ -247,8 +247,14 @@ function AuthenticatedAppShell() {
 	const { pathname } = useLocation();
 	const { accountUserId, error: authError, signOut } = useAuth();
 	const apiClient = useMemo(() => createApiClient(), []);
-	const { ready, profiles, currentProfile, createProfile, reloadProfiles } =
-		useProfile();
+	const {
+		ready,
+		profileTransitionPending,
+		profiles,
+		currentProfile,
+		createProfile,
+		reloadProfiles,
+	} = useProfile();
 	const [collapsed, setCollapsed] = useState(false);
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -347,6 +353,11 @@ function AuthenticatedAppShell() {
 
 	return (
 		<div className="h-dvh overflow-hidden bg-muted/20">
+			{profileTransitionPending ? (
+				<div className="fixed inset-x-0 top-0 z-50 h-1 overflow-hidden bg-primary/15">
+					<div className="h-full w-1/3 animate-pulse bg-primary" />
+				</div>
+			) : null}
 			<div className="flex h-full">
 				<aside
 					className={cn(

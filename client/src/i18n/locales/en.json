@@ -59,7 +59,17 @@
 			"title": "Switch Profile",
 			"description": "Choose an existing profile or create a new one.",
 			"current": "Current",
-			"addProfile": "Add Profile"
+			"addProfile": "Add Profile",
+			"switching": "Switching...",
+			"deleting": "Deleting...",
+			"deleteProfile": "Delete {{name}}",
+			"switchFailed": "Could not switch profile. Try again.",
+			"deleteFailed": "Could not delete profile. Try again."
+		},
+		"delete": {
+			"title": "Delete profile?",
+			"description": "Delete {{name}} and all of its card packs, cards, and review history. This cannot be undone.",
+			"confirm": "Delete profile"
 		},
 		"menu": {
 			"title": "User Settings",

@@ -14,6 +14,7 @@ import {
 import { useAuth } from "@/features/auth/use-auth";
 import { type StoredProfileState } from "@/features/profile/local-profile-store";
 import {
+	deleteCloudProfileWithData,
 	getOrCreateAccountRecord,
 	listCloudProfiles,
 	saveCloudProfile,
@@ -66,10 +67,12 @@ type UpdateCurrentProfileInput = {
 
 type ProfileContextValue = {
 	ready: boolean;
+	profileTransitionPending: boolean;
 	profiles: UserProfile[];
 	currentProfile: UserProfile | null;
 	createProfile: (input: CreateProfileInput) => Promise<UserProfile>;
 	switchProfile: (profileId: string) => Promise<void>;
+	deleteProfile: (profileId: string) => Promise<void>;
 	updateCurrentProfile: (updates: UpdateCurrentProfileInput) => Promise<void>;
 	reloadProfiles: () => Promise<void>;
 };
@@ -215,6 +218,7 @@ function createStaleAccountError(): Error {
 export function ProfileProvider({ children }: { children: ReactNode }) {
 	const { user, accountUserId } = useAuth();
 	const [ready, setReady] = useState(false);
+	const [profileTransitionPending, setProfileTransitionPending] = useState(false);
 	const [state, setState] = useState<StoredProfileState>({
 		profiles: [],
 		current_profile_id: null,
@@ -401,22 +405,70 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
 			assertActiveAccount(accountUserId);
 
-			await touchCloudProfileAndSetCurrentProfile(
-				accountUserId,
-				profileId,
-				now,
+			setProfileTransitionPending(true);
+			try {
+				await touchCloudProfileAndSetCurrentProfile(
+					accountUserId,
+					profileId,
+					now,
+				);
+
+				assertActiveAccount(accountUserId);
+
+				setProfileState((previous) => ({
+					profiles: previous.profiles.map((profile) =>
+						profile.id === profileId
+							? { ...profile, last_used_at: now }
+							: profile,
+					),
+					current_profile_id: profileId,
+				}));
+			} finally {
+				setProfileTransitionPending(false);
+			}
+		},
+		[accountUserId, assertActiveAccount, setProfileState],
+	);
+
+	const deleteProfile = useCallback(
+		async (profileId: string): Promise<void> => {
+			if (!accountUserId) return;
+
+			const existing = stateRef.current.profiles.find(
+				(profile) => profile.id === profileId,
 			);
+			if (!existing) return;
+
+			const remainingProfiles = stateRef.current.profiles.filter(
+				(profile) => profile.id !== profileId,
+			);
+			const wasCurrentProfile =
+				resolveCurrentProfileId(stateRef.current) === profileId;
+			const nextCurrentProfileId = wasCurrentProfile
+				? remainingProfiles[0]?.id ?? null
+				: stateRef.current.current_profile_id;
+			const now = nowIso();
 
 			assertActiveAccount(accountUserId);
 
-			setProfileState((previous) => ({
-				profiles: previous.profiles.map((profile) =>
-					profile.id === profileId
-						? { ...profile, last_used_at: now }
-						: profile,
-				),
-				current_profile_id: profileId,
-			}));
+			setProfileTransitionPending(true);
+			try {
+				await deleteCloudProfileWithData(
+					accountUserId,
+					profileId,
+					nextCurrentProfileId,
+					now,
+				);
+
+				assertActiveAccount(accountUserId);
+
+				setProfileState({
+					profiles: remainingProfiles,
+					current_profile_id: nextCurrentProfileId,
+				});
+			} finally {
+				setProfileTransitionPending(false);
+			}
 		},
 		[accountUserId, assertActiveAccount, setProfileState],
 	);
@@ -460,19 +512,23 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 	const value = useMemo<ProfileContextValue>(
 		() => ({
 			ready,
+			profileTransitionPending,
 			profiles: state.profiles,
 			currentProfile,
 			createProfile,
 			switchProfile,
+			deleteProfile,
 			updateCurrentProfile,
 			reloadProfiles,
 		}),
 		[
 			ready,
+			profileTransitionPending,
 			state.profiles,
 			currentProfile,
 			createProfile,
 			switchProfile,
+			deleteProfile,
 			updateCurrentProfile,
 			reloadProfiles,
 		],
