@@ -13,7 +13,6 @@ import {
 import {
 	type ComponentType,
 	useEffect,
-	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -31,11 +30,10 @@ import { SwitchProfileDialog } from "@/features/profile/components/switch-profil
 import { useProfile } from "@/features/profile/profile-context";
 import {
 	DAILY_REVIEW_PROGRESS_UPDATED_EVENT,
-	countTodayCompletedCards,
 	type DailyReviewProgressUpdatedDetail,
 	isDailyGoalMet,
 } from "@/features/review/daily-goal";
-import { createApiClient } from "@/lib/api/client";
+import { createReviewRepository } from "@/lib/data/repositories/review-repository";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -247,7 +245,6 @@ function AuthenticatedAppShell() {
 	const navigate = useNavigate();
 	const { pathname } = useLocation();
 	const { accountUserId, error: authError, signOut } = useAuth();
-	const apiClient = useMemo(() => createApiClient(), []);
 	const {
 		ready,
 		profileTransitionPending,
@@ -295,11 +292,10 @@ function AuthenticatedAppShell() {
 		let cancelled = false;
 		const loadProgress = async () => {
 			try {
-				const count = await countTodayCompletedCards(
-					apiClient,
+				const count = await createReviewRepository().countTodayCompletedCards({
 					accountUserId,
-					currentProfile.id,
-				);
+					profileId: currentProfile.id,
+				});
 				if (!cancelled) {
 					setCompletedToday(count);
 				}
@@ -336,7 +332,7 @@ function AuthenticatedAppShell() {
 				handleProgressUpdated,
 			);
 		};
-	}, [accountUserId, apiClient, currentProfile, pathname]);
+	}, [accountUserId, currentProfile, pathname]);
 
 	const dailyReviewProgress = currentProfile
 		? {
