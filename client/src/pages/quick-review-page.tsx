@@ -1,9 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import { ReviewCard } from "@/features/review/components/review-card";
+import { ReviewPageShell } from "@/features/review/components/review-page-shell";
 import { ReviewSummary } from "@/features/review/components/review-summary";
 import { useQuickReview } from "@/features/review/hooks/use-quick-review";
 
@@ -19,51 +18,38 @@ export function QuickReviewPage() {
 	const current = session.currentCard;
 
 	return (
-		<div className="min-h-dvh bg-muted/20">
-			{/* Minimal header */}
-			<header className="border-b bg-background/80 backdrop-blur">
-				<div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-					<Button variant="ghost" size="sm" asChild>
-						<Link to={`/pack/${cardPackId}/cards`}>{t("review.back")}</Link>
-					</Button>
-				</div>
-			</header>
-
-			<main className="mx-auto max-w-3xl px-6 py-8">
-				{session.error ? (
-					<div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-						{session.error}
-					</div>
-				) : null}
-
-				{session.loading ? (
-					<div className="flex items-center justify-center gap-2 text-muted-foreground py-12">
-						<Spinner />
-						<span>{t("common.loadingCards")}</span>
-					</div>
-				) : session.isComplete || !current ? (
-					<ReviewSummary
-						packName={session.cardPack?.name ?? null}
-						totalReviewed={session.position.total}
-						backToCardsPath={`/pack/${cardPackId}/cards`}
-						mode="quick"
-						forgotCards={session.forgotCards}
-					/>
-				) : (
-					<ReviewCard
-						key={current.id}
-						mode="simple"
-						card={current}
-						packName={session.cardPack?.name}
-						packType={session.cardPack?.type}
-						learnedCount={session.learnedCount}
-						totalCards={session.totalCards}
-						onReview={session.handleReview}
-						onSkip={session.skipCurrent}
-						isProcessing={session.reviewing}
-					/>
-				)}
-			</main>
-		</div>
+		<ReviewPageShell
+			backPath={`/pack/${cardPackId}/cards`}
+			backLabel={t("review.back")}
+			error={session.error}
+			loading={session.loading}
+			loadingLabel={t("common.loadingCards")}
+			isComplete={session.isComplete}
+			hasCurrentCard={Boolean(current)}
+			summary={
+				<ReviewSummary
+					packName={session.cardPack?.name ?? null}
+					totalReviewed={session.position.total}
+					backToCardsPath={`/pack/${cardPackId}/cards`}
+					mode="quick"
+					forgotCards={session.forgotCards}
+				/>
+			}
+		>
+			{current ? (
+				<ReviewCard
+					key={current.id}
+					mode="simple"
+					card={current}
+					packName={session.cardPack?.name}
+					packType={session.cardPack?.type}
+					learnedCount={session.learnedCount}
+					totalCards={session.totalCards}
+					onReview={session.handleReview}
+					onSkip={session.skipCurrent}
+					isProcessing={session.reviewing}
+				/>
+			) : null}
+		</ReviewPageShell>
 	);
 }
