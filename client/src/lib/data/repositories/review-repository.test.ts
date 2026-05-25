@@ -4,6 +4,18 @@ import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-sta
 import type { ReviewResult } from "@/lib/review";
 import type { Sm2State } from "@/lib/scheduling/types";
 
+vi.mock("@/lib/data/firestore/batch-writer", () => ({
+	commitBatchedWrites: vi.fn(async (_operations, options) => {
+		options?.invalidate?.();
+		return { batchCount: 1, operationCount: _operations.length };
+	}),
+}));
+
+vi.mock("@/lib/data/firestore/firestore-store", () => ({
+	queryStoreRecords: vi.fn(async () => []),
+	storeDocRef: vi.fn((store: string, id: string) => ({ store, id })),
+}));
+
 import { createRepositoryTestDb } from "./repository-test-utils";
 import { createReviewRepository } from "./review-repository";
 
@@ -231,5 +243,27 @@ describe("createReviewRepository", () => {
 			},
 		]);
 		expect(notifyDailyProgress).not.toHaveBeenCalled();
+	});
+
+	it("clears legacy Firestore read caches after production writes", async () => {
+		const clearLegacyReadCache = vi.fn();
+		const repository = createReviewRepository({
+			generateId: () => "review-write-id",
+			now: () => "2026-01-02T00:00:01.000Z",
+			notifyDailyProgress: vi.fn(),
+			clearLegacyReadCache,
+		});
+
+		await repository.persistReviewResult({
+			accountUserId,
+			profileId,
+			grade: "good",
+			result: reviewResult(),
+			existingState: null,
+		});
+
+		expect(clearLegacyReadCache).toHaveBeenCalledWith("review_event");
+		expect(clearLegacyReadCache).toHaveBeenCalledWith("card_scheduling_state");
+		expect(clearLegacyReadCache).toHaveBeenCalledWith("card_mastery_state");
 	});
 });

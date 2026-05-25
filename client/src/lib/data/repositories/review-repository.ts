@@ -6,6 +6,8 @@ import {
 	type DailyReviewProgressUpdatedDetail,
 } from "@/features/review/daily-goal";
 import { normalizeCardMasteryState } from "@/lib/api/card-mastery-state";
+import { clearFirestoreReadCache } from "@/lib/api/firestore-client";
+import type { StoreName } from "@/lib/api/client";
 import type { CardMasteryState } from "@/lib/api/entities/card-mastery-state";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
 import type { ReviewEvent } from "@/lib/api/entities/review-event";
@@ -46,12 +48,14 @@ export type MasteryFeedback = {
 };
 
 type NotifyDailyProgress = (detail: DailyReviewProgressUpdatedDetail) => void;
+type ClearLegacyReadCache = (store?: StoreName) => void;
 
 export type RepositoryDeps = {
 	db?: RepositoryTestDb;
 	now?: () => string;
 	generateId?: () => string;
 	notifyDailyProgress?: NotifyDailyProgress;
+	clearLegacyReadCache?: ClearLegacyReadCache;
 };
 
 export type PersistReviewResultInput = {
@@ -153,6 +157,8 @@ export function createReviewRepository(deps: RepositoryDeps = {}) {
 	const generateId = deps.generateId ?? defaultGenerateId;
 	const notifyDailyProgress =
 		deps.notifyDailyProgress ?? notifyDailyReviewProgressUpdated;
+	const clearLegacyReadCache =
+		deps.clearLegacyReadCache ?? clearFirestoreReadCache;
 
 	async function persistReviewResult({
 		accountUserId,
@@ -239,7 +245,12 @@ export function createReviewRepository(deps: RepositoryDeps = {}) {
 				},
 			];
 			await commitBatchedWrites(operations, {
-				invalidate: () => clearQueryCache({ accountUserId, profileId }),
+				invalidate: () => {
+					clearQueryCache({ accountUserId, profileId });
+					clearLegacyReadCache("review_event");
+					clearLegacyReadCache("card_scheduling_state");
+					clearLegacyReadCache("card_mastery_state");
+				},
 			});
 		}
 
