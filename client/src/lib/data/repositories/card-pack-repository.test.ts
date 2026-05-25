@@ -134,4 +134,38 @@ describe("createCardPackRepository", () => {
 		]);
 		expect(db.review_event.map((item) => item.id)).toEqual(["event-3"]);
 	});
+
+	it("cleans remaining cards and review data when retrying after the pack is already missing", async () => {
+		const db = createRepositoryTestDb({
+			card_pack: [pack("pack-2")],
+			card: [card("card-1", "pack-1"), card("card-2", "pack-2")],
+			card_mastery_state: [
+				masteryState("mastery-1", "card-1"),
+				masteryState("mastery-2", "card-2"),
+			],
+			card_scheduling_state: [
+				schedulingState("schedule-1", "card-1"),
+				schedulingState("schedule-2", "card-2"),
+			],
+			review_event: [
+				reviewEvent("event-1", "card-1"),
+				reviewEvent("event-2", "card-2"),
+			],
+		});
+		const repository = createCardPackRepository({ db });
+
+		await repository.deletePackWithData({
+			accountUserId,
+			profileId,
+			cardPackId: "pack-1",
+		});
+
+		expect(db.card_pack.map((item) => item.id)).toEqual(["pack-2"]);
+		expect(db.card.map((item) => item.id)).toEqual(["card-2"]);
+		expect(db.card_mastery_state.map((item) => item.id)).toEqual(["mastery-2"]);
+		expect(db.card_scheduling_state.map((item) => item.id)).toEqual([
+			"schedule-2",
+		]);
+		expect(db.review_event.map((item) => item.id)).toEqual(["event-2"]);
+	});
 });

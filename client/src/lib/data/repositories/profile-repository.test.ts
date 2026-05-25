@@ -27,6 +27,21 @@ function profile(id: string, accountUserId = "account-1"): CloudUserProfile {
 }
 
 describe("createProfileRepository", () => {
+	it("saves many cloud profiles in one repository call", async () => {
+		const repository = createProfileRepository({ db: createRepositoryTestDb() });
+
+		await repository.saveManyCloudProfiles([
+			profile("profile-a"),
+			profile("profile-b"),
+			{ ...profile("profile-a"), nickname: "Updated A" },
+		]);
+
+		expect(repository.getTestProfiles?.()).toEqual([
+			expect.objectContaining({ id: "profile-a", nickname: "Updated A" }),
+			expect.objectContaining({ id: "profile-b", nickname: "profile-b" }),
+		]);
+	});
+
 	it("deletes profile-owned data, learner scheduling data, profile, and updates the account current profile", async () => {
 		const db = createRepositoryTestDb({
 			card_pack: [

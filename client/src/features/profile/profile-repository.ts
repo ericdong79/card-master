@@ -11,6 +11,7 @@ export const getOrCreateAccountRecord = repository.getOrCreateAccountRecord;
 export const updateAccountCurrentProfile = repository.updateAccountCurrentProfile;
 export const listCloudProfiles = repository.listCloudProfiles;
 export const saveCloudProfile = repository.saveCloudProfile;
+export const saveManyCloudProfiles = repository.saveManyCloudProfiles;
 export const saveCloudProfileAndSetCurrentProfile =
 	repository.saveCloudProfileAndSetCurrentProfile;
 export const touchCloudProfileAndSetCurrentProfile =

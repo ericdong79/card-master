@@ -1,5 +1,5 @@
 import type { CloudUserProfile } from "@/features/profile/profile-repository";
-import { saveCloudProfile } from "@/features/profile/profile-repository";
+import { saveManyCloudProfiles } from "@/features/profile/profile-repository";
 import {
 	loadLocalProfileState,
 	type StoredProfileState,
@@ -623,9 +623,7 @@ export async function writeImportPlan(
 		};
 	}
 
-	for (const profile of plan.profiles) {
-		await saveCloudProfile(profile);
-	}
+	await saveManyCloudProfiles(plan.profiles);
 
 	await createLocalImportRepository({ client: cloudClient }).writePlannedRecords(
 		plan,

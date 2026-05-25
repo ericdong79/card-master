@@ -319,17 +319,26 @@ export function createProfileRepository(deps: ProfileRepositoryDeps = {}) {
 	}
 
 	async function saveCloudProfile(profile: CloudUserProfile): Promise<void> {
+		await saveManyCloudProfiles([profile]);
+	}
+
+	async function saveManyCloudProfiles(
+		nextProfiles: CloudUserProfile[],
+	): Promise<void> {
 		if (deps.db) {
-			upsertProfile(profiles, profile);
+			for (const profile of nextProfiles) {
+				upsertProfile(profiles, profile);
+			}
 			return;
 		}
 
-		const documentRef = doc(
-			getFirestoreDb(),
-			FIRESTORE_COLLECTIONS.profiles,
-			profile.id,
+		await commitBatchedWrites(
+			nextProfiles.map((profile) => ({
+				type: "set",
+				ref: doc(getFirestoreDb(), FIRESTORE_COLLECTIONS.profiles, profile.id),
+				value: profile,
+			})),
 		);
-		await setDoc(documentRef, sanitizeFirestoreDocument(profile));
 	}
 
 	async function saveCloudProfileAndSetCurrentProfile(
@@ -454,6 +463,7 @@ export function createProfileRepository(deps: ProfileRepositoryDeps = {}) {
 		updateAccountCurrentProfile,
 		listCloudProfiles,
 		saveCloudProfile,
+		saveManyCloudProfiles,
 		saveCloudProfileAndSetCurrentProfile,
 		touchCloudProfileAndSetCurrentProfile,
 		deleteProfileWithData,

@@ -247,18 +247,18 @@ export function createCardPackRepository(deps: RepositoryDeps = {}) {
 		profileId,
 		cardPackId,
 	}: DeletePackInput): Promise<void> {
+		const cards = deps.db
+			? testDbPackCards(deps.db, accountUserId, profileId, cardPackId)
+			: await productionPackCards({ accountUserId, profileId, cardPackId });
 		const pack = deps.db
 			? deps.db.card_pack.find((item) => item.id === cardPackId) ?? null
 			: await readPackFromFirestore(cardPackId);
-		if (!pack || !hasProfileOwnership(pack, accountUserId, profileId)) return;
+		if (pack && !hasProfileOwnership(pack, accountUserId, profileId)) return;
+		if (!pack && cards.length === 0) return;
 
 		if (deps.db) {
-			const cards = testDbPackCards(deps.db, accountUserId, profileId, cardPackId);
 			const cardIds = new Set(cards.map((card) => card.id));
 
-			for (const card of cards) {
-				deleteRecord(deps.db, "card", card.id);
-			}
 			for (const state of [...deps.db.card_mastery_state]) {
 				if (
 					hasProfileOwnership(state, accountUserId, profileId) &&
@@ -283,24 +283,30 @@ export function createCardPackRepository(deps: RepositoryDeps = {}) {
 					deleteRecord(deps.db, "review_event", event.id);
 				}
 			}
-			deleteRecord(deps.db, "card_pack", pack.id);
+			for (const card of cards) {
+				deleteRecord(deps.db, "card", card.id);
+			}
+			if (pack) {
+				deleteRecord(deps.db, "card_pack", pack.id);
+			}
 			return;
 		}
 
-		const cards = await productionPackCards({ accountUserId, profileId, cardPackId });
 		const cardIds = cards.map((card) => card.id);
 		const operations: BatchOperation[] = [
-			{ type: "delete", ref: storeDocRef("card_pack", pack.id) },
-			...cards.map<BatchOperation>((card) => ({
-				type: "delete",
-				ref: storeDocRef("card", card.id),
-			})),
 			...(await productionReviewDataDeleteOperations(
 				accountUserId,
 				profileId,
 				cardIds,
 			)),
+			...cards.map<BatchOperation>((card) => ({
+				type: "delete",
+				ref: storeDocRef("card", card.id),
+			})),
 		];
+		if (pack) {
+			operations.push({ type: "delete", ref: storeDocRef("card_pack", pack.id) });
+		}
 
 		await commitBatchedWrites(operations, {
 			invalidate: () => clearQueryCache({ accountUserId, profileId }),

@@ -18,6 +18,17 @@ const allowedFindings = new Map([
 	],
 ]);
 
+const knownSingleRecordWriteWrappers = new Set([
+	"createCard",
+	"createReviewEvent",
+	"deleteCard",
+	"saveCloudProfile",
+	"saveCloudProfileAndSetCurrentProfile",
+	"touchCloudProfileAndSetCurrentProfile",
+	"updateAccountCurrentProfile",
+	"updateCard",
+]);
+
 // These exact repository compatibility paths still support injected IndexedDB-style
 // legacy clients in tests/import flows. New production Firestore paths should use
 // repository batch helpers instead of per-record client writes in loops.
@@ -101,12 +112,40 @@ function isPromiseAllCall(callExpression) {
 }
 
 function hasCreateCardCall(node) {
+	return hasCallNamed(node, new Set(["createCard"]));
+}
+
+function hasCallNamed(node, names) {
 	let found = false;
 
 	function visit(child) {
 		if (found) return;
 
-		if (ts.isCallExpression(child) && callName(child) === "createCard") {
+		if (ts.isCallExpression(child)) {
+			const name = callName(child);
+			if (name && names.has(name)) {
+				found = true;
+				return;
+			}
+		}
+
+		ts.forEachChild(child, visit);
+	}
+
+	ts.forEachChild(node, visit);
+	return found;
+}
+
+function hasSingleRecordWriteWrapperReference(node) {
+	let found = false;
+
+	function visit(child) {
+		if (found) return;
+
+		if (
+			ts.isIdentifier(child) &&
+			knownSingleRecordWriteWrappers.has(child.text)
+		) {
 			found = true;
 			return;
 		}
@@ -190,6 +229,17 @@ function scanSourceFile(sourceFile, relativePath) {
 					"Do not await deleteDoc inside loops; use commitBatchedWrites.",
 				);
 			}
+
+			for (const match of collectAwaitCalls(node.statement, (callExpression) => {
+				const name = callName(callExpression);
+				return Boolean(name && knownSingleRecordWriteWrappers.has(name));
+			})) {
+				addFinding(
+					"await-single-record-wrapper-in-loop",
+					match,
+					"Do not await known single-record write wrappers inside loops; use repository batch writes.",
+				);
+			}
 		}
 
 		if (ts.isCallExpression(node) && isPromiseAllCall(node)) {
@@ -198,6 +248,24 @@ function scanSourceFile(sourceFile, relativePath) {
 					"promise-all-create-card",
 					node,
 					"Do not create cards through Promise.all; use the card repository bulk path.",
+				);
+			}
+			if (
+				node.arguments.some((argument) =>
+					hasCallNamed(argument, knownSingleRecordWriteWrappers),
+				)
+			) {
+				addFinding(
+					"promise-all-single-record-wrapper",
+					node,
+					"Do not call known single-record write wrappers through Promise.all; use repository batch writes.",
+				);
+			}
+			if (node.arguments.some(hasSingleRecordWriteWrapperReference)) {
+				addFinding(
+					"promise-all-single-record-wrapper-reference",
+					node,
+					"Do not pass known single-record write wrappers through Promise.all; use repository batch writes.",
 				);
 			}
 		}
