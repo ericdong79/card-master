@@ -12,6 +12,7 @@ import {
 	signInWithGoogle,
 	signOutOfFirebase,
 } from "@/lib/firebase/auth";
+import { clearLocalAppStorage } from "@/lib/firebase/local-cleanup";
 
 type AuthInitState =
 	| { auth: Auth; error: null }
@@ -46,6 +47,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		const unsubscribe = onAuthStateChanged(
 			authInitState.auth,
 			(nextUser) => {
+				// Cross-tab safety net: if another tab signs out, this tab
+				// receives a null user — clear any per-user local data here so
+				// it does not survive into a different sign-in. We intentionally
+				// do NOT clear Firestore persistence here (Firestore handles
+				// per-tab termination and clearing it across tabs would race).
+				if (!nextUser) {
+					clearLocalAppStorage();
+				}
 				setUser(nextUser);
 				setError(null);
 				setReady(true);

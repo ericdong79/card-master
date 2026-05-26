@@ -9,6 +9,10 @@ import {
 } from "firebase/auth";
 
 import { getFirebaseApp } from "./app";
+import {
+	clearFirestorePersistence,
+	clearLocalAppStorage,
+} from "./local-cleanup";
 
 export function getFirebaseAuth(): Auth {
 	return getAuth(getFirebaseApp());
@@ -46,4 +50,9 @@ export async function signInWithGoogle(): Promise<User> {
 
 export async function signOutOfFirebase(): Promise<void> {
 	await signOut(getFirebaseAuth());
+	// Clear user-scoped local data so the next user on a shared browser
+	// does not see profile names, themes, or import markers from this user.
+	clearLocalAppStorage();
+	// Best-effort: drop Firestore's IndexedDB cache. Never blocks sign-out.
+	await clearFirestorePersistence();
 }
