@@ -11,16 +11,13 @@
   font-family: "CardMasterKaiTi", "STKaiti", "KaiTi", "Kaiti SC", "Noto Serif SC", serif;
 }
 
-.font-card-master-kaiti::before {
-  content: "";
-  font-family: "CardMasterKaiTi";
-}
-
-@font-face {
-  font-family: "CardMasterKaiTi";
-  src: url("./assets/fonts/kaiti.woff2") format("woff2");
-  font-display: swap;
-}
+/*
+ * The "CardMasterKaiTi" @font-face was moved to JS-driven loading
+ * (see client/src/lib/fonts/load-kaiti.ts). The font is ~6.7 MB and is only
+ * needed by pinyin-hanzi cards when the user opts in via their profile, so
+ * loading it eagerly would block FCP for everyone else. Until the font is
+ * loaded on demand, the system serif fallbacks above are used.
+ */
 
 @custom-variant dark (&:is(.dark *));
 

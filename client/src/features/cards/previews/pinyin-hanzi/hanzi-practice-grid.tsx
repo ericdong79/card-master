@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { loadKaitiOnce } from "@/lib/fonts/load-kaiti";
 import { useProfile, type HanziFontPreference } from "@/features/profile/profile-context";
 
 type HanziPracticeGridProps = {
@@ -32,6 +34,12 @@ export function HanziPracticeGrid({
 	const hanziFontPreference = currentProfile?.hanzi_font ?? "default";
 	const hanziFontFamily =
 		HANZI_FONT_FAMILY_BY_PREFERENCE[hanziFontPreference];
+
+	useEffect(() => {
+		if (hanziFontPreference === "kaiti") {
+			void loadKaitiOnce();
+		}
+	}, [hanziFontPreference]);
 
 	if (!characters.length) return null;
 
