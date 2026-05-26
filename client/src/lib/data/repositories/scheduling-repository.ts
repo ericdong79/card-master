@@ -2,6 +2,8 @@ import { limit as firestoreLimit, orderBy, where } from "firebase/firestore";
 
 import type { SchedulingProfile } from "@/lib/api/entities/scheduling-profile";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
+import { normalizeCardSchedulingState } from "@/lib/api/schemas/card-scheduling-state";
+import { parseSm2Parameters } from "@/lib/api/schemas/sm2-parameters";
 import {
 	generateId as defaultGenerateId,
 	nowIso as defaultNow,
@@ -76,7 +78,21 @@ export function createSchedulingRepository(deps: RepositoryDeps = {}) {
 					hasProfileOwnership(profile, accountUserId, profileId),
 				);
 
-		return sortByCreatedAt(records)[0] ?? null;
+		const first = sortByCreatedAt(records)[0];
+		if (!first) return null;
+		// Validate the algorithm parameters at the Firestore boundary so
+		// downstream callers receive a known-good shape. Today only SM-2 is
+		// supported — when we add more algorithms, branch on `algorithm_key`.
+		return {
+			...first,
+			parameters:
+				first.algorithm_key === "sm2"
+					? (parseSm2Parameters(first.parameters) as unknown as Record<
+							string,
+							unknown
+						>)
+					: first.parameters,
+		};
 	}
 
 	async function getOrCreateSchedulingProfile(
@@ -123,11 +139,13 @@ export function createSchedulingRepository(deps: RepositoryDeps = {}) {
 		const cardIdSet = new Set(cardIds);
 
 		if (deps.db) {
-			return deps.db.card_scheduling_state.filter(
-				(state) =>
-					hasLearnerOwnership(state, accountUserId, profileId) &&
-					cardIdSet.has(state.card_id),
-			);
+			return deps.db.card_scheduling_state
+				.filter(
+					(state) =>
+						hasLearnerOwnership(state, accountUserId, profileId) &&
+						cardIdSet.has(state.card_id),
+				)
+				.map(normalizeCardSchedulingState);
 		}
 
 		const chunks = chunkFirestoreInValues(cardIds);
@@ -146,7 +164,8 @@ export function createSchedulingRepository(deps: RepositoryDeps = {}) {
 				(state) =>
 					hasLearnerOwnership(state, accountUserId, profileId) &&
 					cardIdSet.has(state.card_id),
-			);
+			)
+			.map(normalizeCardSchedulingState);
 	}
 
 	/**
@@ -174,7 +193,8 @@ export function createSchedulingRepository(deps: RepositoryDeps = {}) {
 						state.due_at <= asOf,
 				)
 				.sort((a, b) => a.due_at.localeCompare(b.due_at))
-				.slice(0, limit);
+				.slice(0, limit)
+				.map(normalizeCardSchedulingState);
 		}
 
 		const records = await queryStoreRecords("card_scheduling_state", [
@@ -184,9 +204,11 @@ export function createSchedulingRepository(deps: RepositoryDeps = {}) {
 			firestoreLimit(limit),
 		]);
 
-		return records.filter((state) =>
-			hasLearnerOwnership(state, accountUserId, profileId),
-		);
+		return records
+			.filter((state) =>
+				hasLearnerOwnership(state, accountUserId, profileId),
+			)
+			.map(normalizeCardSchedulingState);
 	}
 
 	async function listSchedulingStatesForProfile({
@@ -206,7 +228,7 @@ export function createSchedulingRepository(deps: RepositoryDeps = {}) {
 					hasLearnerOwnership(state, accountUserId, profileId),
 				);
 
-		return records;
+		return records.map(normalizeCardSchedulingState);
 	}
 
 	return {
