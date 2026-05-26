@@ -56,3 +56,14 @@ Pushes to `main` are built and deployed by `.github/workflows/deploy-pages.yml`,
 - `scheduling.md` — SM-2 scheduling algorithm and review state.
 - `docs/review/2026-05-26/README.md` — most recent project review.
 - `AGENTS.md` — current project state and conventions for coding agents.
+
+## Contributing
+
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the commit-message
+convention (Conventional Commits), branching workflow, and PR checklist.
+The PR template at `.github/PULL_REQUEST_TEMPLATE.md` is loaded
+automatically when you open a pull request.
+
+## License
+
+This project is released under the [MIT License](./LICENSE).
