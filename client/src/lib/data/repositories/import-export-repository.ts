@@ -15,6 +15,7 @@ import {
 	listFirestoreRecords,
 	ownershipConstraints as legacyOwnershipConstraints,
 } from "@/lib/api/firestore-client";
+import { parseImportPayload } from "@/lib/api/schemas/import-payload";
 import {
 	generateId as defaultGenerateId,
 	nowIso as defaultNow,
@@ -105,27 +106,12 @@ const IMPORT_STORES = [
 ] as const satisfies StoreName[];
 
 function assertPayload(value: unknown): asserts value is CardMasterExportPayload {
-	if (!value || typeof value !== "object") {
-		throw new Error("Invalid export file: expected JSON object.");
-	}
-
-	const payload = value as Record<string, unknown>;
-	if (payload.format !== EXPORT_FORMAT || payload.version !== EXPORT_VERSION) {
-		throw new Error("Unsupported export file format.");
-	}
-
-	if (!Array.isArray(payload.packs) || !Array.isArray(payload.cards)) {
-		throw new Error("Invalid export file: missing packs or cards.");
-	}
-
-	if (payload.review_state != null && typeof payload.review_state !== "object") {
-		throw new Error("Invalid export file: malformed review_state.");
-	}
-
-	const reviewState = payload.review_state as Record<string, unknown> | undefined;
-	if (reviewState?.card_mastery_states != null && !Array.isArray(reviewState.card_mastery_states)) {
-		throw new Error("Invalid export file: malformed review_state.card_mastery_states.");
-	}
+	// Delegates to the Zod schema in lib/api/schemas/import-payload.ts, which
+	// validates every card / pack / profile / review item with `.strict()`
+	// (rejecting unknown fields) and accumulates all per-item issues into a
+	// single `ImportPayloadValidationError` so the UI can render a complete
+	// failure report.
+	parseImportPayload(value);
 }
 
 function withProfileOwnership<T extends object>(

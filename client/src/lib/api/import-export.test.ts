@@ -124,7 +124,7 @@ describe("parseCardMasterExport backward compatibility", () => {
 		};
 
 		expect(() => parseCardMasterExport(JSON.stringify(payload))).toThrow(
-			"Invalid export file: malformed review_state.card_mastery_states.",
+			/review_state\.card_mastery_states/,
 		);
 	});
 });

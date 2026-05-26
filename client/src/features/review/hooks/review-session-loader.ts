@@ -3,8 +3,8 @@ import type { Card } from "@/lib/api/entities/card";
 import type { CardPack } from "@/lib/api/entities/card-pack";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
 import type { SchedulingProfile } from "@/lib/api/entities/scheduling-profile";
+import { parseSm2Parameters } from "@/lib/api/schemas/sm2-parameters";
 import { ReviewSession } from "@/lib/review";
-import { normalizeSm2Parameters } from "@/lib/scheduling/sm2";
 import type { Sm2Parameters } from "@/lib/scheduling/types";
 
 export type ReviewSessionLoaderSettings = {
@@ -40,9 +40,7 @@ export function buildSm2ReviewSession({
 	completedToday,
 	settings,
 }: BuildSm2ReviewSessionInput): BuiltSm2ReviewSession {
-	const params = normalizeSm2Parameters(
-		schedulingProfile.parameters as Partial<Sm2Parameters>,
-	);
+	const params = parseSm2Parameters(schedulingProfile.parameters);
 	const normalizedSettings = normalizeDailyReviewSettings({
 		dailyGoal: settings.dailyGoal,
 		reviewPerDay: settings.reviewPerDay,

@@ -12,6 +12,7 @@ import {
 	listFirestoreRecords,
 	ownedStoreCacheKey,
 } from "./firestore-client";
+import { normalizeCardSchedulingState } from "./schemas/card-scheduling-state";
 import { generateId, nowIso } from "./utils";
 
 type LegacyCardSchedulingStateInsert = Omit<
@@ -105,7 +106,7 @@ export async function insertSchedulingState(
 	client: ApiClient,
 	input: CardSchedulingStateInsert | LegacyCardSchedulingStateInsert,
 ): Promise<CardSchedulingState> {
-	const record: CardSchedulingState = {
+	const record: CardSchedulingState = normalizeCardSchedulingState({
 		id: generateId(),
 		account_user_id: input.account_user_id,
 		learner_profile_id: input.learner_profile_id,
@@ -117,7 +118,7 @@ export async function insertSchedulingState(
 		last_reviewed_at: input.last_reviewed_at,
 		last_event_id: input.last_event_id ?? null,
 		created_at: nowIso(),
-	};
+	});
 
 	await client.put("card_scheduling_state", record);
 	return record;
@@ -153,10 +154,10 @@ export async function updateSchedulingState(
 		return null;
 	}
 
-	const updated: CardSchedulingState = {
+	const updated: CardSchedulingState = normalizeCardSchedulingState({
 		...existing,
 		...((isCloudScoped ? maybeUpdates : thirdIdOrUpdates) ?? {}),
-	};
+	});
 
 	await client.put("card_scheduling_state", updated);
 	return updated;
@@ -188,10 +189,10 @@ export async function upsertSchedulingState(
 		throw new Error("Scheduling state input is required");
 	}
 	if (existing) {
-		const updated: CardSchedulingState = {
+		const updated: CardSchedulingState = normalizeCardSchedulingState({
 			...existing,
 			...input,
-		};
+		});
 		await client.put("card_scheduling_state", updated);
 		return updated;
 	}
