@@ -11,11 +11,11 @@ npm run build
 npm run test -- --run
 ```
 
-The production build is static and can be deployed to GitLab Pages. There is no app server deployed with the site.
+The production build is static and can be deployed to GitHub Pages. There is no app server deployed with the site.
 
 ## Firebase Configuration
 
-The app uses Firebase Auth for Google sign-in and Firestore for cloud data storage. Create `client/.env.local` for local development, and configure the same values as GitLab CI/CD variables for Pages builds:
+The app uses Firebase Auth for Google sign-in and Firestore for cloud data storage. Create `client/.env.local` for local development. GitHub Pages builds read the committed `client/.env.production`, which must contain only Firebase client-side web configuration:
 
 ```sh
 VITE_FIREBASE_API_KEY=
@@ -28,7 +28,7 @@ VITE_FIREBASE_APP_ID=
 
 Only use Firebase client-side web configuration values here. Do not include service account JSON, private keys, or other server credentials in Vite environment variables.
 
-In the Firebase console, add each deployed app hostname to Authentication > Settings > Authorized domains. Local development usually needs `localhost`; GitLab Pages needs the exact Pages domain.
+In the Firebase console, add each deployed app hostname to Authentication > Settings > Authorized domains. Local development usually needs `localhost`; GitHub Pages needs the exact Pages domain, such as `ericdong79.github.io`.
 
 ## Data Storage
 
