@@ -1,68 +1,68 @@
-# MindMemo Client
+# Card Master — Client
 
-React + TypeScript + Vite app for Card Master / MindMemo.
+React + TypeScript + Vite client for Card Master. See the repo root `README.md` for the project overview.
 
-## Development
+## Quick start
 
 ```sh
+cp .env.example .env.local   # fill in real values from Firebase console
 npm install
 npm run dev
-npm run build
-npm run test -- --run
 ```
 
-The production build is static and can be deployed to GitHub Pages. There is no app server deployed with the site.
+The dev server runs on Vite's default port. Sign-in needs the dev origin (usually `localhost`) listed in Firebase Authentication -> Settings -> Authorized domains.
 
-## Firebase Configuration
+## Environment variables
 
-The app uses Firebase Auth for Google sign-in and Firestore for cloud data storage. Create `client/.env.local` for local development. GitHub Pages builds read the committed `client/.env.production`, which must contain only Firebase client-side web configuration:
+All client config is exposed via Vite `VITE_*` variables. The required keys are listed in `.env.example`. Local development uses `.env.local`; production builds read from `.env.production` (which is being migrated to GitHub Actions secrets — see `docs/review/2026-05-26/P0-critical.md` D2).
 
-```sh
-VITE_FIREBASE_API_KEY=
-VITE_FIREBASE_AUTH_DOMAIN=
-VITE_FIREBASE_PROJECT_ID=
-VITE_FIREBASE_STORAGE_BUCKET=
-VITE_FIREBASE_MESSAGING_SENDER_ID=
-VITE_FIREBASE_APP_ID=
-```
+Only Firebase client-side web configuration belongs in these variables. Do not put service-account JSON, private keys, or other server credentials here.
 
-Only use Firebase client-side web configuration values here. Do not include service account JSON, private keys, or other server credentials in Vite environment variables.
+## Scripts
 
-In the Firebase console, add each deployed app hostname to Authentication > Settings > Authorized domains. Local development usually needs `localhost`; GitHub Pages needs the exact Pages domain, such as `ericdong79.github.io`.
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the Vite dev server. |
+| `npm run build` | Type-check (`tsc -b`) and produce a production build in `dist/`. |
+| `npm run test` | Run the Vitest test suite. |
+| `npm run lint` | Run ESLint. |
+| `npm run storybook` | Launch Storybook on port 6006. |
+| `npm run build-storybook` | Produce a static Storybook build. |
+| `npm run check:firestore-writes` | Guard against unbatched per-record Firestore writes (see `scripts/`). |
+| `npm run preview` | Preview the production build locally. |
 
-## Data Storage
+## Directory structure
 
-Runtime data is stored in Firestore:
+- `src/features/` — feature modules: `auth`, `profile`, `cards`, `review`, `mastery`, `home`, `import`.
+- `src/lib/` — shared libraries: Firebase wiring (`lib/firebase`), data access (`lib/data`, `lib/api`), SM-2 scheduling (`lib/scheduling`), card domain logic (`lib/cards`), preferences, theming, pinyin, hooks, and shared utilities.
+- `src/components/` — shared UI primitives (Radix-based wrappers, app shell, layout chrome).
+- `src/pages/` — route-level page components wired up by `src/App.tsx`.
+- `src/i18n/` — locale resources and i18next setup (entry point is `src/i18n.ts`).
+- `scripts/` — repo maintenance scripts run via `npm run` (currently the Firestore write guard).
 
-- `users/{firebaseUid}` stores account metadata and `current_profile_id`.
-- `profiles` stores learner profiles scoped by `account_user_id`.
-- Card packs, cards, mastery state, scheduling state, scheduling profiles, and review events are stored in their own Firestore collections.
+## Repository-pattern migration (in progress)
 
-User-scoped records use these fields:
+The data layer is migrating from `src/lib/api/` (legacy, direct Firestore calls scattered across modules) to `src/lib/data/repositories/` (the target DAL). New features should add or extend a repository under `lib/data/repositories/`. Old call sites in `lib/api/` are being phased out incrementally — see `docs/review/2026-05-26/P2-medium.md` #9 for the migration plan and current status.
 
-- `account_user_id`: Firebase Auth `uid`.
-- `profile_id`: current learner profile id for normal profile-owned data.
-- `owner_user_id`: compatibility field that should match the learner profile id.
-- `learner_profile_id`: used by scheduling state to avoid overloading algorithm `profile_id`.
+## Firestore configuration
 
-Firestore rules and indexes are in:
+The Firestore rules, indexes, and project wiring live alongside the client code:
 
-- `firestore.rules`
-- `firestore.indexes.json`
-- `firebase.json`
+- `firestore.rules` — security rules.
+- `firestore.indexes.json` — composite index definitions.
+- `firebase.json` — Firebase CLI configuration.
 
-Avoid adding new Firestore query shapes that require composite indexes unless the index file and deployment notes are updated with the code change.
+The current `firebase.json` wires Firestore only (no emulator suite, hosting, or functions config). To experiment with the Firestore emulator, add an `emulators` block to `firebase.json` and run `firebase emulators:start` from this directory; nothing else in the codebase assumes an emulator is running.
 
-## Legacy Local Data Import
+Avoid introducing new Firestore query shapes that need a composite index unless `firestore.indexes.json` is updated in the same change.
 
-Older versions stored data in browser localStorage and IndexedDB. That local storage is no longer the runtime source of truth, but it remains supported as an import source.
+## Legacy local data import
 
-To migrate old browser data:
+Older versions stored data in browser `localStorage` / IndexedDB. That local store is no longer the source of truth but is still supported as a one-way import source. To migrate old browser data:
 
-1. Open the app on the same browser origin that has the old local data, for example `http://localhost:5174`.
+1. Open the app on the same origin that holds the old local data.
 2. Sign in with Google.
-3. Open the user menu or Preferences.
-4. Choose `Import local data`.
-5. Confirm the import.
+3. Open the user menu or Preferences and choose `Import local data`.
+4. Confirm the import.
 
-The import copies local profiles, packs, cards, scheduling state, mastery state, and review events into the signed-in Firestore account. It does not delete local data. Import IDs are deterministic, so retrying the same import should not create duplicate cloud records.
+Import IDs are deterministic, so retrying the same import will not create duplicate cloud records. The import does not delete the local data.
