@@ -2,6 +2,7 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // ---------- Auth + ownership ----------
     function isSignedIn() {
       return request.auth != null;
     }
@@ -18,56 +19,194 @@ service cloud.firestore {
       return isSignedIn() && request.resource.data.account_user_id == request.auth.uid;
     }
 
-    match /users/{userId} {
-      allow read, create, update, delete: if isOwnUser(userId);
+    // ---------- Generic hardening helpers ----------
+
+    // 100 KB per document. Firestore's hard limit is ~1 MiB; 100 KB is plenty
+    // for text-only flashcards and forces large media (e.g. images, audio)
+    // through Firebase Storage rather than inline data URLs. If embedded
+    // media data URLs are added later, raise this cap deliberately rather
+    // than relying on the platform max.
+    function withinSizeLimit() {
+      return request.resource.size() < 100 * 1024;
     }
 
+    // Field-value immutability check between resource (existing) and
+    // request.resource (incoming) data. Use on update paths only.
+    function unchanged(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+
+    // ---------- users/{firebaseUid} ----------
+    // The document id is the Firebase uid. There is no account_user_id field
+    // on this record (ownership is by doc id), so we don't apply the generic
+    // ownsExistingAccount/ownsIncomingAccount checks here.
+    match /users/{userId} {
+      allow read: if isOwnUser(userId);
+      allow create: if isOwnUser(userId)
+        && withinSizeLimit()
+        && request.resource.data.id == userId;
+      allow update: if isOwnUser(userId)
+        && withinSizeLimit()
+        && unchanged('id')
+        && unchanged('created_at');
+      allow delete: if isOwnUser(userId);
+    }
+
+    // ---------- profiles ----------
     match /profiles/{documentId} {
       allow read: if ownsExistingAccount();
-      allow create: if ownsIncomingAccount();
-      allow update: if ownsExistingAccount() && ownsIncomingAccount();
+      allow create: if ownsIncomingAccount()
+        && withinSizeLimit()
+        && request.resource.data.keys().hasAll([
+          'account_user_id', 'created_at'
+        ])
+        && request.resource.data.account_user_id is string;
+      allow update: if ownsExistingAccount()
+        && ownsIncomingAccount()
+        && withinSizeLimit()
+        && unchanged('account_user_id')
+        && unchanged('created_at');
       allow delete: if ownsExistingAccount();
     }
 
+    // ---------- card_packs ----------
     match /card_packs/{documentId} {
       allow read: if ownsExistingAccount();
-      allow create: if ownsIncomingAccount();
-      allow update: if ownsExistingAccount() && ownsIncomingAccount();
+      allow create: if ownsIncomingAccount()
+        && withinSizeLimit()
+        && request.resource.data.keys().hasAll([
+          'account_user_id', 'profile_id', 'owner_user_id', 'created_at'
+        ])
+        && request.resource.data.account_user_id is string
+        && request.resource.data.profile_id is string;
+      allow update: if ownsExistingAccount()
+        && ownsIncomingAccount()
+        && withinSizeLimit()
+        && unchanged('account_user_id')
+        && unchanged('profile_id')
+        && unchanged('owner_user_id')
+        && unchanged('created_at');
       allow delete: if ownsExistingAccount();
     }
 
+    // ---------- cards ----------
+    // Cards may carry inline question/answer content but the 100 KB cap still
+    // applies. Media (image/audio) heavier than that must use Storage URLs,
+    // not data URLs.
     match /cards/{documentId} {
       allow read: if ownsExistingAccount();
-      allow create: if ownsIncomingAccount();
-      allow update: if ownsExistingAccount() && ownsIncomingAccount();
+      allow create: if ownsIncomingAccount()
+        && withinSizeLimit()
+        && request.resource.data.keys().hasAll([
+          'account_user_id', 'profile_id', 'owner_user_id', 'card_pack_id', 'created_at'
+        ])
+        && request.resource.data.account_user_id is string
+        && request.resource.data.profile_id is string
+        && request.resource.data.card_pack_id is string;
+      allow update: if ownsExistingAccount()
+        && ownsIncomingAccount()
+        && withinSizeLimit()
+        && unchanged('account_user_id')
+        && unchanged('profile_id')
+        && unchanged('owner_user_id')
+        && unchanged('card_pack_id')
+        && unchanged('created_at');
       allow delete: if ownsExistingAccount();
     }
 
+    // ---------- scheduling_profiles ----------
     match /scheduling_profiles/{documentId} {
       allow read: if ownsExistingAccount();
-      allow create: if ownsIncomingAccount();
-      allow update: if ownsExistingAccount() && ownsIncomingAccount();
+      allow create: if ownsIncomingAccount()
+        && withinSizeLimit()
+        && request.resource.data.keys().hasAll([
+          'account_user_id', 'profile_id', 'owner_user_id', 'created_at'
+        ])
+        && request.resource.data.account_user_id is string
+        && request.resource.data.profile_id is string;
+      allow update: if ownsExistingAccount()
+        && ownsIncomingAccount()
+        && withinSizeLimit()
+        && unchanged('account_user_id')
+        && unchanged('profile_id')
+        && unchanged('owner_user_id')
+        && unchanged('created_at');
       allow delete: if ownsExistingAccount();
     }
 
+    // ---------- card_scheduling_states ----------
+    // NOTE: uses `learner_profile_id` for the learner scope. It ALSO carries
+    // `profile_id` which references the *scheduling* profile (algorithm
+    // config), not the learner profile. Both are locked immutable on update.
     match /card_scheduling_states/{documentId} {
       allow read: if ownsExistingAccount();
-      allow create: if ownsIncomingAccount();
-      allow update: if ownsExistingAccount() && ownsIncomingAccount();
+      allow create: if ownsIncomingAccount()
+        && withinSizeLimit()
+        && request.resource.data.keys().hasAll([
+          'account_user_id', 'learner_profile_id', 'owner_user_id', 'card_id', 'profile_id', 'created_at'
+        ])
+        && request.resource.data.account_user_id is string
+        && request.resource.data.learner_profile_id is string
+        && request.resource.data.card_id is string
+        && request.resource.data.profile_id is string;
+      allow update: if ownsExistingAccount()
+        && ownsIncomingAccount()
+        && withinSizeLimit()
+        && unchanged('account_user_id')
+        && unchanged('learner_profile_id')
+        && unchanged('owner_user_id')
+        && unchanged('card_id')
+        && unchanged('profile_id')
+        && unchanged('created_at');
       allow delete: if ownsExistingAccount();
     }
 
+    // ---------- card_mastery_states ----------
     match /card_mastery_states/{documentId} {
       allow read: if ownsExistingAccount();
-      allow create: if ownsIncomingAccount();
-      allow update: if ownsExistingAccount() && ownsIncomingAccount();
+      allow create: if ownsIncomingAccount()
+        && withinSizeLimit()
+        && request.resource.data.keys().hasAll([
+          'account_user_id', 'profile_id', 'owner_user_id', 'card_id', 'created_at'
+        ])
+        && request.resource.data.account_user_id is string
+        && request.resource.data.profile_id is string
+        && request.resource.data.card_id is string;
+      allow update: if ownsExistingAccount()
+        && ownsIncomingAccount()
+        && withinSizeLimit()
+        && unchanged('account_user_id')
+        && unchanged('profile_id')
+        && unchanged('owner_user_id')
+        && unchanged('card_id')
+        && unchanged('created_at');
       allow delete: if ownsExistingAccount();
     }
 
+    // ---------- review_events ----------
+    // Review events are conceptually append-only in the domain model (see
+    // database.md), but the DTO layer does not currently expose an update
+    // path, so we keep update allowed-with-immutability rather than blocking
+    // it outright. Tighten to `allow update: if false;` once the client
+    // path is confirmed never to update.
     match /review_events/{documentId} {
       allow read: if ownsExistingAccount();
-      allow create: if ownsIncomingAccount();
-      allow update: if ownsExistingAccount() && ownsIncomingAccount();
+      allow create: if ownsIncomingAccount()
+        && withinSizeLimit()
+        && request.resource.data.keys().hasAll([
+          'account_user_id', 'profile_id', 'owner_user_id', 'card_id', 'created_at'
+        ])
+        && request.resource.data.account_user_id is string
+        && request.resource.data.profile_id is string
+        && request.resource.data.card_id is string;
+      allow update: if ownsExistingAccount()
+        && ownsIncomingAccount()
+        && withinSizeLimit()
+        && unchanged('account_user_id')
+        && unchanged('profile_id')
+        && unchanged('owner_user_id')
+        && unchanged('card_id')
+        && unchanged('created_at');
       allow delete: if ownsExistingAccount();
     }
   }
