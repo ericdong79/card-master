@@ -44,7 +44,7 @@ All commands assume you are inside `client/`.
 - `.github/` — GitHub Actions workflows used for deployment.
 - `AGENTS.md` — project notes for coding agents.
 
-Other top-level markdown files (`database.md`, `scheduling.md`, `scheduling-state-schema.md`, etc.) contain architecture references that will be consolidated into `docs/architecture/` in a follow-up.
+See [`docs/README.md`](./docs/README.md) for the documentation index.
 
 ## Deployment
 
@@ -52,7 +52,7 @@ Pushes to `main` are built and deployed by `.github/workflows/deploy-pages.yml`,
 
 ## Documentation
 
-- `database.md` — Firestore schema overview.
-- `scheduling.md` — SM-2 scheduling algorithm and review state.
-- `docs/review/2026-05-26/README.md` — most recent project review.
-- `AGENTS.md` — current project state and conventions for coding agents.
+- [`docs/architecture/database.md`](./docs/architecture/database.md) — Firestore schema overview.
+- [`docs/architecture/scheduling.md`](./docs/architecture/scheduling.md) — SM-2 scheduling algorithm and review state.
+- [`docs/review/2026-05-26/README.md`](./docs/review/2026-05-26/README.md) — most recent project review.
+- [`AGENTS.md`](./AGENTS.md) — current project state and conventions for coding agents.

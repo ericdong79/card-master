@@ -28,7 +28,7 @@ Research Anki-like memory-first learning systems with RemNotes as reference, foc
 | 10 | Practical Implementation Patterns | Real-world code examples, common patterns | Researcher 10 |
 
 ## Expected Outputs
-- `research_notes/` directory with 10 detailed markdown files
+- `notes/` directory with 10 detailed markdown files
 - `anki-like-memory-learning-system-report.md` - Comprehensive synthesis
 - `anki-like-memory-learning-system-sources.md` - Complete bibliography
 
