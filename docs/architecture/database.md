@@ -114,6 +114,20 @@ browser origin into the signed-in Firebase account. It does not delete local
 data. Import ids are deterministic so repeated imports do not create duplicate
 cloud records.
 
-See `database-schema.sql` for the early PostgreSQL/Supabase schema. That file is
-kept for historical architectural reference only and is not used by the runtime
-application.
+See [`../legacy/database-schema.sql`](../legacy/database-schema.sql) for the
+early PostgreSQL/Supabase schema. That file is kept for historical
+architectural reference only and is not used by the runtime application.
+
+## Deprecation: `owner_user_id`
+
+`owner_user_id` is retained on legacy local-IndexedDB records for backward
+compatibility with the pre-cloud model. For records written via the cloud
+repositories it equals the active profile id and is redundant with
+`profile_id` / `learner_profile_id`.
+
+**Plan**: a future data migration will populate `profile_id` on any legacy
+records still keyed only by `owner_user_id`, after which new writes will
+drop the field. Until then, both reads and writes should prefer
+`profile_id` / `learner_profile_id`.
+
+**Tracking**: see [`../review/2026-05-26/P2-medium.md`](../review/2026-05-26/P2-medium.md) #14.
