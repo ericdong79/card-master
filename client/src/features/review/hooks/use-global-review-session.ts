@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { normalizeDailyReviewSettings } from "@/features/review/daily-goal";
+import { loadDueCardWindow } from "@/features/review/lib/due-card-window";
 import { persistReviewResult } from "@/features/review/hooks/persist-review-result";
 import {
 	buildSm2ReviewSession,
@@ -123,21 +125,40 @@ export function useGlobalReviewSession(): UseGlobalReviewSessionReturn {
 						.filter((pack) => pack.status === "active")
 						.map((pack) => pack.id),
 				);
-				const fetchedCards = (
-					await cardRepository.loadProfileCards({ accountUserId, profileId })
-				).filter((card) => activePackIds.has(card.card_pack_id));
+
+				// Resolve the session's per-day limits up front so we only fetch a
+				// bounded window of due scheduling states + new cards instead of
+				// every active card and every scheduling state.
+				const normalizedSettings = normalizeDailyReviewSettings({
+					dailyGoal: currentProfile?.daily_goal,
+					reviewPerDay: currentProfile?.review_per_day,
+					newPerDay: currentProfile?.new_per_day,
+				});
+				const remainingGoal = Math.max(
+					0,
+					normalizedSettings.dailyGoal - completedToday,
+				);
+				// Over-fetch a little so the SM-2 selector still has slack after
+				// filtering to active packs.
+				const dueWindow = Math.max(
+					normalizedSettings.reviewPerDay,
+					remainingGoal,
+				) * 2;
+				const newWindow = normalizedSettings.newPerDay * 2;
+
+				const { cards: fetchedCards, schedulingStates: stateList } =
+					await loadDueCardWindow({
+						accountUserId,
+						profileId,
+						activeCardPackIds: activePackIds,
+						dueLimit: dueWindow,
+						newLimit: newWindow,
+						cardRepository,
+						schedulingRepository,
+					});
 
 				setCardPacks(fetchedPacks);
 				setCards(fetchedCards);
-
-				const stateList =
-					fetchedCards.length > 0
-						? await schedulingRepository.listSchedulingStatesByCardIds({
-								accountUserId,
-								profileId,
-								cardIds: fetchedCards.map((card) => card.id),
-							})
-						: [];
 
 				const { session: newSession } = buildSm2ReviewSession({
 					accountUserId,

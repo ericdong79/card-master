@@ -1,4 +1,4 @@
-import { where } from "firebase/firestore";
+import { limit as firestoreLimit, orderBy, where } from "firebase/firestore";
 
 import type { SchedulingProfile } from "@/lib/api/entities/scheduling-profile";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
@@ -36,6 +36,11 @@ type ProfileScopeInput = {
 
 type CardIdsInput = ProfileScopeInput & {
 	cardIds: string[];
+};
+
+type DueWindowInput = ProfileScopeInput & {
+	asOf: string;
+	limit: number;
 };
 
 const DEFAULT_PROFILE = {
@@ -144,6 +149,46 @@ export function createSchedulingRepository(deps: RepositoryDeps = {}) {
 			);
 	}
 
+	/**
+	 * Returns the next batch of due scheduling states for a profile, ordered by
+	 * `due_at` ascending. Used by the global review session loader to avoid
+	 * fetching every active scheduling state up front.
+	 *
+	 * NOTE: This is a narrow addition added by the review-pagination work. The
+	 * parallel firestore-filters worktree may add a similar helper — at merge
+	 * time keep one canonical implementation.
+	 */
+	async function listDueSchedulingStatesForProfile({
+		accountUserId,
+		profileId,
+		asOf,
+		limit,
+	}: DueWindowInput): Promise<CardSchedulingState[]> {
+		if (limit <= 0) return [];
+
+		if (deps.db) {
+			return deps.db.card_scheduling_state
+				.filter(
+					(state) =>
+						hasLearnerOwnership(state, accountUserId, profileId) &&
+						state.due_at <= asOf,
+				)
+				.sort((a, b) => a.due_at.localeCompare(b.due_at))
+				.slice(0, limit);
+		}
+
+		const records = await queryStoreRecords("card_scheduling_state", [
+			...learnerOwnershipConstraints(accountUserId, profileId),
+			where("due_at", "<=", asOf),
+			orderBy("due_at", "asc"),
+			firestoreLimit(limit),
+		]);
+
+		return records.filter((state) =>
+			hasLearnerOwnership(state, accountUserId, profileId),
+		);
+	}
+
 	async function listSchedulingStatesForProfile({
 		accountUserId,
 		profileId,
@@ -169,5 +214,6 @@ export function createSchedulingRepository(deps: RepositoryDeps = {}) {
 		getOrCreateSchedulingProfile,
 		listSchedulingStatesByCardIds,
 		listSchedulingStatesForProfile,
+		listDueSchedulingStatesForProfile,
 	};
 }
