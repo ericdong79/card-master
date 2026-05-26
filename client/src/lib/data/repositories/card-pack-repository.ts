@@ -194,25 +194,34 @@ export function createCardPackRepository(deps: RepositoryDeps = {}) {
 		profileId: string,
 		cardIds: string[],
 	): Promise<BatchOperation[]> {
-		const operations: BatchOperation[] = [];
 		const chunks = chunkFirestoreInValues(cardIds);
+		if (chunks.length === 0) return [];
 
-		for (const chunk of chunks) {
-			const [masteryStates, schedulingStates, reviewEvents] = await Promise.all([
-				queryStoreRecords("card_mastery_state", [
-					...profileOwnershipConstraints(accountUserId, profileId),
-					where("card_id", "in", chunk),
+		// Fan out across all chunks AND across the three sub-collections in
+		// parallel. For a 100-card pack this turns ~30 serial RTTs into ~1
+		// parallel RTT. Each query is independent and read-only, so this is
+		// safe for retry semantics (caller still commits via batched writes).
+		const chunkResults = await Promise.all(
+			chunks.map((chunk) =>
+				Promise.all([
+					queryStoreRecords("card_mastery_state", [
+						...profileOwnershipConstraints(accountUserId, profileId),
+						where("card_id", "in", chunk),
+					]),
+					queryStoreRecords("card_scheduling_state", [
+						...learnerOwnershipConstraints(accountUserId, profileId),
+						where("card_id", "in", chunk),
+					]),
+					queryStoreRecords("review_event", [
+						...profileOwnershipConstraints(accountUserId, profileId),
+						where("card_id", "in", chunk),
+					]),
 				]),
-				queryStoreRecords("card_scheduling_state", [
-					...learnerOwnershipConstraints(accountUserId, profileId),
-					where("card_id", "in", chunk),
-				]),
-				queryStoreRecords("review_event", [
-					...profileOwnershipConstraints(accountUserId, profileId),
-					where("card_id", "in", chunk),
-				]),
-			]);
+			),
+		);
 
+		const operations: BatchOperation[] = [];
+		for (const [masteryStates, schedulingStates, reviewEvents] of chunkResults) {
 			for (const state of masteryStates) {
 				if (hasProfileOwnership(state, accountUserId, profileId)) {
 					operations.push({
