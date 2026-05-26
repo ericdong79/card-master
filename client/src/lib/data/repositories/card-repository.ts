@@ -223,6 +223,54 @@ export function createCardRepository(deps: RepositoryDeps = {}) {
 		);
 	}
 
+	/**
+	 * Hydrates Card records by id. Chunks the `where("id", "in", ...)` query
+	 * to respect Firestore's `in`-filter limit. Used by the windowed review
+	 * loader to avoid scanning every card in a profile.
+	 */
+	async function loadCardsByIds({
+		accountUserId,
+		profileId,
+		cardIds,
+	}: CardIdsInput): Promise<Card[]> {
+		if (cardIds.length === 0) return [];
+		const cardIdSet = new Set(cardIds);
+
+		const records = deps.db
+			? deps.db.card.filter(
+					(card) =>
+						hasProfileOwnership(card, accountUserId, profileId) &&
+						cardIdSet.has(card.id),
+				)
+			: (
+					await Promise.all(
+						chunkFirestoreInValues(cardIds).map((chunk) =>
+							queryStoreRecords("card", [
+								...profileOwnershipConstraints(accountUserId, profileId),
+								where("id", "in", chunk),
+							]),
+						),
+					)
+				)
+					.flat()
+					.filter(
+						(card) =>
+							hasProfileOwnership(card, accountUserId, profileId) &&
+							cardIdSet.has(card.id),
+					);
+
+		// De-duplicate (same card id might appear from multiple chunks if input
+		// had duplicates, though chunkFirestoreInValues already de-dupes).
+		const seen = new Set<string>();
+		const unique: Card[] = [];
+		for (const card of records) {
+			if (seen.has(card.id)) continue;
+			seen.add(card.id);
+			unique.push(card);
+		}
+		return unique;
+	}
+
 	async function listMasteryStatesByCardIds({
 		accountUserId,
 		profileId,
@@ -302,6 +350,7 @@ export function createCardRepository(deps: RepositoryDeps = {}) {
 	return {
 		loadPackCards,
 		loadProfileCards,
+		loadCardsByIds,
 		createCard,
 		updateCard,
 		deleteCard,
