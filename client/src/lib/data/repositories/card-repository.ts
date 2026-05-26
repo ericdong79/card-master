@@ -113,6 +113,7 @@ export function createCardRepository(deps: RepositoryDeps = {}) {
 					await queryStoreRecords("card", [
 						...profileOwnershipConstraints(accountUserId, profileId),
 						where("card_pack_id", "==", cardPackId),
+						...(status ? [where("status", "==", status)] : []),
 					])
 				).filter((card) => hasProfileOwnership(card, accountUserId, profileId));
 
@@ -131,10 +132,10 @@ export function createCardRepository(deps: RepositoryDeps = {}) {
 					hasProfileOwnership(card, accountUserId, profileId),
 				)
 			: (
-					await queryStoreRecords(
-						"card",
-						profileOwnershipConstraints(accountUserId, profileId),
-					)
+					await queryStoreRecords("card", [
+						...profileOwnershipConstraints(accountUserId, profileId),
+						...(status ? [where("status", "==", status)] : []),
+					])
 				).filter((card) => hasProfileOwnership(card, accountUserId, profileId));
 
 		return sortByCreatedAt(
