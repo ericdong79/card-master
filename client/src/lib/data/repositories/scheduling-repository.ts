@@ -164,10 +164,34 @@ export function createSchedulingRepository(deps: RepositoryDeps = {}) {
 		return records;
 	}
 
+	async function listDueSchedulingStatesForProfile({
+		accountUserId,
+		profileId,
+		now: dueBefore,
+	}: ProfileScopeInput & { now: string }): Promise<CardSchedulingState[]> {
+		const records = deps.db
+			? deps.db.card_scheduling_state.filter(
+					(state) =>
+						hasLearnerOwnership(state, accountUserId, profileId) &&
+						Date.parse(state.due_at) <= Date.parse(dueBefore),
+				)
+			: (
+					await queryStoreRecords("card_scheduling_state", [
+						...learnerOwnershipConstraints(accountUserId, profileId),
+						where("due_at", "<=", dueBefore),
+					])
+				).filter((state) =>
+					hasLearnerOwnership(state, accountUserId, profileId),
+				);
+
+		return records;
+	}
+
 	return {
 		fetchSchedulingProfile,
 		getOrCreateSchedulingProfile,
 		listSchedulingStatesByCardIds,
 		listSchedulingStatesForProfile,
+		listDueSchedulingStatesForProfile,
 	};
 }
