@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { parseCardMasterExport } from "@/lib/api/import-export";
+import { parseCardMasterExport } from "@/lib/data/repositories/import-export-repository";
 
 type ImportPacksDialogProps = {
 	open: boolean;

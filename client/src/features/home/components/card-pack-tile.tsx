@@ -10,7 +10,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import type { CardPackWithCounts } from "@/lib/api/card-pack";
+import type { CardPackWithCounts } from "@/lib/data/repositories/card-pack-repository";
 import { cn } from "@/lib/utils";
 
 type CardPackTileProps = {

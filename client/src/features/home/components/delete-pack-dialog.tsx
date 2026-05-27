@@ -10,7 +10,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
-import { type CardPackWithCounts } from "@/lib/api/card-pack";
+import { type CardPackWithCounts } from "@/lib/data/repositories/card-pack-repository";
 
 type DeletePackDialogProps = {
 	deletingPack: CardPackWithCounts | null;

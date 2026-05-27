@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { type CardPackWithCounts } from "@/lib/api/card-pack";
+import { type CardPackWithCounts } from "@/lib/data/repositories/card-pack-repository";
 
 type EditPackDialogProps = {
 	editingPack: CardPackWithCounts | null;

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { type CardPackWithCounts } from "@/lib/api/card-pack";
+import { type CardPackWithCounts } from "@/lib/data/repositories/card-pack-repository";
 
 type ExportPacksDialogProps = {
 	open: boolean;
