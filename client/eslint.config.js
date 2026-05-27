@@ -24,4 +24,21 @@ export default defineConfig([globalIgnores(['dist']), {
       ...globals.vitest,
     },
   },
+}, {
+  // Forbid direct firebase/firestore imports outside the data layer. UI and
+  // feature code must go through repositories under @/lib/data/repositories/*.
+  files: ['src/**/*.{ts,tsx}'],
+  ignores: [
+    'src/lib/data/firestore/**',
+    'src/lib/data/repositories/**',
+    'src/lib/firebase/**',
+  ],
+  rules: {
+    'no-restricted-imports': ['error', {
+      paths: [{
+        name: 'firebase/firestore',
+        message: 'Direct firebase/firestore imports are restricted. Use repositories under @/lib/data/repositories/* instead.',
+      }],
+    }],
+  },
 }, ...storybook.configs["flat/recommended"]])
