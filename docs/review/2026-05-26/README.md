@@ -65,10 +65,10 @@
 - `<AppShell>` 只剩 layout + outlet
 - 测试方式: Storybook 故事仍能正常打开每个 modal
 
-**PR 2: CardFormDialog 表单状态用 useReducer 或 react-hook-form**
-- 当前手动管 `questionManuallyEditedRef` 等 ref 状态
-- 引入 `react-hook-form`（项目还没装，~10 KB gzip）或本地 useReducer
-- **附带:** 修 `useUniqueElementIds` accessibility 问题或者写清楚为什么忽略
+**PR 2: CardFormDialog 表单状态用 useReducer 或 react-hook-form** ✅ 完成
+- ~~当前手动管 `questionManuallyEditedRef` 等 ref 状态~~ → 单个 `useReducer` + 显式 action union（`client/src/features/cards/components/card-form-state.ts`）
+- ~~**附带:** 修 `useUniqueElementIds` accessibility 问题或者写清楚为什么忽略~~ → 用 `useId()` 生成唯一 id，删除 stale `biome-ignore-all`（项目用 ESLint，不是 biome，该指令本就无效）
+- 详情：[`implementation/CARDFORM_REDUCER.md`](./implementation/CARDFORM_REDUCER.md)
 
 **PR 3: use-review-session 状态机化**
 - 13 个 useState → 单个 useReducer
@@ -155,3 +155,4 @@
 - `LICENSE_CONTRIBUTING.md` — 法律 / 贡献文档
 - `ZOD_VALIDATION.md` — Zod 边界校验
 - `REPOSITORY_MIGRATION.md` — P2 #9 6 阶段 repo 迁移记录
+- `CARDFORM_REDUCER.md` — P2 #12 PR 2: `card-form-dialog.tsx` useReducer + `useId` 重构

@@ -1,5 +1,10 @@
-/** biome-ignore-all lint/correctness/useUniqueElementIds: <explanation> */
-import { type ChangeEvent, useEffect, useRef, useState } from "react";
+import {
+	type ChangeEvent,
+	useCallback,
+	useEffect,
+	useId,
+	useReducer,
+} from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -23,12 +28,15 @@ import type { CardPackType } from "@/lib/api/entities/card-pack";
 import { resolveCardPackType } from "@/lib/api/entities/card-pack";
 import {
 	buildCardPayload,
-	type CardEditorValues,
-	createEmptyCardEditorValues,
 	getCardEditorValues,
 	getCardTypeConfig,
 } from "@/lib/cards/card-type-registry";
 import { resolvePinyin } from "@/lib/pinyin/provider";
+
+import {
+	cardFormReducer,
+	createInitialCardFormState,
+} from "./card-form-state";
 
 type CardSubmitPayload = {
 	prompt: string;
@@ -75,67 +83,55 @@ export function CardFormDialog({
 	packType,
 }: CardFormDialogProps) {
 	const { t } = useTranslation();
-	const [values, setValues] = useState<CardEditorValues>(
-		createEmptyCardEditorValues(),
-	);
-	const [pending, setPending] = useState(false);
-	const [converting, setConverting] = useState(false);
-	const [questionManuallyEdited, setQuestionManuallyEdited] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	const normalizedPackType = resolveCardPackType(packType);
 	const isPinyinHanziPack = normalizedPackType === "pinyin-hanzi";
 	const config = getCardTypeConfig(normalizedPackType);
-	const questionManuallyEditedRef = useRef(questionManuallyEdited);
+
+	const [state, dispatch] = useReducer(
+		cardFormReducer,
+		undefined,
+		createInitialCardFormState,
+	);
+	const { values, pending, converting, error, questionManuallyEdited } = state;
+
+	// Generate unique ids per dialog instance so multiple dialogs can coexist
+	// (e.g. create + edit dialogs mounted on the same page).
+	const reactId = useId();
+	const ids = {
+		question: `card-question-${reactId}`,
+		answer: `card-answer-${reactId}`,
+		questionImage: `card-question-image-${reactId}`,
+		questionAudio: `card-question-audio-${reactId}`,
+	};
 
 	useEffect(() => {
 		if (open) {
-			setValues(getCardEditorValues(card));
-			setQuestionManuallyEdited(false);
-			setError(null);
+			dispatch({ type: "reset", values: getCardEditorValues(card) });
 		}
 	}, [open, card]);
-
-	useEffect(() => {
-		questionManuallyEditedRef.current = questionManuallyEdited;
-	}, [questionManuallyEdited]);
 
 	const handleSubmit = async () => {
 		const validationError = config.validate(values);
 		if (validationError) {
-			setError(validationError);
+			dispatch({ type: "setError", error: validationError });
 			return;
 		}
 
-		setPending(true);
+		dispatch({ type: "submitStart" });
 		try {
 			await onSubmit(buildCardPayload(packType, values));
+			dispatch({ type: "submitFinish" });
 		} catch (submitError) {
-			setError(
-				submitError instanceof Error
-					? submitError.message
-					: mode === "create"
-						? t("errors.createCard")
-						: t("errors.updateCard"),
-			);
-		} finally {
-			setPending(false);
+			dispatch({
+				type: "submitFinish",
+				error:
+					submitError instanceof Error
+						? submitError.message
+						: mode === "create"
+							? t("errors.createCard")
+							: t("errors.updateCard"),
+			});
 		}
-	};
-
-	const setQuestionText = (
-		questionText: string,
-		source: "manual" | "auto" = "manual",
-	) => {
-		setValues((prev) => ({ ...prev, questionText }));
-		if (source === "manual" && isPinyinHanziPack) {
-			setQuestionManuallyEdited(true);
-		}
-		setError(null);
-	};
-
-	const setAnswerText = (answerText: string) => {
-		setValues((prev) => ({ ...prev, answerText }));
-		setError(null);
 	};
 
 	const handleQuestionImageUpload = async (
@@ -144,15 +140,20 @@ export function CardFormDialog({
 		const file = event.target.files?.[0];
 		if (!file) return;
 		try {
-			const asset = await readFileAsAsset(file, "image", t("cards.form.readFileError"));
-			setValues((prev) => ({ ...prev, questionImage: asset }));
-			setError(null);
-		} catch (uploadError) {
-			setError(
-				uploadError instanceof Error
-					? uploadError.message
-					: t("cards.form.loadImageError"),
+			const asset = await readFileAsAsset(
+				file,
+				"image",
+				t("cards.form.readFileError"),
 			);
+			dispatch({ type: "setQuestionImage", image: asset });
+		} catch (uploadError) {
+			dispatch({
+				type: "setError",
+				error:
+					uploadError instanceof Error
+						? uploadError.message
+						: t("cards.form.loadImageError"),
+			});
 		}
 	};
 
@@ -162,40 +163,48 @@ export function CardFormDialog({
 		const file = event.target.files?.[0];
 		if (!file) return;
 		try {
-			const asset = await readFileAsAsset(file, "audio", t("cards.form.readFileError"));
-			setValues((prev) => ({ ...prev, questionAudio: asset }));
-			setError(null);
-		} catch (uploadError) {
-			setError(
-				uploadError instanceof Error
-					? uploadError.message
-					: t("cards.form.loadAudioError"),
+			const asset = await readFileAsAsset(
+				file,
+				"audio",
+				t("cards.form.readFileError"),
 			);
+			dispatch({ type: "setQuestionAudio", audio: asset });
+		} catch (uploadError) {
+			dispatch({
+				type: "setError",
+				error:
+					uploadError instanceof Error
+						? uploadError.message
+						: t("cards.form.loadAudioError"),
+			});
 		}
 	};
 
-	const handleConvertToPinyin = async () => {
+	const handleConvertToPinyin = useCallback(async () => {
 		const hanzi = values.answerText.trim();
 		if (!hanzi) {
-			setError(t("cards.form.enterHanziFirst"));
+			dispatch({ type: "setError", error: t("cards.form.enterHanziFirst") });
 			return;
 		}
 
-		setConverting(true);
+		dispatch({ type: "convertStart" });
 		try {
 			const pinyin = await resolvePinyin(hanzi);
-			setQuestionText(pinyin, "auto");
+			dispatch({ type: "convertFinish", pinyin });
 		} catch (conversionError) {
-			setError(
-				conversionError instanceof Error
-					? conversionError.message
-					: t("cards.form.convertError"),
-			);
-		} finally {
-			setConverting(false);
+			dispatch({
+				type: "convertFinish",
+				error:
+					conversionError instanceof Error
+						? conversionError.message
+						: t("cards.form.convertError"),
+			});
 		}
-	};
+	}, [t, values.answerText]);
 
+	// Auto-derive pinyin from hanzi while the user hasn't typed the question
+	// themselves yet (pinyin-hanzi packs only). Once they edit the question
+	// field manually, `questionManuallyEdited` flips and this stops firing.
 	useEffect(() => {
 		if (!isPinyinHanziPack) return;
 		if (questionManuallyEdited) return;
@@ -204,23 +213,21 @@ export function CardFormDialog({
 		const hanzi = values.answerText.trim();
 		if (!hanzi) return;
 
+		let cancelled = false;
 		const timer = setTimeout(async () => {
-			if (questionManuallyEditedRef.current) return;
 			try {
 				const pinyin = await resolvePinyin(hanzi);
-				if (questionManuallyEditedRef.current) return;
-				setValues((prev) => {
-					if (prev.answerText.trim() !== hanzi || prev.questionText.trim()) {
-						return prev;
-					}
-					return { ...prev, questionText: pinyin };
-				});
+				if (cancelled) return;
+				dispatch({ type: "autoFillQuestion", hanzi, pinyin });
 			} catch {
 				// Ignore auto-conversion errors while the user is typing.
 			}
 		}, 350);
 
-		return () => clearTimeout(timer);
+		return () => {
+			cancelled = true;
+			clearTimeout(timer);
+		};
 	}, [
 		isPinyinHanziPack,
 		questionManuallyEdited,
@@ -248,7 +255,7 @@ export function CardFormDialog({
 						<>
 							<div className="space-y-2">
 								<div className="flex items-center justify-between gap-2">
-									<Label htmlFor="card-answer">{config.answerLabel}</Label>
+									<Label htmlFor={ids.answer}>{config.answerLabel}</Label>
 									<Button
 										type="button"
 										variant="outline"
@@ -262,19 +269,26 @@ export function CardFormDialog({
 									</Button>
 								</div>
 								<Textarea
-									id="card-answer"
+									id={ids.answer}
 									value={values.answerText}
-									onChange={(event) => setAnswerText(event.target.value)}
+									onChange={(event) =>
+										dispatch({ type: "setAnswer", text: event.target.value })
+									}
 									placeholder={config.answerPlaceholder}
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="card-question">{config.questionLabel}</Label>
+								<Label htmlFor={ids.question}>{config.questionLabel}</Label>
 								<Textarea
-									id="card-question"
+									id={ids.question}
 									value={values.questionText}
 									onChange={(event) =>
-										setQuestionText(event.target.value, "manual")
+										dispatch({
+											type: "setQuestion",
+											text: event.target.value,
+											source: "manual",
+											isPinyinHanziPack,
+										})
 									}
 									placeholder={config.questionPlaceholder}
 								/>
@@ -282,22 +296,29 @@ export function CardFormDialog({
 						</>
 					) : (
 						<div className="space-y-2">
-							<Label htmlFor="card-question">{config.questionLabel}</Label>
+							<Label htmlFor={ids.question}>{config.questionLabel}</Label>
 							<Textarea
-								id="card-question"
+								id={ids.question}
 								value={values.questionText}
-								onChange={(event) => setQuestionText(event.target.value)}
+								onChange={(event) =>
+									dispatch({
+										type: "setQuestion",
+										text: event.target.value,
+										source: "manual",
+										isPinyinHanziPack,
+									})
+								}
 								placeholder={config.questionPlaceholder}
 							/>
 						</div>
 					)}
 					{config.supportsQuestionImage ? (
 						<div className="space-y-2">
-							<Label htmlFor="card-question-image">
+							<Label htmlFor={ids.questionImage}>
 								{t("cards.form.questionImage")}
 							</Label>
 							<Input
-								id="card-question-image"
+								id={ids.questionImage}
 								type="file"
 								accept="image/*"
 								onChange={handleQuestionImageUpload}
@@ -313,7 +334,7 @@ export function CardFormDialog({
 										variant="ghost"
 										size="sm"
 										onClick={() =>
-											setValues((prev) => ({ ...prev, questionImage: null }))
+											dispatch({ type: "setQuestionImage", image: null })
 										}
 									>
 										{t("cards.form.removeImage")}
@@ -324,11 +345,11 @@ export function CardFormDialog({
 					) : null}
 					{config.supportsQuestionAudio ? (
 						<div className="space-y-2">
-							<Label htmlFor="card-question-audio">
+							<Label htmlFor={ids.questionAudio}>
 								{t("cards.form.questionAudioOptional")}
 							</Label>
 							<Input
-								id="card-question-audio"
+								id={ids.questionAudio}
 								type="file"
 								accept="audio/*"
 								onChange={handleQuestionAudioUpload}
@@ -340,7 +361,7 @@ export function CardFormDialog({
 										variant="ghost"
 										size="sm"
 										onClick={() =>
-											setValues((prev) => ({ ...prev, questionAudio: null }))
+											dispatch({ type: "setQuestionAudio", audio: null })
 										}
 									>
 										{t("cards.form.removeAudio")}
@@ -351,11 +372,13 @@ export function CardFormDialog({
 					) : null}
 					{isPinyinHanziPack ? null : (
 						<div className="space-y-2">
-							<Label htmlFor="card-answer">{config.answerLabel}</Label>
+							<Label htmlFor={ids.answer}>{config.answerLabel}</Label>
 							<Textarea
-								id="card-answer"
+								id={ids.answer}
 								value={values.answerText}
-								onChange={(event) => setAnswerText(event.target.value)}
+								onChange={(event) =>
+									dispatch({ type: "setAnswer", text: event.target.value })
+								}
 								placeholder={config.answerPlaceholder}
 							/>
 						</div>
