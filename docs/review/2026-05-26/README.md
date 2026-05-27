@@ -6,24 +6,179 @@
 
 ## 索引
 
-| 文件 | 内容 | 数量 |
+| 文件 | 内容 | 状态 |
 |---|---|---|
-| [P0-critical.md](./P0-critical.md) | 必须立刻修：可被利用 / 烧钱 / 法律或贡献门槛 | 6 |
-| [P1-high.md](./P1-high.md) | 性能与架构热点 | 8 |
-| [P2-medium.md](./P2-medium.md) | 类型安全 / 工程化 / 文档结构 | 10 |
-| [P3-low.md](./P3-low.md) | 打磨项 | 6 |
+| [P0-critical.md](./P0-critical.md) | 必须立刻修：可被利用 / 烧钱 / 法律或贡献门槛 | ✅ **全部完成** (6/6) |
+| [P1-high.md](./P1-high.md) | 性能与架构热点 | ✅ **全部完成** (5/5) |
+| [P2-medium.md](./P2-medium.md) | 类型安全 / 工程化 / 文档结构 | 🟡 **部分完成** (7/10)，剩 #9 / #12 / #14 |
+| [P3-low.md](./P3-low.md) | 打磨项 | ⬜ 未开始 (0/6) |
+| [implementation/](./implementation/) | 各任务实现报告与决策记录 | — |
 
-## 综合落地节奏
+## 已完成（main 已合并并 push）
 
-| 周次 | 重点 | 工作量 |
+### P0（6/6 ✅）
+
+| ID | Commit | 任务 |
 |---|---|---|
-| W1 | P0 全部（6 条） | 1–2 天，本次 sub-agent 处理 |
-| W2 | P1 性能（#4–#8） + #13 CI | 4–5 天 |
-| W3 | P1/P2 架构 #9–#12（Repo 层 + Zod 校验 + 字段统一） | 4 天 |
-| W4 | P2 文档重组（D4–D6） + LICENSE/CONTRIBUTING（D7） | 2 天 |
-| W5+ | P3 打磨 + 测试补 | 持续 |
+| #1+#2 | `d332f04` 之前 | Firestore Rules 字段不可变性 + 100 KiB 大小上限 |
+| #3 | `d11a7ec` | 登出清 localStorage + IndexedDB（保留 device-level 偏好） |
+| D1 | (含 D2/D3 一起) | 根 README + 重写 client/README |
+| D2 | 同上 | untrack `.env.production`，GH Secrets 注入 |
+| D3 | 同上 | untrack `.codex/.opencode/.specify/` 个人 agent 配置 |
+
+### P1（5/5 ✅）
+
+| ID | Commit | 任务 |
+|---|---|---|
+| #4+#5 | `d332f04` | cards 加 status 过滤 + 新增 `listDueSchedulingStatesForProfile` helper + 复合索引 |
+| #6 | `95d8cc1` | pack 级联删除并行化（100 卡：~10 RTT → ~1 RTT） |
+| #7 | `dc0d6a0` | kaiti.woff2 (6.7 MB) 按需加载，移出关键路径 |
+| #8 | `c086827` | global review 分页（500 卡账户 ~1000 reads → ~80） |
+
+### P2（7/10 🟡）
+
+| ID | Commit | 任务 |
+|---|---|---|
+| #10+#11 | `811c422` | Zod schemas 在 SM-2 / scheduling-state / import 边界校验 |
+| #13 | `c05af7c` | CI workflow (lint/tsc/test/build) + Husky pre-commit |
+| D4+D5+D6 | `f78fb3f` | 文档重组到 `docs/{architecture,research,legacy}/` + owner_user_id 弃用计划 |
+| D7 | `e9fe8c0` | MIT LICENSE + CONTRIBUTING + PR template |
+
+---
+
+## 待办 Backlog（建议各自单独 session）
+
+每条都包含足够上下文，新 session 冷启动即可直接做。
+
+### 🔴 P2 #9 — 完成 repository pattern 迁移
+
+**问题:** `lib/api/*` 与 `lib/data/repositories/*` 两层并存，老层还在直接 import `firebase/firestore` 原语，新功能不知道该用哪层。
+
+**入口扫描点:**
+```bash
+grep -rn "from \"firebase/firestore\"" client/src/lib/api/
+# 重点文件：
+#   client/src/lib/api/card-mastery-state.ts:2
+#   client/src/lib/api/scheduling-state.ts:2
+#   client/src/lib/api/firestore-client.ts:6-19
+```
+
+**推荐做法:**
+1. 列出 `lib/api/*` 每个文件还在被哪里 import：`grep -rn "from \"@/lib/api/" client/src/`
+2. 逐个迁移调用方到对应的 `lib/data/repositories/*` 函数
+3. 删掉 `lib/api/*` 里的 firestore 直连模块
+4. 在 ESLint config 加 `no-restricted-imports`：
+   ```js
+   "no-restricted-imports": ["error", { paths: [
+     { name: "firebase/firestore", message: "Only lib/data/firestore/* may import firebase/firestore directly." }
+   ]}]
+   ```
+   排除 `lib/data/firestore/` 和 `lib/firebase/`。
+
+**估时:** 大半天到一天。涉及多文件改动 + 测试更新。建议小步走，每迁移一个 collection 就跑一次测试。
+
+**注意:** Zod schemas 在 `lib/api/schemas/` —— **这部分不要动**，schemas 跟 entities 一起就好。
+
+---
+
+### 🟠 P2 #12 — 巨型组件 / hook 拆分
+
+**问题:**
+- `client/src/components/app-shell.tsx` — 548 行，13 个 useState，6 个 modal 都挤在一起
+- `client/src/features/cards/components/card-form-dialog.tsx` — 389 行，第 1 行 `biome-ignore-all useUniqueElementIds` **无解释**
+- `client/src/features/review/hooks/use-review-session.ts` — 85-103 行有 13 个独立 useState，loading/error 可同时为真
+
+**推荐做法（分 3 个 PR）:**
+
+**PR 1: AppShell modal 抽离**
+- 每个 modal 抽成独立组件，自己管 open/close state（用 Radix Dialog 的 `open` controlled prop 已经在用，只是 state 散在 shell 里）
+- `<AppShell>` 只剩 layout + outlet
+- 测试方式: Storybook 故事仍能正常打开每个 modal
+
+**PR 2: CardFormDialog 表单状态用 useReducer 或 react-hook-form**
+- 当前手动管 `questionManuallyEditedRef` 等 ref 状态
+- 引入 `react-hook-form`（项目还没装，~10 KB gzip）或本地 useReducer
+- **附带:** 修 `useUniqueElementIds` accessibility 问题或者写清楚为什么忽略
+
+**PR 3: use-review-session 状态机化**
+- 13 个 useState → 单个 useReducer
+- 状态机定义：`idle | loading | ready | grading | error`
+- 用 discriminated union 让 TS 阻止 loading + error 同时为真
+- 测试：vitest 直接测 reducer 的 transition
+
+**估时:** 每个 PR 半天到一天。UI 回归风险中等，建议每个 PR 都手动跑一次主要流程 + storybook 检查。
+
+---
+
+### 🟡 P2 #14 — 字段命名跨集合统一
+
+**问题:** `card_scheduling_states` 用 `learner_profile_id`，其他全用 `profile_id`。写约束时容易拿错 helper（`ownershipConstraints` vs `learnerOwnershipConstraints`），错了静默返回空。
+
+**推荐做法:**
+1. 写一份 ADR 在 `docs/architecture/adr-001-profile-id-naming.md` 决定统一名字（建议 `profile_id`）
+2. 写迁移脚本 `client/scripts/migrate-learner-profile-id.mjs`：
+   - 用 Firebase Admin SDK 或 `firebase-tools` 读所有 `card_scheduling_states`
+   - 把 `learner_profile_id` 复制到新字段 `profile_id`
+   - 保留 `learner_profile_id` 一个发布周期（双写），便于回滚
+3. 改代码：所有 `learnerOwnershipConstraints` → `profileOwnershipConstraints`，删 helper
+4. 更新 firestore.indexes.json：把 `learner_profile_id` 索引重建到 `profile_id`
+5. 下一个发布周期再删 `learner_profile_id` 字段
+
+**注意:** 这是 prod 数据迁移，要小心：
+- 先在 staging 跑
+- 部署新代码时双写（保留旧字段写入）
+- 监控一段时间无 schema 异常后才真正删除旧字段
+- Firestore 索引切换要分两次部署（先加新索引，等构建完，再删旧索引）
+
+**估时:** 1-2 天，含 staging 验证。
+
+---
+
+### 🟢 P3 全部（6 条）
+
+详见 [P3-low.md](./P3-low.md)。简列：
+
+| ID | 任务 | 估时 |
+|---|---|---|
+| #15 | i18n locale 动态 import | 1h |
+| #16 | 大列表用 `@tanstack/react-virtual` 虚拟化 | 半天 |
+| #17 | Dashboard 计算结果加 TTL 缓存（用项目已有的 query-cache） | 1h |
+| #18 | 补 hook / context / auth flow 单测 | 持续 |
+| D8 | client/README 进一步完善（实际重写工作 P0 已经做） | — 已完成 |
+| D9-D12 | 仓库卫生（CI 已建好 ✅、build artifact 清理脚本、`.DS_Store` 清理） | 30 min |
+
+---
+
+### 📌 实现过程中浮现的额外 Follow-ups
+
+| 来源 | 任务 |
+|---|---|
+| P1 #7 报告 | `xst.woff2` (451 KB CardMasterPixel) 同样可懒加载 |
+| P1 #6 报告 | `FIRESTORE_IN_FILTER_LIMIT = 10` 可升到 30（影响 6 个文件，单独做） |
+| P0 #1 RULES_CHANGES.md | rules 加 `hasOnly` allow-list（当前太多 optional 字段不敢加） |
+| P0 #1 RULES_CHANGES.md | `review_events` 更新禁用（domain 说 immutable，确认无客户端写路径后 `if false`） |
+| P2 #13 CI.md | 启用更严 ESLint 规则：`no-explicit-any`, `consistent-type-imports`, `no-restricted-imports` |
+| P2 #10 ZOD_VALIDATION.md | `card_scheduling_state.state` 改成按 algorithm 的 discriminated union |
+
+---
 
 ## 编号约定
 
 - `#N` — 代码相关 finding（安全/性能/设计）
 - `DN` — 文档与仓库卫生 finding
+
+## Implementation 记录
+
+每个完成任务的 sub-agent 报告在 [implementation/](./implementation/)：
+
+- `RULES_CHANGES.md` — Firestore rules 加固
+- `LOGOUT_CLEANUP.md` — 登出清缓存
+- `HYGIENE_REPORT.md` — 仓库门面清理 + GH Secrets follow-up
+- `FIRESTORE_FILTERS.md` — cards / scheduling 查询过滤 + 索引
+- `CASCADE_DELETE.md` — pack 删除并行化
+- `FONT_LAZY.md` — kaiti 按需加载
+- `REVIEW_PAGINATION.md` — global review 分页
+- `CI.md` — CI workflow + Husky
+- `DOCS_REORG.md` — 文档重组
+- `LICENSE_CONTRIBUTING.md` — 法律 / 贡献文档
+- `ZOD_VALIDATION.md` — Zod 边界校验
