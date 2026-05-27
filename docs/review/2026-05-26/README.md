@@ -10,7 +10,7 @@
 |---|---|---|
 | [P0-critical.md](./P0-critical.md) | 必须立刻修：可被利用 / 烧钱 / 法律或贡献门槛 | ✅ **全部完成** (6/6) |
 | [P1-high.md](./P1-high.md) | 性能与架构热点 | ✅ **全部完成** (5/5) |
-| [P2-medium.md](./P2-medium.md) | 类型安全 / 工程化 / 文档结构 | 🟡 **部分完成** (7/10)，剩 #9 / #12 / #14 |
+| [P2-medium.md](./P2-medium.md) | 类型安全 / 工程化 / 文档结构 | 🟡 **部分完成** (8/10)，剩 #12 / #14 |
 | [P3-low.md](./P3-low.md) | 打磨项 | ⬜ 未开始 (0/6) |
 | [implementation/](./implementation/) | 各任务实现报告与决策记录 | — |
 
@@ -35,10 +35,11 @@
 | #7 | `dc0d6a0` | kaiti.woff2 (6.7 MB) 按需加载，移出关键路径 |
 | #8 | `c086827` | global review 分页（500 卡账户 ~1000 reads → ~80） |
 
-### P2（7/10 🟡）
+### P2（8/10 🟡）
 
 | ID | Commit | 任务 |
 |---|---|---|
+| #9 | `c537084..93b5079` (7 commits) | Repository pattern 迁移：删 7 个废弃 `lib/api/*` 模块，UI 改走 repositories，foundation 模块挪进 `lib/data/`，加 ESLint `no-restricted-imports` 守卫 |
 | #10+#11 | `811c422` | Zod schemas 在 SM-2 / scheduling-state / import 边界校验 |
 | #13 | `c05af7c` | CI workflow (lint/tsc/test/build) + Husky pre-commit |
 | D4+D5+D6 | `f78fb3f` | 文档重组到 `docs/{architecture,research,legacy}/` + owner_user_id 弃用计划 |
@@ -49,37 +50,6 @@
 ## 待办 Backlog（建议各自单独 session）
 
 每条都包含足够上下文，新 session 冷启动即可直接做。
-
-### 🔴 P2 #9 — 完成 repository pattern 迁移
-
-**问题:** `lib/api/*` 与 `lib/data/repositories/*` 两层并存，老层还在直接 import `firebase/firestore` 原语，新功能不知道该用哪层。
-
-**入口扫描点:**
-```bash
-grep -rn "from \"firebase/firestore\"" client/src/lib/api/
-# 重点文件：
-#   client/src/lib/api/card-mastery-state.ts:2
-#   client/src/lib/api/scheduling-state.ts:2
-#   client/src/lib/api/firestore-client.ts:6-19
-```
-
-**推荐做法:**
-1. 列出 `lib/api/*` 每个文件还在被哪里 import：`grep -rn "from \"@/lib/api/" client/src/`
-2. 逐个迁移调用方到对应的 `lib/data/repositories/*` 函数
-3. 删掉 `lib/api/*` 里的 firestore 直连模块
-4. 在 ESLint config 加 `no-restricted-imports`：
-   ```js
-   "no-restricted-imports": ["error", { paths: [
-     { name: "firebase/firestore", message: "Only lib/data/firestore/* may import firebase/firestore directly." }
-   ]}]
-   ```
-   排除 `lib/data/firestore/` 和 `lib/firebase/`。
-
-**估时:** 大半天到一天。涉及多文件改动 + 测试更新。建议小步走，每迁移一个 collection 就跑一次测试。
-
-**注意:** Zod schemas 在 `lib/api/schemas/` —— **这部分不要动**，schemas 跟 entities 一起就好。
-
----
 
 ### 🟠 P2 #12 — 巨型组件 / hook 拆分
 
@@ -157,8 +127,10 @@ grep -rn "from \"firebase/firestore\"" client/src/lib/api/
 | P1 #6 报告 | `FIRESTORE_IN_FILTER_LIMIT = 10` 可升到 30（影响 6 个文件，单独做） |
 | P0 #1 RULES_CHANGES.md | rules 加 `hasOnly` allow-list（当前太多 optional 字段不敢加） |
 | P0 #1 RULES_CHANGES.md | `review_events` 更新禁用（domain 说 immutable，确认无客户端写路径后 `if false`） |
-| P2 #13 CI.md | 启用更严 ESLint 规则：`no-explicit-any`, `consistent-type-imports`, `no-restricted-imports` |
+| P2 #13 CI.md | 启用更严 ESLint 规则：`no-explicit-any`, `consistent-type-imports`（`no-restricted-imports` 已在 P2 #9 落地） |
 | P2 #10 ZOD_VALIDATION.md | `card_scheduling_state.state` 改成按 algorithm 的 discriminated union |
+| P2 #9 REPOSITORY_MIGRATION.md | `lib/api/import-export.ts` shim 还在（仅用于其 393 行 in-memory 测试），需先把测试迁到 Firestore mock harness 再删 |
+| P2 #9 REPOSITORY_MIGRATION.md | `lib/data/firestore/firestore-client.ts` 与 `firestore-store.ts` 功能重叠，需 dedupe |
 
 ---
 
@@ -182,3 +154,4 @@ grep -rn "from \"firebase/firestore\"" client/src/lib/api/
 - `DOCS_REORG.md` — 文档重组
 - `LICENSE_CONTRIBUTING.md` — 法律 / 贡献文档
 - `ZOD_VALIDATION.md` — Zod 边界校验
+- `REPOSITORY_MIGRATION.md` — P2 #9 6 阶段 repo 迁移记录
