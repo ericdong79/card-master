@@ -2,8 +2,9 @@ import type { Card } from "@/lib/api/entities/card";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";
 import type { CardSchedulingStateInsert } from "@/lib/api/dtos/card-scheduling-state";
 import type { ReviewEventInsert } from "@/lib/api/dtos/review-event";
-import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
 import { generateId, nowIso } from "@/lib/api/utils";
+
+const LOCAL_OWNER_ID = "local-user";
 import {
 	normalizeSm2Parameters,
 	sm2Scheduler,

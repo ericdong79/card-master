@@ -1,6 +1,7 @@
 import type { Card } from "@/lib/api/entities/card";
 import type { ReviewEventInsert } from "@/lib/api/dtos/review-event";
-import { LOCAL_OWNER_ID } from "@/lib/api/local-user";
+
+const LOCAL_OWNER_ID = "local-user";
 
 
 /**
