@@ -5,7 +5,7 @@ import {
 	notifyDailyReviewProgressUpdated,
 	type DailyReviewProgressUpdatedDetail,
 } from "@/features/review/daily-goal";
-import { normalizeCardMasteryState } from "@/lib/api/card-mastery-state";
+import { normalizeCardMasteryState } from "@/lib/api/schemas/card-mastery-state";
 import { clearFirestoreReadCache } from "@/lib/api/firestore-client";
 import type { StoreName } from "@/lib/api/client";
 import type { ReviewEventInsert } from "@/lib/api/dtos/review-event";

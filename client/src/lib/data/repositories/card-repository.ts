@@ -1,6 +1,6 @@
 import { getDoc, where } from "firebase/firestore";
 
-import { normalizeCardMasteryState } from "@/lib/api/card-mastery-state";
+import { normalizeCardMasteryState } from "@/lib/api/schemas/card-mastery-state";
 import type { CardUpdate } from "@/lib/api/dtos/card";
 import type { Card, CardStatus } from "@/lib/api/entities/card";
 import type { CardMasteryState } from "@/lib/api/entities/card-mastery-state";
