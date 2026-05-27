@@ -10,7 +10,7 @@
 |---|---|---|
 | [P0-critical.md](./P0-critical.md) | 必须立刻修：可被利用 / 烧钱 / 法律或贡献门槛 | ✅ **全部完成** (6/6) |
 | [P1-high.md](./P1-high.md) | 性能与架构热点 | ✅ **全部完成** (5/5) |
-| [P2-medium.md](./P2-medium.md) | 类型安全 / 工程化 / 文档结构 | 🟡 **部分完成** (8/10)，剩 #12 / #14 |
+| [P2-medium.md](./P2-medium.md) | 类型安全 / 工程化 / 文档结构 | 🟡 **部分完成** (9/10)，剩 #14 |
 | [P3-low.md](./P3-low.md) | 打磨项 | ⬜ 未开始 (0/6) |
 | [implementation/](./implementation/) | 各任务实现报告与决策记录 | — |
 
@@ -35,12 +35,13 @@
 | #7 | `dc0d6a0` | kaiti.woff2 (6.7 MB) 按需加载，移出关键路径 |
 | #8 | `c086827` | global review 分页（500 卡账户 ~1000 reads → ~80） |
 
-### P2（8/10 🟡）
+### P2（9/10 🟡）
 
 | ID | Commit | 任务 |
 |---|---|---|
 | #9 | `c537084..93b5079` (7 commits) | Repository pattern 迁移：删 7 个废弃 `lib/api/*` 模块，UI 改走 repositories，foundation 模块挪进 `lib/data/`，加 ESLint `no-restricted-imports` 守卫 |
 | #10+#11 | `811c422` | Zod schemas 在 SM-2 / scheduling-state / import 边界校验 |
+| #12 | 3 merge commits | 巨型组件 / hook 拆分：AppShell 563→163 行 + 6 自治组件；CardFormDialog → useReducer + useId 修 a11y；use-review-session 9 useState → 状态机 reducer + 19 新单测 |
 | #13 | `c05af7c` | CI workflow (lint/tsc/test/build) + Husky pre-commit |
 | D4+D5+D6 | `f78fb3f` | 文档重组到 `docs/{architecture,research,legacy}/` + owner_user_id 弃用计划 |
 | D7 | `e9fe8c0` | MIT LICENSE + CONTRIBUTING + PR template |
@@ -50,35 +51,6 @@
 ## 待办 Backlog（建议各自单独 session）
 
 每条都包含足够上下文，新 session 冷启动即可直接做。
-
-### 🟠 P2 #12 — 巨型组件 / hook 拆分
-
-**问题:**
-- `client/src/components/app-shell.tsx` — 548 行，13 个 useState，6 个 modal 都挤在一起
-- `client/src/features/cards/components/card-form-dialog.tsx` — 389 行，第 1 行 `biome-ignore-all useUniqueElementIds` **无解释**
-- `client/src/features/review/hooks/use-review-session.ts` — 85-103 行有 13 个独立 useState，loading/error 可同时为真
-
-**推荐做法（分 3 个 PR）:**
-
-**PR 1: AppShell modal 抽离**
-- 每个 modal 抽成独立组件，自己管 open/close state（用 Radix Dialog 的 `open` controlled prop 已经在用，只是 state 散在 shell 里）
-- `<AppShell>` 只剩 layout + outlet
-- 测试方式: Storybook 故事仍能正常打开每个 modal
-
-**PR 2: CardFormDialog 表单状态用 useReducer 或 react-hook-form** ✅ 完成
-- ~~当前手动管 `questionManuallyEditedRef` 等 ref 状态~~ → 单个 `useReducer` + 显式 action union（`client/src/features/cards/components/card-form-state.ts`）
-- ~~**附带:** 修 `useUniqueElementIds` accessibility 问题或者写清楚为什么忽略~~ → 用 `useId()` 生成唯一 id，删除 stale `biome-ignore-all`（项目用 ESLint，不是 biome，该指令本就无效）
-- 详情：[`implementation/CARDFORM_REDUCER.md`](./implementation/CARDFORM_REDUCER.md)
-
-**PR 3: use-review-session 状态机化**
-- 13 个 useState → 单个 useReducer
-- 状态机定义：`idle | loading | ready | grading | error`
-- 用 discriminated union 让 TS 阻止 loading + error 同时为真
-- 测试：vitest 直接测 reducer 的 transition
-
-**估时:** 每个 PR 半天到一天。UI 回归风险中等，建议每个 PR 都手动跑一次主要流程 + storybook 检查。
-
----
 
 ### 🟡 P2 #14 — 字段命名跨集合统一
 
@@ -155,4 +127,6 @@
 - `LICENSE_CONTRIBUTING.md` — 法律 / 贡献文档
 - `ZOD_VALIDATION.md` — Zod 边界校验
 - `REPOSITORY_MIGRATION.md` — P2 #9 6 阶段 repo 迁移记录
-- `CARDFORM_REDUCER.md` — P2 #12 PR 2: `card-form-dialog.tsx` useReducer + `useId` 重构
+- `APPSHELL_SPLIT.md` — P2 #12 PR 1: AppShell 563→163 行拆分
+- `CARDFORM_REDUCER.md` — P2 #12 PR 2: card-form-dialog useReducer + useId
+- `REVIEW_SESSION_FSM.md` — P2 #12 PR 3: use-review-session 状态机化
