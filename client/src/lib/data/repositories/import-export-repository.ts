@@ -1,6 +1,6 @@
 import { where } from "firebase/firestore";
 
-import type { ApiClient, QueryOptions, StoreName, StoreValue } from "@/lib/api/client";
+import type { ApiClient, QueryOptions, StoreName, StoreValue } from "@/lib/data/store-client";
 import type { Card } from "@/lib/api/entities/card";
 import type { CardMasteryState } from "@/lib/api/entities/card-mastery-state";
 import type { CardPack } from "@/lib/api/entities/card-pack";
@@ -14,7 +14,7 @@ import {
 	learnerOwnershipConstraints as legacyLearnerOwnershipConstraints,
 	listFirestoreRecords,
 	ownershipConstraints as legacyOwnershipConstraints,
-} from "@/lib/api/firestore-client";
+} from "@/lib/data/firestore/firestore-client";
 import { parseImportPayload } from "@/lib/api/schemas/import-payload";
 import {
 	generateId as defaultGenerateId,

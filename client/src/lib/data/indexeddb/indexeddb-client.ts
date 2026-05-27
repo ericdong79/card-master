@@ -2,7 +2,7 @@
  * @deprecated IndexedDB is retained only for legacy local-data import and tests.
  * New app data access should go through repositories under `@/lib/data/repositories/*`.
  */
-import type { ApiClient, QueryOptions, StoreName, StoreValue } from "./client";
+import type { ApiClient, QueryOptions, StoreName, StoreValue } from "@/lib/data/store-client";
 
 const DB_NAME = "card-master";
 const DB_VERSION = 2;

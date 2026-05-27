@@ -1,4 +1,4 @@
-import type { ApiClient } from "./client";
+import type { ApiClient } from "@/lib/data/store-client";
 import {
 	createImportExportRepository,
 	downloadCardMasterExport,

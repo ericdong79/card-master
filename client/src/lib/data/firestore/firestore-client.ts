@@ -18,8 +18,8 @@ import {
 	type QueryConstraint,
 } from "firebase/firestore";
 
-import type { ApiClient, QueryOptions, StoreName, StoreValue } from "./client";
-import { FIRESTORE_COLLECTIONS, getCardMasterFirestore } from "../firebase/firestore";
+import type { ApiClient, QueryOptions, StoreName, StoreValue } from "@/lib/data/store-client";
+import { FIRESTORE_COLLECTIONS, getCardMasterFirestore } from "@/lib/firebase/firestore";
 
 export {
 	FIRESTORE_IN_FILTER_LIMIT,

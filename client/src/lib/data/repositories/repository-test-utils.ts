@@ -1,4 +1,4 @@
-import type { StoreName, StoreValue } from "@/lib/api/client";
+import type { StoreName, StoreValue } from "@/lib/data/store-client";
 
 export type RepositoryTestDb = {
 	[S in StoreName]: StoreValue<S>[];

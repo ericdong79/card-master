@@ -11,8 +11,8 @@ import {
 	type DocumentData,
 } from "firebase/firestore";
 
-import type { StoreName } from "@/lib/api/client";
-import { clearFirestoreReadCache } from "@/lib/api/firestore-client";
+import type { StoreName } from "@/lib/data/store-client";
+import { clearFirestoreReadCache } from "@/lib/data/firestore/firestore-client";
 import { FIRESTORE_COLLECTIONS } from "@/lib/firebase/firestore";
 import {
 	commitBatchedWrites,

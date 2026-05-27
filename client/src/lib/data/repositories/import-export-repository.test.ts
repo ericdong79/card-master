@@ -16,9 +16,9 @@ vi.mock("@/lib/data/firestore/query-cache", () => ({
 	clearQueryCache: vi.fn(),
 }));
 
-vi.mock("@/lib/api/firestore-client", async (importOriginal) => {
+vi.mock("@/lib/data/firestore/firestore-client", async (importOriginal) => {
 	const actual =
-		await importOriginal<typeof import("@/lib/api/firestore-client")>();
+		await importOriginal<typeof import("@/lib/data/firestore/firestore-client")>();
 	return {
 		...actual,
 		clearFirestoreReadCache: vi.fn(),
@@ -28,7 +28,7 @@ vi.mock("@/lib/api/firestore-client", async (importOriginal) => {
 import type { CardMasterExportPayload } from "./import-export-repository";
 import { createImportExportRepository } from "./import-export-repository";
 import { createRepositoryTestDb } from "./repository-test-utils";
-import { clearFirestoreReadCache } from "@/lib/api/firestore-client";
+import { clearFirestoreReadCache } from "@/lib/data/firestore/firestore-client";
 import { commitBatchedWrites } from "@/lib/data/firestore/batch-writer";
 import { clearQueryCache } from "@/lib/data/firestore/query-cache";
 

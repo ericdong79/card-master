@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ApiClient, StoreName, StoreValue } from "./client";
+import type { ApiClient, StoreName, StoreValue } from "@/lib/data/store-client";
 import type { Card } from "./entities/card";
 import type { CardMasteryState } from "./entities/card-mastery-state";
 import type { CardPack } from "./entities/card-pack";

@@ -9,7 +9,7 @@ import {
 	type QueryDocumentSnapshot,
 } from "firebase/firestore";
 
-import type { StoreName, StoreValue } from "@/lib/api/client";
+import type { StoreName, StoreValue } from "@/lib/data/store-client";
 import {
 	FIRESTORE_COLLECTIONS,
 	getCardMasterFirestore,

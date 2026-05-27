@@ -1,4 +1,4 @@
-import type { ApiClient, StoreName, StoreValue } from "@/lib/api/client";
+import type { ApiClient, StoreName, StoreValue } from "@/lib/data/store-client";
 import type { Card } from "@/lib/api/entities/card";
 import type { CardMasteryState } from "@/lib/api/entities/card-mastery-state";
 import type { CardPack } from "@/lib/api/entities/card-pack";
@@ -8,7 +8,7 @@ import type { SchedulingProfile } from "@/lib/api/entities/scheduling-profile";
 import {
 	clearFirestoreReadCache,
 	isFirestoreApiClient,
-} from "@/lib/api/firestore-client";
+} from "@/lib/data/firestore/firestore-client";
 import {
 	commitBatchedWrites,
 	type BatchOperation,

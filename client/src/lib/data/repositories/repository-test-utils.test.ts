@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { StoreValue } from "@/lib/api/client";
+import type { StoreValue } from "@/lib/data/store-client";
 
 import { createRepositoryTestDb } from "./repository-test-utils";
 

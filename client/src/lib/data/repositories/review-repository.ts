@@ -6,8 +6,8 @@ import {
 	type DailyReviewProgressUpdatedDetail,
 } from "@/features/review/daily-goal";
 import { normalizeCardMasteryState } from "@/lib/api/schemas/card-mastery-state";
-import { clearFirestoreReadCache } from "@/lib/api/firestore-client";
-import type { StoreName } from "@/lib/api/client";
+import { clearFirestoreReadCache } from "@/lib/data/firestore/firestore-client";
+import type { StoreName } from "@/lib/data/store-client";
 import type { ReviewEventInsert } from "@/lib/api/dtos/review-event";
 import type { CardMasteryState } from "@/lib/api/entities/card-mastery-state";
 import type { CardSchedulingState } from "@/lib/api/entities/card-scheduling-state";

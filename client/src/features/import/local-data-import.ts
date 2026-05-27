@@ -4,9 +4,9 @@ import {
 	loadLocalProfileState,
 	type StoredProfileState,
 } from "@/features/profile/local-profile-store";
-import type { ApiClient } from "@/lib/api/client";
-import { createApiClient } from "@/lib/api/client";
-import { createIndexedDbApiClient } from "@/lib/api/indexeddb-client";
+import type { ApiClient } from "@/lib/data/store-client";
+import { createApiClient } from "@/lib/data/store-client";
+import { createIndexedDbApiClient } from "@/lib/data/indexeddb/indexeddb-client";
 import type { Card } from "@/lib/api/entities/card";
 import type { CardMasteryState } from "@/lib/api/entities/card-mastery-state";
 import type { CardPack } from "@/lib/api/entities/card-pack";

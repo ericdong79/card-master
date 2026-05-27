@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { UserProfile } from "@/features/profile/profile-context";
-import type { ApiClient } from "@/lib/api/client";
+import type { ApiClient } from "@/lib/data/store-client";
 import type { LocalDataImportSource } from "./local-data-import";
 import {
 	createImportPlan,
