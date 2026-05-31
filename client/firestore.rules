@@ -36,6 +36,30 @@ service cloud.firestore {
       return request.resource.data[field] == resource.data[field];
     }
 
+    function unchangedIfExistingFieldPresent(field) {
+      return !resource.data.keys().hasAny([field])
+        || request.resource.data[field] == resource.data[field];
+    }
+
+    function incomingCurrentProfileIdIsValid() {
+      return !request.resource.data.keys().hasAny(['current_profile_id'])
+        || request.resource.data.current_profile_id is string
+        || request.resource.data.current_profile_id == null;
+    }
+
+    function incomingUserCreateIsValid(userId) {
+      return (
+          request.resource.data.keys().hasAny(['id'])
+          && request.resource.data.id == userId
+        )
+        || (
+          !request.resource.data.keys().hasAny(['id'])
+          && request.resource.data.keys().hasOnly([
+            'current_profile_id', 'updated_at'
+          ])
+        );
+    }
+
     // ---------- users/{firebaseUid} ----------
     // The document id is the Firebase uid. There is no account_user_id field
     // on this record (ownership is by doc id), so we don't apply the generic
@@ -44,11 +68,13 @@ service cloud.firestore {
       allow read: if isOwnUser(userId);
       allow create: if isOwnUser(userId)
         && withinSizeLimit()
-        && request.resource.data.id == userId;
+        && incomingUserCreateIsValid(userId)
+        && incomingCurrentProfileIdIsValid();
       allow update: if isOwnUser(userId)
         && withinSizeLimit()
-        && unchanged('id')
-        && unchanged('created_at');
+        && incomingCurrentProfileIdIsValid()
+        && unchangedIfExistingFieldPresent('id')
+        && unchangedIfExistingFieldPresent('created_at');
       allow delete: if isOwnUser(userId);
     }
 
