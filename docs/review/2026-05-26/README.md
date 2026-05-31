@@ -13,6 +13,7 @@
 | [P2-medium.md](./P2-medium.md) | 类型安全 / 工程化 / 文档结构 | 🟡 **部分完成** (9/10)，剩 #14 |
 | [P3-low.md](./P3-low.md) | 打磨项 | ⬜ 未开始 (0/6) |
 | [implementation/](./implementation/) | 各任务实现报告与决策记录 | — |
+| [MANUAL_VERIFICATION.md](./MANUAL_VERIFICATION.md) | 上线前手动验证清单（汇总全部 PR 的 UI / 行为检查项） | 待执行 |
 
 ## 已完成（main 已合并并 push）
 
