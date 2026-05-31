@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { LoginPage } from "@/features/auth/login-page";
 import { useAuth } from "@/features/auth/use-auth";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { CreateProfileController } from "./create-profile-controller";
 import { AppShellModalsProvider } from "./modals-context";
 import { MobileSidebar } from "./mobile-sidebar";
+import { getProfileSwitchRedirectPath } from "./profile-switch-navigation";
 import { SidebarPanel } from "./sidebar-panel";
 import { useDailyReviewProgress } from "./use-daily-review-progress";
 import { UserMenuDialog } from "./user-menu-dialog";
@@ -18,6 +19,7 @@ import { UserMenuDialog } from "./user-menu-dialog";
 function AuthenticatedAppShell() {
 	const { t } = useTranslation();
 	const { pathname } = useLocation();
+	const navigate = useNavigate();
 	const { accountUserId } = useAuth();
 	const {
 		ready,
@@ -53,6 +55,12 @@ function AuthenticatedAppShell() {
 		() => setCreateProfileOpen(true),
 		[],
 	);
+	const handleProfileSwitched = useCallback(() => {
+		const redirectPath = getProfileSwitchRedirectPath(pathname);
+		if (redirectPath) {
+			navigate(redirectPath, { replace: true });
+		}
+	}, [navigate, pathname]);
 
 	const modalsValue = useMemo(
 		() => ({
@@ -125,6 +133,7 @@ function AuthenticatedAppShell() {
 					open={switchProfileOpen}
 					onOpenChange={setSwitchProfileOpen}
 					onCreateNew={openCreateProfile}
+					onProfileSwitched={handleProfileSwitched}
 				/>
 
 				<LocalDataImportDialog

@@ -19,12 +19,14 @@ type SwitchProfileDialogProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	onCreateNew: () => void;
+	onProfileSwitched?: () => void;
 };
 
 export function SwitchProfileDialog({
 	open,
 	onOpenChange,
 	onCreateNew,
+	onProfileSwitched,
 }: SwitchProfileDialogProps) {
 	const { t } = useTranslation();
 	const { profiles, currentProfile, switchProfile, deleteProfile } = useProfile();
@@ -48,6 +50,7 @@ export function SwitchProfileDialog({
 		setError(null);
 		try {
 			await switchProfile(profileId);
+			onProfileSwitched?.();
 			onOpenChange(false);
 		} catch (error) {
 			console.error("Failed to switch profile", error);
